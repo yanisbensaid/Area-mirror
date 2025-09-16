@@ -12,6 +12,8 @@ L’objectif est de créer une application moderne, robuste et efficace grâce �
 - **Liaison Front/Back :** [Inertia.js](https://inertiajs.com/)
 - **Base de données :** [SQLite](https://www.sqlite.org/index.html)
 
+👉 Pour une analyse détaillée et comparative des choix techniques, consultez le fichier [**BENCHMARK.md**](./BENCHMARK.md).
+
 ---
 
 ## 📌 Objectifs du projet
