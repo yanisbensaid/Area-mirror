@@ -309,6 +309,14 @@ jobs:
               ls -la /home/ubuntu/area-backend/public/ || echo 'Laravel public directory not found!'
               [ -f /home/ubuntu/area-backend/public/index.php ] && echo 'index.php found' || echo 'index.php missing!'
               
+              # Show the actual nginx configuration that was created
+              echo 'Current nginx configuration:'
+              cat /etc/nginx/sites-available/area-app || echo 'Nginx config not found!'
+              
+              # Check which sites are enabled
+              echo 'Enabled nginx sites:'
+              ls -la /etc/nginx/sites-enabled/
+              
               # Test nginx configuration
               sudo nginx -t
               
@@ -318,10 +326,21 @@ jobs:
               # Verify PHP-FPM is running
               sudo systemctl status php8.2-fpm --no-pager || echo 'PHP-FPM not running!'
               
-              # Test the configuration
+              # Test the configuration and create debug files
               sleep 2
+              
+              # Create a test file in the Laravel public directory for debugging
+              echo '<h1>Laravel Directory Test</h1><p>Files in directory:</p><pre>' > /home/ubuntu/area-backend/public/debug.html
+              ls -la /home/ubuntu/area-backend/public/ >> /home/ubuntu/area-backend/public/debug.html
+              echo '</pre>' >> /home/ubuntu/area-backend/public/debug.html
+              
+              # Test if Laravel directory is accessible
+              curl -I http://localhost/debug.html || echo 'Debug file test failed'
               curl -I http://localhost/health || echo 'Health check failed'
               curl http://localhost/test || echo 'Test endpoint failed'
+              
+              # Show nginx error logs if there are issues
+              sudo tail -10 /var/log/nginx/error.log || echo 'No nginx error logs'
             "
       - run:
           name: Create test pages
