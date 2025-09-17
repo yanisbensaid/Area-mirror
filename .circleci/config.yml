@@ -271,8 +271,10 @@ jobs:
               location /test {
                   return 200 \"Laravel configuration test - Backend path: /home/$SSH_USERNAME/area-backend/public\";
                   add_header Content-Type text/plain;
-              }                  # PHP-FPM configuration for Laravel
-                  location ~ \.php$ {
+              }
+                  
+              # PHP-FPM configuration for Laravel
+              location ~ \.php$ {
                       fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
                       fastcgi_index index.php;
                       fastcgi_param SCRIPT_FILENAME \$realpath_root\$fastcgi_script_name;
