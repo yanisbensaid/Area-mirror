@@ -12,7 +12,8 @@ class ApiTestController extends Controller
         return response()->json([
             'message' => 'API is working!',
             'timestamp' => now()->toISOString(),
-            'status' => 'success'
+            'status' => 'success',
+            'version' => '1.0.0'
         ]);
     }
 
