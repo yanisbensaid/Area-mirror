@@ -26,72 +26,13 @@ L'objectif est de créer une application moderne, robuste et efficace grâce à 
 - Laravel API server at http://localhost:8000
 - React frontend at http://localhost:5173
 
-## Database Setup
-
-**⚠️ IMPORTANT:** Le projet utilise maintenant PostgreSQL. Si vous récupérez le projet pour la première fois après cette migration, suivez ces étapes :
-
-### 1. Installer PostgreSQL
-```bash
-# Ubuntu/Debian
-sudo apt install postgresql postgresql-contrib php-pgsql
-
-# macOS
-brew install postgresql
-brew services start postgresql
-```
-
-### 2. Créer la base de données
-```bash
-sudo -u postgres psql
-CREATE DATABASE area_db;
-CREATE USER area_user WITH PASSWORD 'area_password';
-GRANT ALL PRIVILEGES ON DATABASE area_db TO area_user;
-GRANT ALL ON SCHEMA public TO area_user;
-GRANT CREATE ON SCHEMA public TO area_user;
-\q
-```
-
-### 3. Configurer Laravel
-```bash
-cd backend
-cp .env.example .env
-# Modifier .env avec :
-# DB_CONNECTION=pgsql
-# DB_HOST=127.0.0.1
-# DB_PORT=5432
-# DB_DATABASE=area_db
-# DB_USERNAME=area_user
-# DB_PASSWORD=area_password
-```
-
-### Start Servers Individually
-
-#### Backend (Laravel API)
-```bash
-./start-backend.sh
-# Or manually:
-cd backend
-composer install
-php artisan key:generate
-php artisan migrate  # ⚠️ Important après migration PostgreSQL
-php artisan serve --port=8000
-```
-
-#### Frontend (React)
-```bash
-./start-frontend.sh
-# Or manually:
-cd frontend
-npm install
-npm run dev
-```
 
 ## Configuration
 
 ### Backend Configuration
 - **Base URL**: http://localhost:8000
 - **API Prefix**: `/api`
-- **Database**: SQLite (included)
+- **Database**: PostgreSQL (area_db)
 - **Authentication**: Laravel Sanctum
 - **CORS**: Configured for frontend at localhost:5173
 
@@ -116,7 +57,7 @@ npm run dev
 - ✅ Laravel Sanctum for API authentication
 - ✅ CORS configuration for frontend communication
 - ✅ API routes with proper middleware
-- ✅ SQLite database setup
+- ✅ PostgreSQL database setup
 - ✅ Example controllers and routes
 
 ### Frontend
@@ -139,7 +80,7 @@ L’objectif est de créer une application moderne, robuste et efficace grâce �
 - **Frontend :** [React](https://reactjs.org/)
 - **Backend :** [Laravel](https://laravel.com/)
 - **Liaison Front/Back :** [Inertia.js](https://inertiajs.com/)
-- **Base de données :** [SQLite](https://www.sqlite.org/index.html)
+- **Base de données :** [PostgreSQL](https://www.postgresql.org/)
 
 👉 Pour une analyse détaillée et comparative des choix techniques, consultez le fichier [**BENCHMARK.md**](./BENCHMARK.md).
 
@@ -149,7 +90,7 @@ L’objectif est de créer une application moderne, robuste et efficace grâce �
 
 - Développer une application web moderne et réactive.
 - Utiliser une architecture claire et maintenable.
-- Mettre en place une base de données simple mais efficace.
+- Mettre en place une base de données robuste et scalable.
 - Favoriser la rapidité de développement avec une stack adaptée.
 
 ---
