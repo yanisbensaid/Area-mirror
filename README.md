@@ -4,6 +4,8 @@
 
 AREA est un projet **web** développé dans le cadre d'un projet étudiant avec une pipeline CI/CD complète.
 
+> **🔒 Security Note**: Repository history has been cleaned to remove accidentally committed SSH credentials (September 17, 2025).
+
 ## 🚀 CI/CD Workflow
 
 Ce projet utilise un **workflow staging → production** avec CircleCI :
