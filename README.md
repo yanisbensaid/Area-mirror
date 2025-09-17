@@ -1,6 +1,6 @@
 # 🌐 AREA - Laravel API + React Frontend
 
-[![CircleCI](https://circleci.com/gh/EpitechPGE3-2025/G-DEV-500-MPL-5-1-area-2.svg?style=shield)](https://circleci.com/gh/EpitechPGE3-2025/G-DEV-500-MPL-5-1-area-2)
+[![CircleCI](https://circleci.com/gh/EthanBranchereau/area-cicd-mirror.svg?style=shield)](https://circleci.com/gh/EthanBranchereau/area-cicd-mirror)
 
 AREA est un projet **web** développé dans le cadre d'un projet étudiant.
 L'objectif est de créer une application moderne, robuste et efficace grâce à une stack technique complète.
@@ -72,51 +72,44 @@ L'objectif est de créer une application moderne, robuste et efficace grâce à 
 
 ## CI/CD Pipeline
 
-This project uses GitHub Actions for continuous integration and deployment.
+This project uses CircleCI for continuous integration and deployment.
 
-### CI Workflows
+### CI/CD Workflows
 
-#### Backend CI (`backend-ci.yml`)
-- Triggers on push/PR to `main` branch when backend files change
-- Sets up PostgreSQL test database
-- Runs code quality checks:
-  - PHP syntax validation
-  - PSR-12 coding standards
-  - Static analysis with Larastan
-- Runs PHPUnit tests
-- Migration testing
+#### Backend CI
+- Runs PHP setup with Composer installation
+- Sets up SQLite database for testing
+- Runs Laravel migrations
+- Executes backend tests with PHPUnit
 
-#### Frontend CI (`frontend-ci.yml`)
-- Triggers on push/PR to `main` branch when frontend files change
-- Separate jobs for linting, type checking, and building
-- Verifies build output
-- ESLint code quality checks
-- TypeScript type checking
+#### Frontend CI
+- Sets up Node.js environment
+- Installs frontend dependencies
+- Runs ESLint for code quality (if configured)
+- Builds the frontend application
+- Stores the build artifacts for deployment
 
 ### Deployment
 
-Deployments are managed through the `deploy.yml` workflow:
+Deployments are managed automatically through CircleCI:
 
-- **Environments**: Staging (default) and Production
-- **Trigger Methods**:
-  - Automatic on push to `main` (deploys to Staging)
-  - Manual workflow dispatch with environment selection
+- **Environment**: Server specified by environment variables
+- **Trigger**: Automatic on push to `main` branch
   
 - **Deployment Process**:
   1. Backend deployment with optimized dependencies
-  2. Database migrations
-  3. Laravel cache optimization
-  4. Frontend build with environment-specific variables
-  5. Health checks for both services
+  2. Database migrations and cache optimization
+  3. Frontend build with environment-specific variables
+  4. Upload of both services to the target server
+  5. Health checks for verification
 
 ### Setting Up Secrets
 
-For deployments to work properly, set up these GitHub repository secrets:
+For deployments to work properly, set up these CircleCI environment variables:
 - `SSH_HOST`: Server hostname (e.g., `144.24.201.112`)
 - `SSH_USERNAME`: SSH username
 - `SSH_KEY`: SSH private key for authentication
-- `STAGING_API_URL`: Backend API URL for staging (e.g., `http://144.24.201.112:8000`)
-- `PROD_API_URL`: Backend API URL for production (e.g., `http://144.24.201.112:8000`)
+- `DB_PASSWORD`: Database password for deployment
 
 ### Server Configuration
 
