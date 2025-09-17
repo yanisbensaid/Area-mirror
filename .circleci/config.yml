@@ -23,29 +23,7 @@ workflows:
           requires:
             - deploy-staging
           filters:
-                # Set proper Laravel permissions for production
-              sudo chown -R www-data:www-data /home/$SSH_USERNAME/area-backend-prod/storage
-              sudo chown -R www-data:www-data /home/$SSH_USERNAME/area-backend-prod/bootstrap/cache
-              sudo chmod -R 775 /home/$SSH_USERNAME/area-backend-prod/storage
-              sudo chmod -R 775 /home/$SSH_USERNAME/area-backend-prod/bootstrap/cache
-              
-              # Debug: Create test files and check directory structure
-              echo '<?php phpinfo(); ?>' | sudo tee /home/$SSH_USERNAME/area-backend-prod/public/phpinfo.php > /dev/null
-              echo 'Test: Laravel static file serving works!' | sudo tee /home/$SSH_USERNAME/area-backend-prod/public/test.html > /dev/null
-              
-              # Debug: List directory contents and permissions
-              echo '=== DEBUGGING LARAVEL DIRECTORY STRUCTURE ==='
-              ls -la /home/$SSH_USERNAME/area-backend-prod/public/
-              echo '=== CHECKING IF INDEX.PHP EXISTS ==='
-              test -f /home/$SSH_USERNAME/area-backend-prod/public/index.php && echo 'index.php EXISTS' || echo 'index.php MISSING!'
-              echo '=== CHECKING NGINX ROOT DIRECTORY ==='
-              ls -la /home/$SSH_USERNAME/area-backend-prod/
-              echo '=== CHECKING FILE OWNERSHIP ==='
-              ls -la /home/$SSH_USERNAME/area-backend-prod/public/index.php
-              echo '=== END DEBUG INFO ==='
-              
-              # Test Nginx configuration
-              sudo nginx -t"     branches:
+            branches:
               only: main
 
 jobs:
