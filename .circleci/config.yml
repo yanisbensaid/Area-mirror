@@ -450,8 +450,20 @@ jobs:
             cd backend
             rsync -avz --exclude='vendor' --exclude='.git' \
               --exclude='.env.example' --exclude='.env.testing' \
+              --exclude='storage' --exclude='bootstrap/cache' \
               -e "ssh -o StrictHostKeyChecking=no" \
               ./ $SSH_USERNAME@$SSH_HOST:/home/$SSH_USERNAME/area-backend-prod
+            
+            # Create storage and bootstrap/cache directories for production
+            ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "
+              sudo mkdir -p /home/$SSH_USERNAME/area-backend-prod/storage/{app,framework,logs}
+              sudo mkdir -p /home/$SSH_USERNAME/area-backend-prod/storage/framework/{cache,sessions,testing,views}
+              sudo mkdir -p /home/$SSH_USERNAME/area-backend-prod/storage/framework/cache/data
+              sudo mkdir -p /home/$SSH_USERNAME/area-backend-prod/bootstrap/cache
+              sudo chown -R $SSH_USERNAME:www-data /home/$SSH_USERNAME/area-backend-prod
+              sudo chmod -R 775 /home/$SSH_USERNAME/area-backend-prod/storage
+              sudo chmod -R 775 /home/$SSH_USERNAME/area-backend-prod/bootstrap/cache
+            "
             
             # Deploy Frontend from workspace
             if [ -d "/tmp/workspace/dist" ]; then
