@@ -201,43 +201,38 @@ jobs:
           name: Configure Nginx
           command: |
             ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "
-              # Create Nginx site configuration
-              cat > /tmp/area-app.conf << 'NGINX_CONFIG'
-            server {
-                listen 80 default_server;
-                listen [::]:80 default_server;
-                
-                root /home/\${SSH_USERNAME}/area-frontend;
-                index index.html index.htm;
-                
-                server_name _;
-                
-                # Frontend - serve React app
-                location / {
-                    try_files \$uri \$uri/ /index.html;
-                }
-                
-                # Backend API - proxy to Laravel
-                location /api {
-                    alias /home/\${SSH_USERNAME}/area-backend/public;
-                    try_files \$uri \$uri/ @laravel;
-                    
-                    location ~ \.php\$ {
-                        include snippets/fastcgi-php.conf;
-                        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
-                        fastcgi_param SCRIPT_FILENAME /home/\${SSH_USERNAME}/area-backend/public/index.php;
-                        include fastcgi_params;
-                    }
-                }
-                
-                location @laravel {
-                    rewrite /api/(.*)\$ /api/index.php/\$1 last;
-                }
-            }
-            NGINX_CONFIG
-              
-              # Move config to proper location
-              sudo mv /tmp/area-app.conf /etc/nginx/sites-available/area-app
+              # Create Nginx site configuration using echo
+              echo 'server {
+                  listen 80 default_server;
+                  listen [::]:80 default_server;
+                  
+                  root /home/$SSH_USERNAME/area-frontend;
+                  index index.html index.htm;
+                  
+                  server_name _;
+                  
+                  # Frontend - serve React app
+                  location / {
+                      try_files \$uri \$uri/ /index.html;
+                  }
+                  
+                  # Backend API - proxy to Laravel
+                  location /api {
+                      alias /home/$SSH_USERNAME/area-backend/public;
+                      try_files \$uri \$uri/ @laravel;
+                      
+                      location ~ \.php\$ {
+                          include snippets/fastcgi-php.conf;
+                          fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+                          fastcgi_param SCRIPT_FILENAME /home/$SSH_USERNAME/area-backend/public/index.php;
+                          include fastcgi_params;
+                      }
+                  }
+                  
+                  location @laravel {
+                      rewrite /api/(.*)\$ /api/index.php/\$1 last;
+                  }
+              }' | sudo tee /etc/nginx/sites-available/area-app > /dev/null
               
               # Enable the site
               sudo ln -sf /etc/nginx/sites-available/area-app /etc/nginx/sites-enabled/
@@ -252,16 +247,16 @@ jobs:
             ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "
               # Create a simple test page in the default nginx location
               sudo mkdir -p /var/www/html
-              echo '<h1>Oracle Cloud Server - Nginx Working!</h1><p>Server Time: $(date)</p>' | sudo tee /var/www/html/index.html
+              echo '<h1>Oracle Cloud Server - Nginx Working!</h1><p>Server Time: '$(date)'</p>' | sudo tee /var/www/html/index.html > /dev/null
               
               # Create test page in our application directory
-              mkdir -p /home/\$SSH_USERNAME/area-frontend
-              echo '<h1>Area App - Frontend Working!</h1><p>Deployment successful at: $(date)</p>' > /home/\$SSH_USERNAME/area-frontend/index.html
+              mkdir -p /home/$SSH_USERNAME/area-frontend
+              echo '<h1>Area App - Frontend Working!</h1><p>Deployment successful at: '$(date)'</p>' > /home/$SSH_USERNAME/area-frontend/index.html
               
               # Set proper permissions
               sudo chown -R www-data:www-data /var/www/html
-              sudo chown -R \$SSH_USERNAME:www-data /home/\$SSH_USERNAME/area-frontend
-              sudo chmod -R 755 /home/\$SSH_USERNAME/area-frontend
+              sudo chown -R $SSH_USERNAME:www-data /home/$SSH_USERNAME/area-frontend
+              sudo chmod -R 755 /home/$SSH_USERNAME/area-frontend
             "
       - run:
           name: Debug network and firewall configuration
