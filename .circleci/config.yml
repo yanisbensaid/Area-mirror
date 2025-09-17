@@ -104,7 +104,9 @@ jobs:
               echo "$SSH_KEY" > ~/.ssh/id_rsa
               chmod 600 ~/.ssh/id_rsa
               ssh-keyscan -H $SSH_HOST >> ~/.ssh/known_hosts
-              echo "SSH key installed"
+              echo "SSH key installed from CircleCI environment variable"
+              echo "Testing SSH connection..."
+              ssh -v -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "echo SSH Connection Successful"
             else
               echo "No SSH_KEY environment variable found. Skipping deployment."
               exit 1
