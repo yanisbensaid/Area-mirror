@@ -92,43 +92,24 @@ jobs:
           command: |
             sudo apt-get update
             sudo apt-get install -y openssh-client rsync
+      - add_ssh_keys:
+          fingerprints:
+            - "SHA256:dxRc6rNVwDiBZAw0pcJWkrVMj5XG8my+mr47DnUVgzE"
       - run:
           name: Setup SSH directory
           command: |
             mkdir -p ~/.ssh
             chmod 700 ~/.ssh
-      - run:
-          name: Add SSH key
-          command: |
-            if [ -n "$SSH_KEY" ]; then
-              # Write the SSH key with proper formatting
-              printf '%s\n' "$SSH_KEY" > ~/.ssh/id_rsa
-              chmod 600 ~/.ssh/id_rsa
-              ssh-keyscan -H $SSH_HOST >> ~/.ssh/known_hosts
-              echo "SSH key installed from CircleCI environment variable"
-              echo "SSH key file info:"
-              ls -la ~/.ssh/id_rsa
-              echo "SSH key first line:"
-              head -1 ~/.ssh/id_rsa
-              echo "SSH key last line:"
-              tail -1 ~/.ssh/id_rsa
-              echo "SSH key type check:"
-              ssh-keygen -l -f ~/.ssh/id_rsa
-              echo "Testing SSH connection..."
-              ssh -v -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa $SSH_USERNAME@$SSH_HOST "echo 'SSH Connection Test Successful'"
-            else
-              echo "No SSH_KEY environment variable found. Skipping deployment."
-              exit 1
-            fi
+            ssh-keyscan -H $SSH_HOST >> ~/.ssh/known_hosts
       - run:
           name: Deploy Backend
           command: |
             cd backend
             rsync -avz --exclude='vendor' --exclude='.git' \
               --exclude='.env.example' --exclude='.env.testing' \
-              -e "ssh -i ~/.ssh/id_rsa -o IdentitiesOnly=yes -o StrictHostKeyChecking=no" \
+              -e "ssh -o StrictHostKeyChecking=no" \
               ./ $SSH_USERNAME@$SSH_HOST:/home/$SSH_USERNAME/area-backend
-            ssh -i ~/.ssh/id_rsa -o IdentitiesOnly=yes -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "cd ~/area-backend && \
+            ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "cd ~/area-backend && \
               composer install --no-interaction --no-dev --prefer-dist --optimize-autoloader && \
               php artisan migrate --force && \
               php artisan config:cache && \
@@ -138,7 +119,7 @@ jobs:
           name: Deploy Frontend
           command: |
             if [ -d "/tmp/workspace/dist" ]; then
-              rsync -avz -e "ssh -i ~/.ssh/id_rsa -o IdentitiesOnly=yes -o StrictHostKeyChecking=no" \
+              rsync -avz -e "ssh -o StrictHostKeyChecking=no" \
                 /tmp/workspace/dist/ $SSH_USERNAME@$SSH_HOST:/home/$SSH_USERNAME/area-frontend
             else
               echo "No frontend build found. Build may have failed or workspace not attached properly."
@@ -147,4 +128,4 @@ jobs:
       - run:
           name: Restart Services
           command: |
-            ssh -i ~/.ssh/id_rsa -o IdentitiesOnly=yes -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "sudo systemctl restart nginx || true"
+            ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "sudo systemctl restart nginx || true"
