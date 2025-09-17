@@ -8,9 +8,6 @@ L'objectif est de créer une application moderne, robuste et efficace grâce à 
 ```
 ├── backend/          # Laravel 11 API
 ├── frontend/         # React + Vite frontend
-├── start-backend.sh  # Script to start Laravel server
-├── start-frontend.sh # Script to start React server
-└── start-dev.sh      # Script to start both servers
 ```
 
 ## Quick Start
