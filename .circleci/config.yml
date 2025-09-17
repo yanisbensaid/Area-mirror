@@ -92,6 +92,10 @@ jobs:
           command: |
             sudo apt-get update
             sudo apt-get install -y openssh-client rsync
+      - run:
+          name: Install rsync on remote server
+          command: |
+            ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "export LC_ALL=C && sudo apt-get update && sudo apt-get install -y rsync"
       - add_ssh_keys:
           fingerprints:
             - "SHA256:dxRc6rNVwDiBZAw0pcJWkrVMj5XG8my+mr47DnUVgzE"
