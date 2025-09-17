@@ -23,7 +23,15 @@ workflows:
           requires:
             - deploy-staging
           filters:
-            branches:
+                # Set proper Laravel permissions for production
+              sudo chown -R www-data:www-data /home/$SSH_USERNAME/area-backend-prod/storage
+              sudo chown -R www-data:www-data /home/$SSH_USERNAME/area-backend-prod/bootstrap/cache
+              sudo chmod -R 775 /home/$SSH_USERNAME/area-backend-prod/storage
+              sudo chmod -R 775 /home/$SSH_USERNAME/area-backend-prod/bootstrap/cache
+              
+              # Create a test PHP file to verify PHP-FPM is working
+              echo '<?php phpinfo(); ?>' | sudo tee /home/$SSH_USERNAME/area-backend-prod/public/phpinfo.php > /dev/null
+              echo 'Test: Laravel is working!' | sudo tee /home/$SSH_USERNAME/area-backend-prod/public/test.html > /dev/null"     branches:
               only: main
 
 jobs:
