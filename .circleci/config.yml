@@ -191,10 +191,33 @@ jobs:
               ./ $SSH_USERNAME@$SSH_HOST:/home/$SSH_USERNAME/area-backend
             ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "cd ~/area-backend && \
               composer install --no-interaction --no-dev --prefer-dist --optimize-autoloader && \
+              
+              # Create Laravel .env file for production
+              cp .env.example .env
+              sed -i 's/APP_ENV=.*/APP_ENV=production/' .env
+              sed -i 's/APP_DEBUG=.*/APP_DEBUG=false/' .env
+              sed -i 's|APP_URL=.*|APP_URL=http://144.24.201.112|' .env
+              sed -i 's/DB_CONNECTION=.*/DB_CONNECTION=sqlite/' .env
+              sed -i 's|DB_DATABASE=.*|DB_DATABASE=/home/$SSH_USERNAME/area-backend/database/database.sqlite|' .env
+              
+              # Generate Laravel application key
+              php artisan key:generate --force
+              
+              # Create SQLite database if it doesn't exist
+              touch /home/$SSH_USERNAME/area-backend/database/database.sqlite
+              chmod 664 /home/$SSH_USERNAME/area-backend/database/database.sqlite
+              
+              # Run Laravel setup commands
               php artisan migrate --force && \
               php artisan config:cache && \
               php artisan route:cache && \
-              php artisan view:cache"
+              php artisan view:cache && \
+              
+              # Set proper permissions for Laravel
+              sudo chown -R www-data:www-data /home/$SSH_USERNAME/area-backend/storage
+              sudo chown -R www-data:www-data /home/$SSH_USERNAME/area-backend/bootstrap/cache
+              sudo chmod -R 775 /home/$SSH_USERNAME/area-backend/storage
+              sudo chmod -R 775 /home/$SSH_USERNAME/area-backend/bootstrap/cache"
       - run:
           name: Deploy Frontend
           command: |
@@ -209,21 +232,41 @@ jobs:
           name: Configure Nginx
           command: |
             ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "
-              # Create a simple working Nginx configuration first
+              # Create Laravel-optimized Nginx configuration
               echo 'server {
                   listen 80 default_server;
                   listen [::]:80 default_server;
                   
-                  root /var/www/html;
-                  index index.html index.htm;
+                  root /home/$SSH_USERNAME/area-backend/public;
+                  index index.php index.html index.htm;
                   
                   server_name _;
                   
+                  # Laravel application
                   location / {
-                      try_files \$uri \$uri/ =404;
+                      try_files \$uri \$uri/ /index.php?\$query_string;
                   }
                   
-                  # Health check endpoint
+                  # PHP-FPM configuration for Laravel
+                  location ~ \.php$ {
+                      fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+                      fastcgi_index index.php;
+                      fastcgi_param SCRIPT_FILENAME \$realpath_root\$fastcgi_script_name;
+                      include fastcgi_params;
+                      fastcgi_hide_header X-Powered-By;
+                  }
+                  
+                  # Security: deny access to .htaccess files
+                  location ~ /\.ht {
+                      deny all;
+                  }
+                  
+                  # Security: deny access to sensitive Laravel files
+                  location ~ /\.(env|git) {
+                      deny all;
+                  }
+                  
+                  # Health check endpoint (static override)
                   location /health {
                       access_log off;
                       return 200 \"<!DOCTYPE html><html><head><title>Area Health</title><style>body{font-family:Arial;text-align:center;margin:40px;background:#667eea;color:white;}img{max-width:200px;border-radius:20px;margin:20px;}</style></head><body><img src='https://pbs.twimg.com/profile_images/1158580265725206529/91kypvss_400x400.jpg' alt='Area Logo'/><h1>✅ Area Project - System Healthy</h1><p>🚀 CI/CD Pipeline Active</p><p>⚡ Server: Oracle Cloud</p><p>🔧 Stack: Laravel + React + Nginx</p><p>$(date)</p></body></html>\";
@@ -400,14 +443,38 @@ jobs:
               cd ~/area-backend-prod
               composer install --no-interaction --no-dev --prefer-dist --optimize-autoloader
               
+              # Create production Laravel .env file
+              cp .env.example .env
+              sed -i 's/APP_ENV=.*/APP_ENV=production/' .env
+              sed -i 's/APP_DEBUG=.*/APP_DEBUG=false/' .env
+              sed -i 's|APP_URL=.*|APP_URL=http://144.24.201.112|' .env
+              sed -i 's/DB_CONNECTION=.*/DB_CONNECTION=sqlite/' .env
+              sed -i 's|DB_DATABASE=.*|DB_DATABASE=/home/$SSH_USERNAME/area-backend-prod/database/database.sqlite|' .env
+              
+              # Generate Laravel application key
+              php artisan key:generate --force
+              
+              # Create SQLite database if it doesn't exist
+              touch /home/$SSH_USERNAME/area-backend-prod/database/database.sqlite
+              chmod 664 /home/$SSH_USERNAME/area-backend-prod/database/database.sqlite
+              
+              # Run Laravel migrations
+              php artisan migrate --force
+              
               # Laravel production optimizations
               php artisan config:cache
               php artisan route:cache
               php artisan view:cache
               
-              # Update production Nginx configuration
+              # Set proper Laravel permissions for production
+              sudo chown -R www-data:www-data /home/$SSH_USERNAME/area-backend-prod/storage
+              sudo chown -R www-data:www-data /home/$SSH_USERNAME/area-backend-prod/bootstrap/cache
+              sudo chmod -R 775 /home/$SSH_USERNAME/area-backend-prod/storage
+              sudo chmod -R 775 /home/$SSH_USERNAME/area-backend-prod/bootstrap/cache
+              
+              # Update production Nginx configuration to point to Laravel
               sudo sed -i 's|/home/$SSH_USERNAME/area-frontend|/home/$SSH_USERNAME/area-frontend-prod|g' /etc/nginx/sites-available/area-app
-              sudo sed -i 's|/home/$SSH_USERNAME/area-backend|/home/$SSH_USERNAME/area-backend-prod|g' /etc/nginx/sites-available/area-app
+              sudo sed -i 's|/home/$SSH_USERNAME/area-backend/public|/home/$SSH_USERNAME/area-backend-prod/public|g' /etc/nginx/sites-available/area-app
               
               # Restart production services
               sudo systemctl restart php8.2-fpm
