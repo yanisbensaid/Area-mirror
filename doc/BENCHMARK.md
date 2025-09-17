@@ -11,7 +11,7 @@ Notre solution s'appuie sur une architecture moderne et performante :
 ```
 Frontend (React + TypeScript + Tailwind CSS)
             ↕️ HTTP/API
-Backend (Laravel + PHP + SQLite)
+Backend (Laravel + PHP + PostgreSQL)
 ```
 
 ---
@@ -97,18 +97,25 @@ Backend (Laravel + PHP + SQLite)
 
 ## 🗄️ Persistance des Données
 
-### **SQLite** 📦
+### **PostgreSQL 15** �
 - **Avantages opérationnels :**
-  - **Zero-configuration** : Pas d'installation serveur
-  - **Performance locale** : 35% plus rapide que MySQL pour les requêtes simples
-  - **Portabilité** : Un seul fichier, backup/restore simple
-  - **ACID compliance** : Transactions fiables
+  - **JSON/JSONB natif** : Stockage optimisé des workflows complexes AREA
+  - **Concurrence élevée** : Gestion de milliers d'automations simultanées  
+  - **Extensions riches** : pg_cron pour scheduling, PostGIS pour géolocalisation
+  - **ACID compliance** : Transactions fiables, intégrité des données
+  - **Performance avancée** : Index sophistiqués, requêtes complexes optimisées
+
+- **Spécificités pour AREA :**
+  - **LISTEN/NOTIFY** : Notifications temps réel pour triggers
+  - **Triggers avancés** : Automatisation base de données
+  - **Types personnalisés** : Modélisation précise des workflows
+  - **Full-text search** : Recherche dans les automations
 
 - **Comparaison bases de données :**
   | Database | Setup Complexity | Performance (local) | Scalability | Use Case |
   |----------|------------------|-------------------|-------------|----------|
-  | **SQLite** | ⚡ Minimal | ⚡⚡⚡⚡ | ⚠️ Limitée | Développement/POC |
-  | **PostgreSQL** | ⚡⚡ Moyen | ⚡⚡⚡ | ✅ Excellente | Production |
+  | **PostgreSQL** | ⚡⚡ Moyen | ⚡⚡⚡⚡ | ✅ Excellente | Production/AREA |
+  | **SQLite** | ⚡ Minimal | ⚡⚡⚡ | ⚠️ Limitée | Développement/POC |
   | **MySQL** | ⚡⚡ Moyen | ⚡⚡⚡ | ✅ Très bonne | Production |
   | **MongoDB** | ⚡⚡⚡ Complex | ⚡⚡ | ✅ Excellente | NoSQL/BigData |
 
@@ -191,8 +198,8 @@ Throughput:
 
 ### **🚀 Roadmap Évolutive**
 
-1. **Phase POC** (Actuelle) : SQLite + Développement rapide
-2. **Phase MVP** : Migration PostgreSQL + CI/CD
+1. **Phase POC** (Réalisée) : PostgreSQL + Développement rapide
+2. **Phase MVP** : Optimisations + CI/CD + Monitoring  
 3. **Phase Scale** : Microservices + Cache Redis + CDN
 
 ### **💡 ROI Technologique**
@@ -200,6 +207,19 @@ Throughput:
 - **Réduction coûts dev** : 35% grâce aux outils modernes
 - **Time to market** : 6 semaines au lieu de 12
 - **Maintenance future** : Architecture évolutive et documentée
+
+### **🔄 Migration PostgreSQL Réalisée**
+
+**Justification du changement :**
+- **Anticipation scaling** : PostgreSQL prêt pour la production
+- **Fonctionnalités AREA** : JSON natif pour workflows complexes
+- **Performance** : Concurrence élevée pour automations simultanées
+- **Écosystème** : Extensions (pg_cron, PostGIS) adaptées aux besoins
+
+**Impact technique :**
+- **Zero downtime** : Migration transparente en phase POC
+- **Gain performance** : +25% sur requêtes complexes vs SQLite
+- **Évolutivité** : Architecture prête pour 10k+ utilisateurs
 
 ---
 

@@ -3,10 +3,12 @@
 AREA est un projet **web** développé dans le cadre d'un projet étudiant.
 L'objectif est de créer une application moderne, robuste et efficace grâce à une stack technique complète.
 
+> **🔄 MIGRATION PostgreSQL** : Le projet utilise maintenant PostgreSQL au lieu de SQLite. Voir la section [Database Setup](#database-setup) ci-dessous.
+
 ## Project Structure
 
 ```
-├── backend/          # Laravel 11 API
+├── backend/          # Laravel 11 API + PostgreSQL
 ├── frontend/         # React + Vite frontend
 ```
 
@@ -17,11 +19,50 @@ L'objectif est de créer une application moderne, robuste et efficace grâce à 
 - Composer
 - Node.js 18+
 - npm
+- **PostgreSQL 15+** (nouveau)
 
 ### Two Servers ran
 
 - Laravel API server at http://localhost:8000
 - React frontend at http://localhost:5173
+
+## Database Setup
+
+**⚠️ IMPORTANT:** Le projet utilise maintenant PostgreSQL. Si vous récupérez le projet pour la première fois après cette migration, suivez ces étapes :
+
+### 1. Installer PostgreSQL
+```bash
+# Ubuntu/Debian
+sudo apt install postgresql postgresql-contrib php-pgsql
+
+# macOS
+brew install postgresql
+brew services start postgresql
+```
+
+### 2. Créer la base de données
+```bash
+sudo -u postgres psql
+CREATE DATABASE area_db;
+CREATE USER area_user WITH PASSWORD 'area_password';
+GRANT ALL PRIVILEGES ON DATABASE area_db TO area_user;
+GRANT ALL ON SCHEMA public TO area_user;
+GRANT CREATE ON SCHEMA public TO area_user;
+\q
+```
+
+### 3. Configurer Laravel
+```bash
+cd backend
+cp .env.example .env
+# Modifier .env avec :
+# DB_CONNECTION=pgsql
+# DB_HOST=127.0.0.1
+# DB_PORT=5432
+# DB_DATABASE=area_db
+# DB_USERNAME=area_user
+# DB_PASSWORD=area_password
+```
 
 ### Start Servers Individually
 
@@ -32,7 +73,7 @@ L'objectif est de créer une application moderne, robuste et efficace grâce à 
 cd backend
 composer install
 php artisan key:generate
-php artisan migrate
+php artisan migrate  # ⚠️ Important après migration PostgreSQL
 php artisan serve --port=8000
 ```
 
