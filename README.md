@@ -18,12 +18,8 @@ L'objectif est de créer une application moderne, robuste et efficace grâce à 
 - Node.js 18+
 - npm
 
-### Start Both Servers (Recommended)
-```bash
-./start-dev.sh
-```
+### Two Servers ran
 
-This will start:
 - Laravel API server at http://localhost:8000
 - React frontend at http://localhost:5173
 
