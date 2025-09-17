@@ -255,6 +255,32 @@ jobs:
               sudo chmod -R 755 /home/$SSH_USERNAME/area-frontend
             "
       - run:
+          name: Fix iptables blocking rules
+          command: |
+            ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "
+              echo '=== Current iptables rules causing issues ==='
+              sudo iptables -L INPUT -n --line-numbers
+              
+              echo '=== Removing problematic REJECT rules ==='
+              # Remove the REJECT rule that's blocking traffic before UFW rules
+              sudo iptables -D INPUT -j REJECT --reject-with icmp-host-prohibited 2>/dev/null || echo 'Rule not found'
+              
+              echo '=== Adding explicit ALLOW rule for HTTP ==='
+              # Add explicit allow rule for port 80 at the beginning
+              sudo iptables -I INPUT 1 -p tcp --dport 80 -j ACCEPT
+              sudo iptables -I INPUT 1 -p tcp --dport 443 -j ACCEPT
+              
+              echo '=== Updated iptables rules ==='
+              sudo iptables -L INPUT -n --line-numbers | head -10
+              
+              echo '=== Testing port accessibility ==='
+              timeout 5 nc -zv localhost 80 && echo 'Port 80 now accessible' || echo 'Port 80 still blocked'
+              
+              echo '=== Making iptables rules persistent ==='
+              sudo apt-get install -y iptables-persistent
+              sudo netfilter-persistent save
+            "
+      - run:
           name: Debug network and firewall configuration
           command: |
             ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "
