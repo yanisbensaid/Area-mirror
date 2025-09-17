@@ -13,8 +13,8 @@ workflows:
       - frontend-ci
       - deploy:
           name: deploy-staging
-          requires:
-            - backend-ci
+          requir                echo "    location ~ /\\\\.ht {" >> /etc/nginx/sites-available/area-apps:
+                echo "    location ~ /\\\\.(env|git) {" >> /etc/nginx/sites-available/area-app           - backend-ci
             - frontend-ci
           filters:
             branches:
@@ -265,7 +265,7 @@ jobs:
                 echo \"\" >> /etc/nginx/sites-available/area-app
                 echo \"    # Laravel application\" >> /etc/nginx/sites-available/area-app
                 echo \"    location / {\" >> /etc/nginx/sites-available/area-app
-                echo \"        try_files \$uri \$uri/ /index.php?\$query_string;\" >> /etc/nginx/sites-available/area-app
+                echo \"        try_files \\\$uri \\\$uri/ /index.php?\\\$query_string;\" >> /etc/nginx/sites-available/area-app
                 echo \"    }\" >> /etc/nginx/sites-available/area-app
                 echo \"\" >> /etc/nginx/sites-available/area-app
                 echo \"    # Debug endpoint\" >> /etc/nginx/sites-available/area-app
@@ -275,10 +275,10 @@ jobs:
                 echo \"    }\" >> /etc/nginx/sites-available/area-app
                 echo \"\" >> /etc/nginx/sites-available/area-app
                 echo \"    # PHP-FPM configuration\" >> /etc/nginx/sites-available/area-app
-                echo \"    location ~ \.php\$ {\" >> /etc/nginx/sites-available/area-app
+                echo \"    location ~ \\\\.php\\\$ {\" >> /etc/nginx/sites-available/area-app
                 echo \"        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;\" >> /etc/nginx/sites-available/area-app
                 echo \"        fastcgi_index index.php;\" >> /etc/nginx/sites-available/area-app
-                echo \"        fastcgi_param SCRIPT_FILENAME \$realpath_root\$fastcgi_script_name;\" >> /etc/nginx/sites-available/area-app
+                echo \"        fastcgi_param SCRIPT_FILENAME \\\$realpath_root\\\$fastcgi_script_name;\" >> /etc/nginx/sites-available/area-app
                 echo \"        include fastcgi_params;\" >> /etc/nginx/sites-available/area-app
                 echo \"        fastcgi_hide_header X-Powered-By;\" >> /etc/nginx/sites-available/area-app
                 echo \"    }\" >> /etc/nginx/sites-available/area-app
