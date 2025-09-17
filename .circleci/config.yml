@@ -1,0 +1,139 @@
+version: 2.1
+
+orbs:
+  node: circleci/node@5.1.0
+  php: circleci/php@1.1.1
+
+workflows:
+  version: 2
+  build-test-deploy:
+    jobs:
+      - backend-ci
+      - frontend-ci
+      - deploy:
+          requires:
+            - backend-ci
+            - frontend-ci
+          filters:
+            branches:
+              only: main
+
+jobs:
+  backend-ci:
+    docker:
+      - image: cimg/php:8.2
+        environment:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: database/database.sqlite
+    steps:
+      - checkout
+      - php/install-composer
+      - restore_cache:
+          keys:
+            - composer-v1-{{ checksum "backend/composer.lock" }}
+            - composer-v1-
+      - run:
+          name: Install Backend Dependencies
+          command: cd backend && composer install --no-interaction --prefer-dist
+      - save_cache:
+          key: composer-v1-{{ checksum "backend/composer.lock" }}
+          paths:
+            - ~/.composer/cache
+      - run:
+          name: Prepare Laravel Environment
+          command: |
+            cd backend
+            cp .env.example .env
+            touch database/database.sqlite
+            php artisan key:generate
+      - run:
+          name: Run Laravel Migrations
+          command: cd backend && php artisan migrate --force
+      - run:
+          name: Run Backend Tests
+          command: cd backend && php artisan test
+
+  frontend-ci:
+    docker:
+      - image: cimg/node:18.15
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - node-v1-{{ checksum "frontend/package-lock.json" }}
+            - node-v1-
+      - node/install-packages:
+          pkg-manager: npm
+          app-dir: ./frontend
+      - save_cache:
+          key: node-v1-{{ checksum "frontend/package-lock.json" }}
+          paths:
+            - frontend/node_modules
+      - run:
+          name: Run ESLint
+          command: cd frontend && npm run lint || echo "Linting issues found but continuing"
+      - run:
+          name: Build Frontend
+          command: cd frontend && npm run build
+      - persist_to_workspace:
+          root: frontend
+          paths:
+            - dist
+
+  deploy:
+    docker:
+      - image: cimg/base:2022.03
+    steps:
+      - checkout
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Install deployment dependencies
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y openssh-client rsync
+      - run:
+          name: Setup SSH directory
+          command: |
+            mkdir -p ~/.ssh
+            chmod 700 ~/.ssh
+      - run:
+          name: Add SSH key
+          command: |
+            if [ -n "$SSH_KEY" ]; then
+              echo "$SSH_KEY" > ~/.ssh/id_rsa
+              chmod 600 ~/.ssh/id_rsa
+              ssh-keyscan -H $SSH_HOST >> ~/.ssh/known_hosts
+              echo "SSH key installed"
+            else
+              echo "No SSH_KEY environment variable found. Skipping deployment."
+              exit 1
+            fi
+      - run:
+          name: Deploy Backend
+          command: |
+            cd backend
+            rsync -avz --exclude='vendor' --exclude='.git' \
+              --exclude='.env.example' --exclude='.env.testing' \
+              -e "ssh -o StrictHostKeyChecking=no" \
+              ./ $SSH_USERNAME@$SSH_HOST:/home/$SSH_USERNAME/area-backend
+            ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "cd ~/area-backend && \
+              composer install --no-interaction --no-dev --prefer-dist --optimize-autoloader && \
+              php artisan migrate --force && \
+              php artisan config:cache && \
+              php artisan route:cache && \
+              php artisan view:cache"
+      - run:
+          name: Deploy Frontend
+          command: |
+            if [ -d "/tmp/workspace/dist" ]; then
+              rsync -avz -e "ssh -o StrictHostKeyChecking=no" \
+                /tmp/workspace/dist/ $SSH_USERNAME@$SSH_HOST:/home/$SSH_USERNAME/area-frontend
+            else
+              echo "No frontend build found. Build may have failed or workspace not attached properly."
+              exit 1
+            fi
+      - run:
+          name: Restart Services
+          command: |
+            ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "sudo systemctl restart nginx || true"

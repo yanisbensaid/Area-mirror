@@ -1,5 +1,7 @@
 # 🌐 AREA - Laravel API + React Frontend
 
+[![CircleCI](https://circleci.com/gh/EpitechPGE3-2025/G-DEV-500-MPL-5-1-area-2.svg?style=shield)](https://circleci.com/gh/EpitechPGE3-2025/G-DEV-500-MPL-5-1-area-2)
+
 AREA est un projet **web** développé dans le cadre d'un projet étudiant.
 L'objectif est de créer une application moderne, robuste et efficace grâce à une stack technique complète.
 
@@ -122,6 +124,43 @@ The application is configured to use the following ports:
 - **Backend API**: Port 8000 (Laravel)
 - **Frontend**: Port 80/443 for web access
 
+### Testing the CI/CD Pipeline
+
+To test the CI/CD workflows:
+
+1. **Local Testing**
+   ```bash
+   # Test backend
+   cd backend
+   cp .env.example .env
+   php artisan key:generate
+   php artisan test
+   
+   # Test frontend
+   cd frontend
+   echo 'VITE_API_URL=http://localhost:8000' > .env
+   npm run typecheck
+   npm run build
+   ```
+
+2. **CI Testing**
+   - Create a pull request to the `main` branch
+   - Check GitHub Actions tab to monitor workflow runs
+   - Address any failures in the CI workflows
+   
+3. **Deployment Testing**
+   - Go to Actions tab > Deploy workflow > "Run workflow"
+   - Select "staging" environment
+   - Monitor deployment progress
+   - Check backend at http://[your-server-ip]:8000/api/test
+   - Check frontend at http://[your-server-ip]
+   
+4. **Troubleshooting**
+   - Check server logs: `cat ~/area-backend.log`
+   - Verify Nginx configuration: `sudo nginx -t`
+   - Check running services: `ps aux | grep php`
+   - Review database status: `sudo systemctl status postgresql`
+
 ---REA
 
 AREA est un projet **web** développé dans le cadre d’un projet étudiant.
@@ -149,5 +188,39 @@ L’objectif est de créer une application moderne, robuste et efficace grâce �
 
 ---
 
-## 📂 Structure du projet
+## � CI/CD Pipeline
+
+Le projet utilise CircleCI pour l'intégration continue et le déploiement continu.
+
+### Workflow CI/CD
+
+1. **Backend CI**: Teste et valide le code du backend Laravel
+   - Installation des dépendances PHP
+   - Préparation de l'environnement Laravel
+   - Exécution des migrations
+   - Exécution des tests
+
+2. **Frontend CI**: Teste et build le frontend React
+   - Installation des dépendances Node.js
+   - Exécution du linter ESLint
+   - Construction du build de production
+
+3. **Déploiement**: Déploie les applications backend et frontend
+   - Se déclenche uniquement sur la branche `main`
+   - Nécessite que les jobs CI backend et frontend réussissent
+   - Déploie le backend vers le serveur
+   - Déploie le frontend vers le serveur
+
+### Variables d'environnement CircleCI requises
+
+Pour que le déploiement fonctionne, les variables d'environnement suivantes doivent être configurées dans CircleCI:
+
+- `SSH_HOST`: Adresse IP ou nom d'hôte du serveur
+- `SSH_USERNAME`: Nom d'utilisateur SSH
+- `SSH_KEY`: Clé SSH privée pour l'authentification
+- `DB_PASSWORD`: Mot de passe de la base de données PostgreSQL
+
+---
+
+## �📂 Structure du projet
 
