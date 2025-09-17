@@ -24,6 +24,12 @@ jobs:
     
     environment: ${{ github.event.inputs.environment || 'staging' }}
     
+    env:
+      SSH_HOST: ${{ secrets.SSH_HOST || '144.24.201.112' }}
+      SSH_USERNAME: ${{ secrets.SSH_USERNAME || 'ubuntu' }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD || 'change_me_in_production' }}
+      API_URL: ${{ github.event.inputs.environment == 'production' && secrets.PROD_API_URL || secrets.STAGING_API_URL || 'http://144.24.201.112:8000' }}
+    
     steps:
     - uses: actions/checkout@v3
     
@@ -53,18 +59,18 @@ jobs:
     - name: Deploy Backend to ${{ github.event.inputs.environment || 'staging' }}
       uses: appleboy/scp-action@v0.1.4
       with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USERNAME }}
+        host: ${{ env.SSH_HOST }}
+        username: ${{ env.SSH_USERNAME }}
         key: ${{ secrets.SSH_KEY }}
         source: "./dist/backend/*"
-        target: "/home/${{ secrets.SSH_USERNAME }}/area-backend"
+        target: "/home/${{ env.SSH_USERNAME }}/area-backend"
         strip_components: 2
         
     - name: Setup Backend Environment
       uses: appleboy/ssh-action@master
       with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USERNAME }}
+        host: ${{ env.SSH_HOST }}
+        username: ${{ env.SSH_USERNAME }}
         key: ${{ secrets.SSH_KEY }}
         script_stop: true
         command_timeout: "20m"
@@ -99,7 +105,7 @@ jobs:
           sed -i 's/DB_PORT=3306/DB_PORT=5432/g' .env
           sed -i 's/DB_DATABASE=laravel/DB_DATABASE=area_db/g' .env
           sed -i 's/DB_USERNAME=root/DB_USERNAME=ubuntu/g' .env
-          sed -i "s/DB_PASSWORD=/DB_PASSWORD=${{ secrets.DB_PASSWORD || 'change_me_in_production' }}/g" .env
+          sed -i "s/DB_PASSWORD=/DB_PASSWORD=${DB_PASSWORD}/g" .env
           
           if ! command -v psql &> /dev/null; then
             echo "Installing PostgreSQL..."
@@ -109,7 +115,7 @@ jobs:
           
           if ! sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw area_db; then
             echo "Creating PostgreSQL database and user..."
-            sudo -u postgres psql -c "CREATE USER ubuntu WITH PASSWORD '${{ secrets.DB_PASSWORD || 'change_me_in_production' }}';"
+            sudo -u postgres psql -c "CREATE USER ubuntu WITH PASSWORD '${DB_PASSWORD}';"
             sudo -u postgres psql -c "CREATE DATABASE area_db OWNER ubuntu;"
             sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE area_db TO ubuntu;"
           fi
@@ -129,17 +135,19 @@ jobs:
     
     - name: Health Check Backend
       run: |
-        if [[ "${{ github.event.inputs.environment || 'staging' }}" == "production" ]]; then
-          curl --fail --retry 3 --retry-delay 5 --max-time 10 ${{ secrets.PROD_API_URL || 'http://144.24.201.112:8000' }}/api/test
-        else
-          curl --fail --retry 3 --retry-delay 5 --max-time 10 ${{ secrets.STAGING_API_URL || 'http://144.24.201.112:8000' }}/api/test
-        fi
+        curl --fail --retry 3 --retry-delay 5 --max-time 10 ${{ env.API_URL }}/api/test
   
   deploy-frontend:
     runs-on: ubuntu-latest
     needs: deploy-backend
     
     environment: ${{ github.event.inputs.environment || 'staging' }}
+    
+    env:
+      SSH_HOST: ${{ secrets.SSH_HOST || '144.24.201.112' }}
+      SSH_USERNAME: ${{ secrets.SSH_USERNAME || 'ubuntu' }}
+      API_URL: ${{ github.event.inputs.environment == 'production' && secrets.PROD_API_URL || secrets.STAGING_API_URL || 'http://144.24.201.112:8000' }}
+      FRONTEND_URL: ${{ github.event.inputs.environment == 'production' && secrets.FRONTEND_URL || secrets.STAGING_FRONTEND_URL || 'http://144.24.201.112' }}
     
     steps:
     - uses: actions/checkout@v3
@@ -154,11 +162,7 @@ jobs:
     - name: Setup Environment Variables
       working-directory: ./frontend
       run: |
-        if [[ "${{ github.event.inputs.environment || 'staging' }}" == "production" ]]; then
-          echo "VITE_API_URL=${{ secrets.PROD_API_URL || 'http://144.24.201.112:8000' }}" > .env
-        else
-          echo "VITE_API_URL=${{ secrets.STAGING_API_URL || 'http://144.24.201.112:8000' }}" > .env
-        fi
+        echo "VITE_API_URL=${{ env.API_URL }}" > .env
     
     - name: Install and Build
       working-directory: ./frontend
@@ -174,18 +178,18 @@ jobs:
     - name: Upload Frontend Build
       uses: appleboy/scp-action@v0.1.4
       with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USERNAME }}
+        host: ${{ env.SSH_HOST }}
+        username: ${{ env.SSH_USERNAME }}
         key: ${{ secrets.SSH_KEY }}
         source: "./dist/frontend/*"
-        target: "/home/${{ secrets.SSH_USERNAME }}/area-frontend"
+        target: "/home/${{ env.SSH_USERNAME }}/area-frontend"
         strip_components: 2
         
     - name: Setup Frontend Environment
       uses: appleboy/ssh-action@master
       with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USERNAME }}
+        host: ${{ env.SSH_HOST }}
+        username: ${{ env.SSH_USERNAME }}
         key: ${{ secrets.SSH_KEY }}
         script_stop: true
         command_timeout: "10m"
@@ -233,14 +237,9 @@ jobs:
           
           # Test and restart nginx
           echo "Restarting Nginx..."
-          sudo nginx -t && sudo systemctl restart nginx || echo "Warning: Nginx configuration test failed"
+          sudo nginx -t && sudo systemctl restart nginx
           echo "Frontend deployment completed!"
 
     - name: Smoke Test Frontend
       run: |
-        if [[ "${{ github.event.inputs.environment || 'staging' }}" == "production" ]]; then
-          URL="${{ secrets.FRONTEND_URL || 'http://144.24.201.112' }}"
-        else
-          URL="${{ secrets.STAGING_FRONTEND_URL || 'http://144.24.201.112' }}"
-        fi
-        curl --fail --retry 3 --retry-delay 5 --max-time 10 $URL
+        curl --fail --retry 3 --retry-delay 5 --max-time 10 ${{ env.FRONTEND_URL }}
