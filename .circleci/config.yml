@@ -202,12 +202,12 @@ jobs:
           command: |
             ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "
               # Create Nginx site configuration
-              sudo tee /etc/nginx/sites-available/area-app > /dev/null <<'EOF'
+              cat > /tmp/area-app.conf << 'NGINX_CONFIG'
             server {
                 listen 80 default_server;
                 listen [::]:80 default_server;
                 
-                root /home/\$SSH_USERNAME/area-frontend;
+                root /home/\${SSH_USERNAME}/area-frontend;
                 index index.html index.htm;
                 
                 server_name _;
@@ -219,22 +219,25 @@ jobs:
                 
                 # Backend API - proxy to Laravel
                 location /api {
-                    alias /home/\$SSH_USERNAME/area-backend/public;
+                    alias /home/\${SSH_USERNAME}/area-backend/public;
                     try_files \$uri \$uri/ @laravel;
                     
-                    location ~ \.php$ {
+                    location ~ \.php\$ {
                         include snippets/fastcgi-php.conf;
                         fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
-                        fastcgi_param SCRIPT_FILENAME /home/\$SSH_USERNAME/area-backend/public/index.php;
+                        fastcgi_param SCRIPT_FILENAME /home/\${SSH_USERNAME}/area-backend/public/index.php;
                         include fastcgi_params;
                     }
                 }
                 
                 location @laravel {
-                    rewrite /api/(.*)$ /api/index.php/\$1 last;
+                    rewrite /api/(.*)\$ /api/index.php/\$1 last;
                 }
             }
-            EOF
+            NGINX_CONFIG
+              
+              # Move config to proper location
+              sudo mv /tmp/area-app.conf /etc/nginx/sites-available/area-app
               
               # Enable the site
               sudo ln -sf /etc/nginx/sites-available/area-app /etc/nginx/sites-enabled/
