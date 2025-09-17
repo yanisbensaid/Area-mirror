@@ -72,11 +72,11 @@ jobs:
     
     - name: Lint
       working-directory: ./frontend
-      run: npm run lint || true  # Don't fail the build yet, just for information
+      run: npm run lint
     
     - name: Type Check
       working-directory: ./frontend
-      run: npm run typecheck || echo "Type check issues found"
+      run: npm run typecheck
     
     - name: Build
       working-directory: ./frontend
@@ -89,8 +89,3 @@ jobs:
           echo "Build failed - dist directory not found"
           exit 1
         fi
-    
-    # Uncomment and add vitest or jest when you add tests
-    # - name: Run Tests
-    #   working-directory: ./frontend
-    #   run: npm test
