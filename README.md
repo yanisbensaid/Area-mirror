@@ -110,11 +110,17 @@ Deployments are managed through the `deploy.yml` workflow:
 ### Setting Up Secrets
 
 For deployments to work properly, set up these GitHub repository secrets:
-- `SSH_HOST`: Server hostname
+- `SSH_HOST`: Server hostname (e.g., `144.24.201.112`)
 - `SSH_USERNAME`: SSH username
 - `SSH_KEY`: SSH private key for authentication
-- `STAGING_API_URL`: Backend API URL for staging
-- `PROD_API_URL`: Backend API URL for production
+- `STAGING_API_URL`: Backend API URL for staging (e.g., `http://144.24.201.112:8000`)
+- `PROD_API_URL`: Backend API URL for production (e.g., `http://144.24.201.112:8000`)
+
+### Server Configuration
+
+The application is configured to use the following ports:
+- **Backend API**: Port 8000 (Laravel)
+- **Frontend**: Port 80/443 for web access
 
 ---REA
 
