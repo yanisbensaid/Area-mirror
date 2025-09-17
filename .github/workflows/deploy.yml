@@ -1,0 +1,125 @@
+name: Deploy
+
+on:
+  workflow_dispatch:  # Manual trigger
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - 'doc/**'
+      - '.github/**'
+
+jobs:
+  deploy-backend:
+    runs-on: ubuntu-latest
+    
+    # Define environment based on trigger
+    environment: ${{ github.event.inputs.environment || 'staging' }}
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Cache Composer dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.composer/cache
+        key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+        restore-keys: ${{ runner.os }}-composer-
+    
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+        extensions: mbstring, xml, ctype, iconv, intl, pdo_pgsql, pgsql, zip, dom
+    
+    - name: Install Dependencies
+      working-directory: ./backend
+      run: composer install --no-dev --optimize-autoloader
+    
+    # Example deployment to a server via SSH
+    - name: Deploy Backend to ${{ github.event.inputs.environment || 'staging' }}
+      # Uncomment and configure when ready for real deployment
+      # uses: appleboy/ssh-action@master
+      # with:
+      #   host: ${{ secrets.SSH_HOST }}
+      #   username: ${{ secrets.SSH_USERNAME }}
+      #   key: ${{ secrets.SSH_KEY }}
+      #   script: |
+      #     cd /path/to/${{ github.event.inputs.environment || 'staging' }}/backend
+      #     git pull
+      #     composer install --no-dev --optimize-autoloader
+      #     php artisan migrate --force
+      #     php artisan config:cache
+      #     php artisan route:cache
+      #     php artisan view:cache
+      run: echo "Backend deployment to ${{ github.event.inputs.environment || 'staging' }} would happen here"
+    
+    # Add post-deployment health check
+    - name: Health Check Backend
+      # Uncomment when you have a real endpoint
+      # run: |
+      #   curl --fail ${{ secrets.BACKEND_URL }}/api/health || exit 1
+      run: echo "Health check would happen here"
+  
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    needs: deploy-backend  # Ensures backend is deployed first
+    
+    # Define environment based on trigger
+    environment: ${{ github.event.inputs.environment || 'staging' }}
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: ./frontend/package-lock.json
+    
+    # Create environment-specific .env file
+    - name: Setup Environment Variables
+      working-directory: ./frontend
+      run: |
+        if [[ "${{ github.event.inputs.environment || 'staging' }}" == "production" ]]; then
+          echo "VITE_API_URL=${{ secrets.PROD_API_URL }}" > .env
+        else
+          echo "VITE_API_URL=${{ secrets.STAGING_API_URL }}" > .env
+        fi
+    
+    - name: Install and Build
+      working-directory: ./frontend
+      run: |
+        npm ci
+        npm run build
+    
+    # Example deployment to a server via SSH
+    - name: Deploy Frontend to ${{ github.event.inputs.environment || 'staging' }}
+      # Uncomment and configure when ready for real deployment
+      # uses: appleboy/ssh-action@master
+      # with:
+      #   host: ${{ secrets.SSH_HOST }}
+      #   username: ${{ secrets.SSH_USERNAME }}
+      #   key: ${{ secrets.SSH_KEY }}
+      #   script: |
+      #     cd /path/to/${{ github.event.inputs.environment || 'staging' }}/frontend
+      #     rm -rf dist
+      #     # Copy the new build files (deploy from dist directory)
+      run: echo "Frontend deployment to ${{ github.event.inputs.environment || 'staging' }} would happen here"
+    
+    # Add post-deployment smoke test
+    - name: Smoke Test Frontend
+      # Uncomment when you have a real endpoint
+      # run: |
+      #   curl --fail ${{ secrets.FRONTEND_URL }} || exit 1
+      run: echo "Smoke test would happen here"

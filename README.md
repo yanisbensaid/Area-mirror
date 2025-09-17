@@ -68,6 +68,54 @@ L'objectif est de créer une application moderne, robuste et efficace grâce à 
 - ✅ Environment variables setup
 - ✅ TypeScript support
 
+## CI/CD Pipeline
+
+This project uses GitHub Actions for continuous integration and deployment.
+
+### CI Workflows
+
+#### Backend CI (`backend-ci.yml`)
+- Triggers on push/PR to `main` branch when backend files change
+- Sets up PostgreSQL test database
+- Runs code quality checks:
+  - PHP syntax validation
+  - PSR-12 coding standards
+  - Static analysis with Larastan
+- Runs PHPUnit tests
+- Migration testing
+
+#### Frontend CI (`frontend-ci.yml`)
+- Triggers on push/PR to `main` branch when frontend files change
+- Separate jobs for linting, type checking, and building
+- Verifies build output
+- ESLint code quality checks
+- TypeScript type checking
+
+### Deployment
+
+Deployments are managed through the `deploy.yml` workflow:
+
+- **Environments**: Staging (default) and Production
+- **Trigger Methods**:
+  - Automatic on push to `main` (deploys to Staging)
+  - Manual workflow dispatch with environment selection
+  
+- **Deployment Process**:
+  1. Backend deployment with optimized dependencies
+  2. Database migrations
+  3. Laravel cache optimization
+  4. Frontend build with environment-specific variables
+  5. Health checks for both services
+
+### Setting Up Secrets
+
+For deployments to work properly, set up these GitHub repository secrets:
+- `SSH_HOST`: Server hostname
+- `SSH_USERNAME`: SSH username
+- `SSH_KEY`: SSH private key for authentication
+- `STAGING_API_URL`: Backend API URL for staging
+- `PROD_API_URL`: Backend API URL for production
+
 ---REA
 
 AREA est un projet **web** développé dans le cadre d’un projet étudiant.
