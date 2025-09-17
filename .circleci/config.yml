@@ -187,8 +187,22 @@ jobs:
             cd backend
             rsync -avz --exclude='vendor' --exclude='.git' \
               --exclude='.env.example' --exclude='.env.testing' \
+              --exclude='storage' --exclude='bootstrap/cache' \
               -e "ssh -o StrictHostKeyChecking=no" \
               ./ $SSH_USERNAME@$SSH_HOST:/home/$SSH_USERNAME/area-backend
+            
+            # Create storage and bootstrap/cache directories with proper permissions
+            ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "
+              sudo mkdir -p /home/$SSH_USERNAME/area-backend/storage/{app,framework,logs}
+              sudo mkdir -p /home/$SSH_USERNAME/area-backend/storage/framework/{cache,sessions,testing,views}
+              sudo mkdir -p /home/$SSH_USERNAME/area-backend/storage/framework/cache/data
+              sudo mkdir -p /home/$SSH_USERNAME/area-backend/bootstrap/cache
+              sudo chown -R $SSH_USERNAME:www-data /home/$SSH_USERNAME/area-backend
+              sudo chmod -R 755 /home/$SSH_USERNAME/area-backend
+              sudo chmod -R 775 /home/$SSH_USERNAME/area-backend/storage
+              sudo chmod -R 775 /home/$SSH_USERNAME/area-backend/bootstrap/cache
+            "
+            
             ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "cd ~/area-backend && \
               composer install --no-interaction --no-dev --prefer-dist --optimize-autoloader && \
               
