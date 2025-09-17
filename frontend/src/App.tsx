@@ -1,54 +1,23 @@
-import { useState, useEffect } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-import { apiService } from './services/api'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import Navbar from './components/Navbar'
+import HomePage from './pages/HomePage'
+import LoginPage from './pages/LoginPage'
 
 function App() {
-  const [count, setCount] = useState(0)
-  const [apiStatus, setApiStatus] = useState<string>('Testing...')
-
-  useEffect(() => {
-    testApiConnection()
-  }, [])
-
-  const testApiConnection = async () => {
-    try {
-      const response = await apiService.test()
-      setApiStatus(`✅ ${response.data.message}`)
-    } catch (error) {
-      console.error('API test failed:', error)
-      setApiStatus('❌ API connection failed')
-    }
-  }
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <Router>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800">
+        <Routes>
+          <Route path="/" element={
+            <>
+              <Navbar />
+              <HomePage />
+            </>
+          } />
+          <Route path="/login" element={<LoginPage />} />
+        </Routes>
       </div>
-      <h1>Vite + React + Laravel API</h1>
-      <div className="card">
-        <p><strong>API Status:</strong> {apiStatus}</p>
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <button onClick={testApiConnection} style={{ marginLeft: '10px' }}>
-          Test API
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    </Router>
   )
 }
 
