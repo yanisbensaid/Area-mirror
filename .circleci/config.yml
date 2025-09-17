@@ -259,38 +259,48 @@ jobs:
           command: |
             ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "
               echo '=== Network Configuration Debug ==='
+              # Install net-tools for netstat
+              sudo apt-get install -y net-tools
+              
               # Check if nginx is listening on port 80
+              echo 'Checking what is listening on port 80:'
               sudo netstat -tlnp | grep :80 || echo 'Port 80 not listening'
               
+              # Check all listening ports
+              echo 'All listening ports:'
+              sudo netstat -tlnp | head -10
+              
               # Check UFW status
+              echo 'UFW firewall status:'
               sudo ufw status verbose
               
-              # Check iptables rules
-              sudo iptables -L -n | head -20
+              # Check iptables rules (first 20 lines of each chain)
+              echo 'iptables INPUT chain:'
+              sudo iptables -L INPUT -n | head -15
               
               # Test local nginx response
+              echo 'Testing local HTTP connection:'
               curl -I http://localhost || echo 'Local nginx not responding'
               curl -I http://127.0.0.1 || echo 'Local 127.0.0.1 not responding'
               
+              # Test external connectivity
+              echo 'Testing if port 80 is reachable externally (from server perspective):'
+              timeout 5 nc -zv localhost 80 && echo 'Port 80 locally accessible' || echo 'Port 80 locally not accessible'
+              
+              # Check if there are any blocking rules
+              echo 'Checking for any REJECT rules in iptables:'
+              sudo iptables -L | grep -i reject
+              
               # Get server public IP
-              echo 'Public IP from ifconfig.me:'
-              curl -s ifconfig.me || echo 'Could not get public IP'
+              echo 'Public IP from multiple sources:'
+              curl -s ifconfig.me || echo 'ifconfig.me failed'
+              curl -s icanhazip.com || echo 'icanhazip.com failed'
               
               echo '=== Nginx Configuration ==='
-              sudo nginx -T 2>/dev/null | grep -A 5 -B 5 'listen'
+              sudo nginx -T 2>/dev/null | grep -A 5 -B 5 'listen' | head -20
               
-              echo '=== Active nginx sites ==='
-              ls -la /etc/nginx/sites-enabled/
-              
-              echo '=== Test Pages ==='
-              echo 'Default test page:'
-              cat /var/www/html/index.html 2>/dev/null || echo 'No default test page'
-              echo 'App test page:'
-              cat /home/$SSH_USERNAME/area-frontend/index.html 2>/dev/null || echo 'No app test page'
-              
-              echo '=== External connectivity test ==='
-              # Test if we can reach external services (to confirm outbound works)
-              curl -s --connect-timeout 5 http://google.com > /dev/null && echo 'Outbound connectivity: OK' || echo 'Outbound connectivity: FAILED'
+              echo '=== Test file contents ==='
+              cat /var/www/html/index.html 2>/dev/null || echo 'No index.html found'
             "
       - run:
           name: Restart Services
