@@ -257,7 +257,7 @@ jobs:
                   listen 80 default_server;
                   listen [::]:80 default_server;
                   
-                  root /home/$SSH_USERNAME/area-backend-prod/public;
+                  root /home/$SSH_USERNAME/area-backend/public;
                   index index.php index.html index.htm;
                   
                   server_name _;
@@ -269,7 +269,7 @@ jobs:
               
               # Debug: Add a simple test endpoint
               location /test {
-                  return 200 \"Laravel configuration test - Backend path: /home/$SSH_USERNAME/area-backend-prod/public\";
+                  return 200 \"Laravel configuration test - Backend path: /home/$SSH_USERNAME/area-backend/public\";
                   add_header Content-Type text/plain;
               }
                   
