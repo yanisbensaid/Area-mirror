@@ -101,8 +101,8 @@ jobs:
           name: Add SSH key
           command: |
             if [ -n "$SSH_KEY" ]; then
-              # Handle potential formatting issues with the SSH key
-              echo -e "$SSH_KEY" > ~/.ssh/id_rsa
+              # Write the SSH key with proper formatting
+              printf '%s\n' "$SSH_KEY" > ~/.ssh/id_rsa
               chmod 600 ~/.ssh/id_rsa
               ssh-keyscan -H $SSH_HOST >> ~/.ssh/known_hosts
               echo "SSH key installed from CircleCI environment variable"
@@ -112,6 +112,8 @@ jobs:
               head -1 ~/.ssh/id_rsa
               echo "SSH key last line:"
               tail -1 ~/.ssh/id_rsa
+              echo "SSH key type check:"
+              ssh-keygen -l -f ~/.ssh/id_rsa
               echo "Testing SSH connection..."
               ssh -v -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa $SSH_USERNAME@$SSH_HOST "echo 'SSH Connection Test Successful'"
             else
