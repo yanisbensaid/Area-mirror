@@ -508,6 +508,17 @@ jobs:
               sudo chmod -R 775 /home/$SSH_USERNAME/area-backend-prod/storage
               sudo chmod -R 775 /home/$SSH_USERNAME/area-backend-prod/bootstrap/cache
               
+              # Debug: Create test files and check Laravel structure
+              echo '<?php phpinfo(); ?>' | sudo tee /home/$SSH_USERNAME/area-backend-prod/public/phpinfo.php > /dev/null
+              echo 'Test: Laravel static file serving works!' | sudo tee /home/$SSH_USERNAME/area-backend-prod/public/test.html > /dev/null
+              
+              echo '=== DEBUGGING LARAVEL DIRECTORY STRUCTURE ==='
+              ls -la /home/$SSH_USERNAME/area-backend-prod/public/
+              echo '=== CHECKING IF INDEX.PHP EXISTS ==='
+              test -f /home/$SSH_USERNAME/area-backend-prod/public/index.php && echo 'index.php EXISTS' || echo 'index.php MISSING!'
+              echo '=== CHECKING FILE OWNERSHIP ==='
+              ls -la /home/$SSH_USERNAME/area-backend-prod/public/index.php
+              
               # Update production Nginx configuration to point to Laravel
               sudo sed -i 's|/home/$SSH_USERNAME/area-frontend|/home/$SSH_USERNAME/area-frontend-prod|g' /etc/nginx/sites-available/area-app
               sudo sed -i 's|/home/$SSH_USERNAME/area-backend/public|/home/$SSH_USERNAME/area-backend-prod/public|g' /etc/nginx/sites-available/area-app
