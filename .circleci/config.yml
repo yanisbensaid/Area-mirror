@@ -226,8 +226,8 @@ jobs:
                   # Health check endpoint
                   location /health {
                       access_log off;
-                      return 200 \"healthy\n\";
-                      add_header Content-Type text/plain;
+                      return 200 \"<!DOCTYPE html><html><head><title>Area Health</title><style>body{font-family:Arial;text-align:center;margin:40px;background:#667eea;color:white;}img{max-width:200px;border-radius:20px;margin:20px;}</style></head><body><img src='https://pbs.twimg.com/profile_images/1158580265725206529/91kypvss_400x400.jpg' alt='Area Logo'/><h1>✅ Area Project - System Healthy</h1><p>🚀 CI/CD Pipeline Active</p><p>⚡ Server: Oracle Cloud</p><p>🔧 Stack: Laravel + React + Nginx</p><p>$(date)</p></body></html>\";
+                      add_header Content-Type text/html;
                   }
               }' | sudo tee /etc/nginx/sites-available/area-app > /dev/null
               
