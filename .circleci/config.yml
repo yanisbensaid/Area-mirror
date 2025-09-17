@@ -284,11 +284,11 @@ jobs:
                 echo \"    }\" >> /etc/nginx/sites-available/area-app
                 echo \"\" >> /etc/nginx/sites-available/area-app
                 echo \"    # Security\" >> /etc/nginx/sites-available/area-app
-                echo \"    location ~ /\.ht {\" >> /etc/nginx/sites-available/area-app
+                echo \"    location ~ /\\\\.ht {\" >> /etc/nginx/sites-available/area-app
                 echo \"        deny all;\" >> /etc/nginx/sites-available/area-app
                 echo \"    }\" >> /etc/nginx/sites-available/area-app
                 echo \"\" >> /etc/nginx/sites-available/area-app
-                echo \"    location ~ /\.(env|git) {\" >> /etc/nginx/sites-available/area-app
+                echo \"    location ~ /\\\\.(env|git) {\" >> /etc/nginx/sites-available/area-app
                 echo \"        deny all;\" >> /etc/nginx/sites-available/area-app
                 echo \"    }\" >> /etc/nginx/sites-available/area-app
                 echo \"\" >> /etc/nginx/sites-available/area-app
