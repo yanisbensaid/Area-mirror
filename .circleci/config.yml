@@ -357,48 +357,55 @@ jobs:
           name: Install deployment dependencies
           command: |
             sudo apt-get update
-            sudo apt-get install -y openssh-client rsync git
+            sudo apt-get install -y openssh-client rsync
       - run:
-          name: Configure Git for organization repo push
+          name: Notify for manual organization repo sync
           command: |
-            git config --global user.email "ci@area-project.com"
-            git config --global user.name "Area CI/CD"
+            echo "=== STAGING TESTS PASSED ==="
+            echo "✅ All tests successful on staging environment"
+            echo "✅ Staging deployment completed successfully"
+            echo ""
+            echo "🔄 MANUAL SYNC REQUIRED:"
+            echo "To deploy to production, run these commands locally:"
+            echo ""
+            echo "git remote add organization https://github.com/EpitechPGE3-2025/G-DEV-500-MPL-5-1-area-2.git"
+            echo "git push organization main"
+            echo ""
+            echo "This will trigger production deployment."
+            echo "=== STAGING PIPELINE COMPLETE ==="
       - run:
-          name: Push successful changes to organization repository
+          name: Deploy to Production Server (Hot Deployment)
           command: |
-            # Add organization repo as remote
-            git remote add organization https://github.com/EpitechPGE3-2025/G-DEV-500-MPL-5-1-area-2.git
+            echo "=== PRODUCTION HOT DEPLOYMENT STARTED ==="
+            echo "Deploying validated staging build directly to production..."
             
-            # Push to organization repo (this will trigger production deployment there)
-            echo "Pushing successful changes to production repository..."
-            git push https://$GITHUB_TOKEN@github.com/EpitechPGE3-2025/G-DEV-500-MPL-5-1-area-2.git main
-      - run:
-          name: Deploy to Production Server
-          command: |
+            # Deploy Backend directly from staging-validated code
+            cd backend
+            rsync -avz --exclude='vendor' --exclude='.git' \
+              --exclude='.env.example' --exclude='.env.testing' \
+              -e "ssh -o StrictHostKeyChecking=no" \
+              ./ $SSH_USERNAME@$SSH_HOST:/home/$SSH_USERNAME/area-backend-prod
+            
+            # Deploy Frontend from workspace
+            if [ -d "/tmp/workspace/dist" ]; then
+              rsync -avz -e "ssh -o StrictHostKeyChecking=no" \
+                /tmp/workspace/dist/ $SSH_USERNAME@$SSH_HOST:/home/$SSH_USERNAME/area-frontend-prod
+            else
+              echo "Warning: No frontend build found, skipping frontend deployment"
+            fi
+            
+            # Production setup on server
             ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "
-              echo '=== Production Deployment Started ==='
-              
-              # Deploy Backend
-              rsync -avz --exclude='vendor' --exclude='.git' \
-                --exclude='.env.example' --exclude='.env.testing' \
-                -e 'ssh -o StrictHostKeyChecking=no' \
-                ./ $SSH_USERNAME@$SSH_HOST:/home/$SSH_USERNAME/area-backend-prod
-              
-              # Deploy Frontend  
-              if [ -d '/tmp/workspace/dist' ]; then
-                rsync -avz -e 'ssh -o StrictHostKeyChecking=no' \
-                  /tmp/workspace/dist/ $SSH_USERNAME@$SSH_HOST:/home/$SSH_USERNAME/area-frontend-prod
-              fi
-              
-              # Production setup
+              echo 'Setting up production Laravel environment...'
               cd ~/area-backend-prod
               composer install --no-interaction --no-dev --prefer-dist --optimize-autoloader
-              php artisan migrate --force
+              
+              # Laravel production optimizations
               php artisan config:cache
               php artisan route:cache
               php artisan view:cache
               
-              # Update production Nginx to point to prod directories
+              # Update production Nginx configuration
               sudo sed -i 's|/home/$SSH_USERNAME/area-frontend|/home/$SSH_USERNAME/area-frontend-prod|g' /etc/nginx/sites-available/area-app
               sudo sed -i 's|/home/$SSH_USERNAME/area-backend|/home/$SSH_USERNAME/area-backend-prod|g' /etc/nginx/sites-available/area-app
               
@@ -406,6 +413,8 @@ jobs:
               sudo systemctl restart php8.2-fpm
               sudo systemctl restart nginx
               
-              echo '=== Production Deployment Complete ==='
+              echo '=== PRODUCTION DEPLOYMENT COMPLETE ==='
+              echo 'Testing production health...'
               curl -I http://localhost/health || echo 'Production health check failed'
+              echo 'Production URL: http://144.24.201.112/'
             "

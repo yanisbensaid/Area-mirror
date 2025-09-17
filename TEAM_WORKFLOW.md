@@ -17,10 +17,11 @@ Team Members → Personal Repo (Staging/CI) → Organization Repo (Production)
 4. **Manual Review**: Code review and approval
 5. **Merge to Staging**: Changes merged to personal repo `main` branch
 6. **Staging Deployment**: Automatic deployment to staging server for verification
-7. **Production Promotion**: If staging tests pass, automatically:
-   - Push changes to organization repo (`EpitechPGE3-2025/G-DEV-500-MPL-5-1-area-2`)
-   - Deploy to production server
-   - Restart production services
+7. **Production Promotion**: If staging tests pass:
+   - **Automatic**: Hot deployment to production server (immediate)
+   - **Manual**: Repository admin syncs to organization repo when ready
+
+> **Note**: Due to organization SAML SSO requirements, the organization repository sync is manual but production deployment is automatic after successful staging validation.
 
 ### 👥 For Team Members
 
@@ -71,17 +72,24 @@ Team Members → Personal Repo (Staging/CI) → Organization Repo (Production)
 Add these in CircleCI Project Settings → Environment Variables:
 
 ```
-GITHUB_TOKEN=<personal_access_token_with_repo_scope>
 SSH_HOST=144.24.201.112
 SSH_USERNAME=ethanl
 DB_PASSWORD=<your_production_db_password>
 ```
 
-#### GitHub Token Setup
+#### Manual Organization Repo Sync
 
-1. Go to GitHub → Settings → Developer settings → Personal access tokens
-2. Generate new token with `repo` scope
-3. Add as `GITHUB_TOKEN` environment variable in CircleCI
+After successful staging deployment, sync to organization repo:
+
+```bash
+# Add organization remote (one time setup)
+git remote add organization https://github.com/EpitechPGE3-2025/G-DEV-500-MPL-5-1-area-2.git
+
+# Sync validated changes to organization repo
+git push organization main
+```
+
+> **Why Manual?**: Organization SAML SSO prevents automated pushes. This ensures you maintain control over what reaches the organization repository.
 
 ### 📊 Monitoring and Troubleshooting
 
@@ -93,7 +101,8 @@ DB_PASSWORD=<your_production_db_password>
 1. **Backend CI**: PHP tests, Laravel setup
 2. **Frontend CI**: Node build, ESLint, React tests  
 3. **Staging Deploy**: Deploy to staging server for testing
-4. **Production Deploy**: Push to org repo + production deployment
+4. **Production Deploy**: Automatic hot deployment to production server
+5. **Manual Sync**: Repository admin syncs to organization repo (when ready)
 
 #### Troubleshooting
 - **Failed Tests**: Check CircleCI logs for specific test failures
