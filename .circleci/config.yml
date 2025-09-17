@@ -101,14 +101,10 @@ jobs:
           name: Add SSH key
           command: |
             if [ -n "$SSH_KEY" ]; then
-              # Make sure we create the correct key file based on key format
               echo "$SSH_KEY" > ~/.ssh/id_rsa
               chmod 600 ~/.ssh/id_rsa
               ssh-keyscan -H $SSH_HOST >> ~/.ssh/known_hosts
               echo "SSH key installed from CircleCI environment variable"
-              echo "Testing SSH connection with verbose output..."
-              # Try direct connection to verify key format
-              ssh -v -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa $SSH_USERNAME@$SSH_HOST "echo SSH Connection Successful"
             else
               echo "No SSH_KEY environment variable found. Skipping deployment."
               exit 1
