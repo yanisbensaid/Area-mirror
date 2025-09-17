@@ -1,0 +1,111 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+
+jobs:
+  code-quality:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+    
+    - name: PHP Syntax Check
+      run: |
+        find ./backend -type f -name "*.php" -not -path "./backend/vendor/*" -print0 | xargs -0 -n1 php -l
+    
+    - name: Install PHP_CodeSniffer
+      run: |
+        composer global require "squizlabs/php_codesniffer=*"
+    
+    - name: Check PSR-12 coding standards
+      run: |
+        php ~/.composer/vendor/bin/phpcs --standard=PSR12 ./backend/app
+
+  laravel-tests:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: area_db_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+        extensions: mbstring, xml, ctype, iconv, intl, pdo_pgsql, pgsql, zip, dom
+        coverage: none
+    
+    - name: Get Composer Cache Directory
+      id: composer-cache
+      run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: ${{ steps.composer-cache.outputs.dir }}
+        key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+        restore-keys: ${{ runner.os }}-composer-
+    
+    - name: Install Dependencies
+      working-directory: ./backend
+      run: composer install --no-ansi --no-interaction --no-scripts --no-progress
+    
+    - name: Copy .env
+      working-directory: ./backend
+      run: cp .env.example .env
+    
+    - name: Generate key
+      working-directory: ./backend
+      run: php artisan key:generate
+    
+    - name: Configure Database
+      working-directory: ./backend
+      run: |
+        echo "DB_CONNECTION=pgsql" >> .env
+        echo "DB_HOST=localhost" >> .env
+        echo "DB_PORT=5432" >> .env
+        echo "DB_DATABASE=area_db_test" >> .env
+        echo "DB_USERNAME=postgres" >> .env
+        echo "DB_PASSWORD=postgres" >> .env
+    
+    - name: Run Migrations
+      working-directory: ./backend
+      run: php artisan migrate --force
+    
+    - name: Run Tests
+      working-directory: ./backend
+      run: vendor/bin/phpunit
+      
+    - name: Run Laravel Static Analysis
+      working-directory: ./backend
+      run: |
+        composer require --dev nunomaduro/larastan
+        vendor/bin/phpstan analyse app --level=4

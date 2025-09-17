@@ -1,0 +1,6 @@
+
+# Act local testing files
+.github/workflows/act-secrets.env
+.github/workflows/workflow_dispatch_payload.json
+bin/
+dist/
