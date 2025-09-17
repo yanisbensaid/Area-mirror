@@ -104,6 +104,23 @@ jobs:
               which rsync
               rsync --version
             "
+      - run:
+          name: Install PHP and Composer on remote server
+          command: |
+            ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "
+              export DEBIAN_FRONTEND=noninteractive
+              export LC_ALL=C.UTF-8
+              export LANG=C.UTF-8
+              # Install PHP and required extensions
+              sudo apt-get install -y php8.2 php8.2-cli php8.2-fpm php8.2-mysql php8.2-pgsql php8.2-sqlite3 php8.2-curl php8.2-zip php8.2-mbstring php8.2-xml php8.2-bcmath php8.2-tokenizer
+              # Install Composer
+              curl -sS https://getcomposer.org/installer | php
+              sudo mv composer.phar /usr/local/bin/composer
+              sudo chmod +x /usr/local/bin/composer
+              # Verify installations
+              php --version
+              composer --version
+            "
       - add_ssh_keys:
           fingerprints:
             - "SHA256:dxRc6rNVwDiBZAw0pcJWkrVMj5XG8my+mr47DnUVgzE"
@@ -114,12 +131,17 @@ jobs:
             chmod 700 ~/.ssh
             ssh-keyscan -H $SSH_HOST >> ~/.ssh/known_hosts
       - run:
-          name: Verify rsync installation
+          name: Verify installation requirements
           command: |
             ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "
-              echo 'Checking rsync installation...'
-              which rsync || (echo 'rsync not found, attempting manual installation...' && sudo apt-get update && sudo apt-get install -y rsync)
-              rsync --version
+              echo 'Checking required tools...'
+              which rsync || (echo 'rsync not found!' && exit 1)
+              which php || (echo 'PHP not found!' && exit 1)
+              which composer || (echo 'Composer not found!' && exit 1)
+              echo 'All tools verified:'
+              rsync --version | head -1
+              php --version | head -1
+              composer --version
             "
       - run:
           name: Deploy Backend
