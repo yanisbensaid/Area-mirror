@@ -2,8 +2,16 @@
 
 [![CircleCI](https://circleci.com/gh/EthanBranchereau/area-cicd-mirror.svg?style=shield)](https://circleci.com/gh/EthanBranchereau/area-cicd-mirror)
 
-AREA est un projet **web** développé dans le cadre d'un projet étudiant.
-L'objectif est de créer une application moderne, robuste et efficace grâce à une stack technique complète.
+AREA est un projet **web** développé dans le cadre d'un projet étudiant avec une pipeline CI/CD complète.
+
+## 🚀 CI/CD Workflow
+
+Ce projet utilise un **workflow staging → production** avec CircleCI :
+
+- **Staging** : https://github.com/EthanBranchereau/area-cicd-mirror (Tests et validation)
+- **Production** : http://144.24.201.112/ (Déploiement automatique)
+
+**👥 Pour l'équipe** : Voir [TEAM_WORKFLOW.md](./TEAM_WORKFLOW.md) pour le processus de développement.
 
 > **🔄 MIGRATION PostgreSQL** : Le projet utilise maintenant PostgreSQL au lieu de SQLite. Voir la section [Database Setup](#database-setup) ci-dessous.
 
