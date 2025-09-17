@@ -217,6 +217,12 @@ jobs:
               sudo chown -R www-data:www-data /home/$SSH_USERNAME/area-backend/storage
               sudo chown -R www-data:www-data /home/$SSH_USERNAME/area-backend/bootstrap/cache
               sudo chmod -R 775 /home/$SSH_USERNAME/area-backend/storage
+              sudo chmod -R 775 /home/$SSH_USERNAME/area-backend/bootstrap/cache
+              
+              # Ensure proper permissions for the entire Laravel app
+              sudo chown -R $SSH_USERNAME:www-data /home/$SSH_USERNAME/area-backend
+              sudo chmod -R 755 /home/$SSH_USERNAME/area-backend
+              sudo chmod -R 775 /home/$SSH_USERNAME/area-backend/storage
               sudo chmod -R 775 /home/$SSH_USERNAME/area-backend/bootstrap/cache"
       - run:
           name: Deploy Frontend
@@ -242,12 +248,16 @@ jobs:
                   
                   server_name _;
                   
-                  # Laravel application
-                  location / {
-                      try_files \$uri \$uri/ /index.php?\$query_string;
-                  }
-                  
-                  # PHP-FPM configuration for Laravel
+              # Laravel application
+              location / {
+                  try_files \$uri \$uri/ /index.php?\$query_string;
+              }
+              
+              # Debug: Add a simple test endpoint
+              location /test {
+                  return 200 \"Laravel configuration test - Backend path: /home/$SSH_USERNAME/area-backend/public\";
+                  add_header Content-Type text/plain;
+              }                  # PHP-FPM configuration for Laravel
                   location ~ \.php$ {
                       fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
                       fastcgi_index index.php;
