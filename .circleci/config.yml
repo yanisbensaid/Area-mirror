@@ -252,57 +252,62 @@ jobs:
           name: Configure Nginx
           command: |
             ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "
-              # Create Laravel-optimized Nginx configuration
-              echo 'server {
-                  listen 80 default_server;
-                  listen [::]:80 default_server;
-                  
-                  root /home/$SSH_USERNAME/area-backend/public;
-                  index index.php index.html index.htm;
-                  
-                  server_name _;
-                  
-              # Laravel application
-              location / {
-                  try_files \$uri \$uri/ /index.php?\$query_string;
-              }
-              
-              # Debug: Add a simple test endpoint
-              location /test {
-                  return 200 \"Laravel configuration test - Backend path: /home/$SSH_USERNAME/area-backend/public\";
-                  add_header Content-Type text/plain;
-              }
-                  
-              # PHP-FPM configuration for Laravel
-              location ~ \.php$ {
-                      fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
-                      fastcgi_index index.php;
-                      fastcgi_param SCRIPT_FILENAME \$realpath_root\$fastcgi_script_name;
-                      include fastcgi_params;
-                      fastcgi_hide_header X-Powered-By;
-                  }
-                  
-                  # Security: deny access to .htaccess files
-                  location ~ /\.ht {
-                      deny all;
-                  }
-                  
-                  # Security: deny access to sensitive Laravel files
-                  location ~ /\.(env|git) {
-                      deny all;
-                  }
-                  
-                  # Health check endpoint (static override)
-                  location /health {
-                      access_log off;
-                      return 200 \"<!DOCTYPE html><html><head><title>Area Health</title><style>body{font-family:Arial;text-align:center;margin:40px;background:#667eea;color:white;}img{max-width:200px;border-radius:20px;margin:20px;}</style></head><body><img src='https://pbs.twimg.com/profile_images/1158580265725206529/91kypvss_400x400.jpg' alt='Area Logo'/><h1>✅ Area Project - System Healthy</h1><p>🚀 CI/CD Pipeline Active</p><p>⚡ Server: Oracle Cloud</p><p>🔧 Stack: Laravel + React + Nginx</p><p>$(date)</p></body></html>\";
-                      add_header Content-Type text/html;
-                  }
-              }' | sudo tee /etc/nginx/sites-available/area-app > /dev/null
+              # Create Laravel nginx config with echo statements (avoiding heredoc)
+              sudo bash -c '
+                echo \"server {\" > /etc/nginx/sites-available/area-app
+                echo \"    listen 80 default_server;\" >> /etc/nginx/sites-available/area-app
+                echo \"    listen [::]:80 default_server;\" >> /etc/nginx/sites-available/area-app
+                echo \"\" >> /etc/nginx/sites-available/area-app
+                echo \"    root /home/ubuntu/area-backend/public;\" >> /etc/nginx/sites-available/area-app
+                echo \"    index index.php index.html index.htm;\" >> /etc/nginx/sites-available/area-app
+                echo \"\" >> /etc/nginx/sites-available/area-app
+                echo \"    server_name _;\" >> /etc/nginx/sites-available/area-app
+                echo \"\" >> /etc/nginx/sites-available/area-app
+                echo \"    # Laravel application\" >> /etc/nginx/sites-available/area-app
+                echo \"    location / {\" >> /etc/nginx/sites-available/area-app
+                echo \"        try_files \$uri \$uri/ /index.php?\$query_string;\" >> /etc/nginx/sites-available/area-app
+                echo \"    }\" >> /etc/nginx/sites-available/area-app
+                echo \"\" >> /etc/nginx/sites-available/area-app
+                echo \"    # Debug endpoint\" >> /etc/nginx/sites-available/area-app
+                echo \"    location /test {\" >> /etc/nginx/sites-available/area-app
+                echo \"        return 200 \\\"Laravel test - Backend: /home/ubuntu/area-backend/public\\\";\" >> /etc/nginx/sites-available/area-app
+                echo \"        add_header Content-Type text/plain;\" >> /etc/nginx/sites-available/area-app
+                echo \"    }\" >> /etc/nginx/sites-available/area-app
+                echo \"\" >> /etc/nginx/sites-available/area-app
+                echo \"    # PHP-FPM configuration\" >> /etc/nginx/sites-available/area-app
+                echo \"    location ~ \.php\$ {\" >> /etc/nginx/sites-available/area-app
+                echo \"        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;\" >> /etc/nginx/sites-available/area-app
+                echo \"        fastcgi_index index.php;\" >> /etc/nginx/sites-available/area-app
+                echo \"        fastcgi_param SCRIPT_FILENAME \$realpath_root\$fastcgi_script_name;\" >> /etc/nginx/sites-available/area-app
+                echo \"        include fastcgi_params;\" >> /etc/nginx/sites-available/area-app
+                echo \"        fastcgi_hide_header X-Powered-By;\" >> /etc/nginx/sites-available/area-app
+                echo \"    }\" >> /etc/nginx/sites-available/area-app
+                echo \"\" >> /etc/nginx/sites-available/area-app
+                echo \"    # Security\" >> /etc/nginx/sites-available/area-app
+                echo \"    location ~ /\.ht {\" >> /etc/nginx/sites-available/area-app
+                echo \"        deny all;\" >> /etc/nginx/sites-available/area-app
+                echo \"    }\" >> /etc/nginx/sites-available/area-app
+                echo \"\" >> /etc/nginx/sites-available/area-app
+                echo \"    location ~ /\.(env|git) {\" >> /etc/nginx/sites-available/area-app
+                echo \"        deny all;\" >> /etc/nginx/sites-available/area-app
+                echo \"    }\" >> /etc/nginx/sites-available/area-app
+                echo \"\" >> /etc/nginx/sites-available/area-app
+                echo \"    # Health check\" >> /etc/nginx/sites-available/area-app
+                echo \"    location /health {\" >> /etc/nginx/sites-available/area-app
+                echo \"        return 200 \\\"Health check OK\\\";\" >> /etc/nginx/sites-available/area-app
+                echo \"        add_header Content-Type text/plain;\" >> /etc/nginx/sites-available/area-app
+                echo \"    }\" >> /etc/nginx/sites-available/area-app
+                echo \"}\" >> /etc/nginx/sites-available/area-app
+              '
               
               # Enable the site
               sudo ln -sf /etc/nginx/sites-available/area-app /etc/nginx/sites-enabled/
               sudo rm -f /etc/nginx/sites-enabled/default
+              
+              # Debug: Check if Laravel files exist
+              echo 'Checking Laravel deployment...'
+              ls -la /home/ubuntu/area-backend/public/ || echo 'Laravel public directory not found!'
+              [ -f /home/ubuntu/area-backend/public/index.php ] && echo 'index.php found' || echo 'index.php missing!'
               
               # Test nginx configuration
               sudo nginx -t
@@ -310,9 +315,13 @@ jobs:
               # Restart nginx to apply changes
               sudo systemctl restart nginx
               
+              # Verify PHP-FPM is running
+              sudo systemctl status php8.2-fpm --no-pager || echo 'PHP-FPM not running!'
+              
               # Test the configuration
               sleep 2
               curl -I http://localhost/health || echo 'Health check failed'
+              curl http://localhost/test || echo 'Test endpoint failed'
             "
       - run:
           name: Create test pages
