@@ -13,8 +13,8 @@ workflows:
       - frontend-ci
       - deploy:
           name: deploy-staging
-          requir                echo "    location ~ /\\\\.ht {" >> /etc/nginx/sites-available/area-apps:
-                echo "    location ~ /\\\\.(env|git) {" >> /etc/nginx/sites-available/area-app           - backend-ci
+          requires:
+            - backend-ci
             - frontend-ci
           filters:
             branches:
