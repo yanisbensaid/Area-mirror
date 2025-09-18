@@ -252,53 +252,32 @@ jobs:
           name: Configure Nginx
           command: |
             ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "
-              # Create Laravel nginx config with echo statements (avoiding heredoc)
-              sudo bash -c '
-                echo \"server {\" > /etc/nginx/sites-available/area-app
-                echo \"    listen 80 default_server;\" >> /etc/nginx/sites-available/area-app
-                echo \"    listen [::]:80 default_server;\" >> /etc/nginx/sites-available/area-app
-                echo \"\" >> /etc/nginx/sites-available/area-app
-                echo \"    root /home/ubuntu/area-backend/public;\" >> /etc/nginx/sites-available/area-app
-                echo \"    index index.php index.html index.htm;\" >> /etc/nginx/sites-available/area-app
-                echo \"\" >> /etc/nginx/sites-available/area-app
-                echo \"    server_name _;\" >> /etc/nginx/sites-available/area-app
-                echo \"\" >> /etc/nginx/sites-available/area-app
-                echo \"    # Laravel application\" >> /etc/nginx/sites-available/area-app
-                echo \"    location / {\" >> /etc/nginx/sites-available/area-app
-                echo \"        try_files \\\$uri \\\$uri/ /index.php?\\\$query_string;\" >> /etc/nginx/sites-available/area-app
-                echo \"    }\" >> /etc/nginx/sites-available/area-app
-                echo \"\" >> /etc/nginx/sites-available/area-app
-                echo \"    # Debug endpoint\" >> /etc/nginx/sites-available/area-app
-                echo \"    location /test {\" >> /etc/nginx/sites-available/area-app
-                echo \"        return 200 \\\"Laravel test - Backend: /home/ubuntu/area-backend/public\\\";\" >> /etc/nginx/sites-available/area-app
-                echo \"        add_header Content-Type text/plain;\" >> /etc/nginx/sites-available/area-app
-                echo \"    }\" >> /etc/nginx/sites-available/area-app
-                echo \"\" >> /etc/nginx/sites-available/area-app
-                echo \"    # PHP-FPM configuration\" >> /etc/nginx/sites-available/area-app
-                echo \"    location ~ \\\\.php\\\$ {\" >> /etc/nginx/sites-available/area-app
-                echo \"        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;\" >> /etc/nginx/sites-available/area-app
-                echo \"        fastcgi_index index.php;\" >> /etc/nginx/sites-available/area-app
-                echo \"        fastcgi_param SCRIPT_FILENAME \\\$realpath_root\\\$fastcgi_script_name;\" >> /etc/nginx/sites-available/area-app
-                echo \"        include fastcgi_params;\" >> /etc/nginx/sites-available/area-app
-                echo \"        fastcgi_hide_header X-Powered-By;\" >> /etc/nginx/sites-available/area-app
-                echo \"    }\" >> /etc/nginx/sites-available/area-app
-                echo \"\" >> /etc/nginx/sites-available/area-app
-                echo \"    # Security\" >> /etc/nginx/sites-available/area-app
-                echo \"    location ~ /\\\\.ht {\" >> /etc/nginx/sites-available/area-app
-                echo \"        deny all;\" >> /etc/nginx/sites-available/area-app
-                echo \"    }\" >> /etc/nginx/sites-available/area-app
-                echo \"\" >> /etc/nginx/sites-available/area-app
-                echo \"    location ~ /\\\\.(env|git) {\" >> /etc/nginx/sites-available/area-app
-                echo \"        deny all;\" >> /etc/nginx/sites-available/area-app
-                echo \"    }\" >> /etc/nginx/sites-available/area-app
-                echo \"\" >> /etc/nginx/sites-available/area-app
-                echo \"    # Health check\" >> /etc/nginx/sites-available/area-app
-                echo \"    location /health {\" >> /etc/nginx/sites-available/area-app
-                echo \"        return 200 \\\"Health check OK\\\";\" >> /etc/nginx/sites-available/area-app
-                echo \"        add_header Content-Type text/plain;\" >> /etc/nginx/sites-available/area-app
-                echo \"    }\" >> /etc/nginx/sites-available/area-app
-                echo \"}\" >> /etc/nginx/sites-available/area-app
-              '
+              # Create basic nginx config for Laravel
+              sudo rm -f /etc/nginx/sites-available/area-app
+              
+              # Write nginx config line by line
+              echo 'server {' | sudo tee /etc/nginx/sites-available/area-app
+              echo '    listen 80 default_server;' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '    root /home/ubuntu/area-backend/public;' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '    index index.php index.html;' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '    server_name _;' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '    location / {' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '        try_files \$uri \$uri/ /index.php?\$query_string;' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '    }' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '    location ~ \.php\$ {' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '        fastcgi_index index.php;' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '        fastcgi_param SCRIPT_FILENAME \$realpath_root\$fastcgi_script_name;' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '        include fastcgi_params;' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '    }' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '    location /health {' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '        return 200 \"OK\";' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '        add_header Content-Type text/plain;' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '    }' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '}' | sudo tee -a /etc/nginx/sites-available/area-app
               
               # Enable the site
               sudo ln -sf /etc/nginx/sites-available/area-app /etc/nginx/sites-enabled/
