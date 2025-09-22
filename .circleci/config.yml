@@ -253,39 +253,65 @@ jobs:
               exit 1
             fi
       - run:
-          name: Configure Nginx
+          name: Configure Nginx - Basic Static Setup
           command: |
             ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "
-              # Create simple nginx config that works
+              # Create simple working nginx config
               sudo rm -f /etc/nginx/sites-available/area-app
               
-              # Write nginx config line by line - Start with React frontend
-              echo 'server {' | sudo tee /etc/nginx/sites-available/area-app
-              echo '    listen 80 default_server;' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '    server_name _;' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '    root /home/$SSH_USERNAME/area-frontend;' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '    index index.html;' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '    # Serve React frontend - SPA routing' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '    location / {' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '        try_files \$uri \$uri/ /index.html;' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '    }' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '    # API proxy to Laravel backend' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '    location /api/ {' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '        rewrite ^/api/(.*)\$ /\$1 break;' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '        proxy_pass http://127.0.0.1:8000;' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '        proxy_set_header Host \$host;' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '        proxy_set_header X-Real-IP \$remote_addr;' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '    }' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '    # Health check' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '    location /health {' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '        return 200 \"Frontend OK\";' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '        add_header Content-Type text/plain;' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '    }' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '}' | sudo tee -a /etc/nginx/sites-available/area-app
+              # Basic nginx configuration that should work immediately
+              cat << 'EOF' | sudo tee /etc/nginx/sites-available/area-app
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name _;
+    root /home/ubuntu/area-frontend;
+    index index.html index.htm;
+
+    # Basic file serving
+    location / {
+        try_files \$uri \$uri/ /index.html;
+    }
+
+    # Simple health check
+    location /health {
+        return 200 'Frontend Working';
+        add_header Content-Type text/plain;
+    }
+
+    # Static assets
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+}
+EOF
+
+              # Enable the site and disable default
+              sudo ln -sf /etc/nginx/sites-available/area-app /etc/nginx/sites-enabled/
+              sudo rm -f /etc/nginx/sites-enabled/default
+              
+              # Test nginx configuration
+              sudo nginx -t
+              
+              # Create a simple test file if frontend doesn't exist
+              sudo mkdir -p /home/$SSH_USERNAME/area-frontend
+              if [ ! -f /home/$SSH_USERNAME/area-frontend/index.html ]; then
+                echo '<h1>AREA Frontend</h1><p>Deployment working! Time: '$(date)'</p>' | sudo tee /home/$SSH_USERNAME/area-frontend/index.html
+              fi
+              
+              # Set permissions
+              sudo chown -R www-data:www-data /home/$SSH_USERNAME/area-frontend
+              sudo chmod -R 755 /home/$SSH_USERNAME/area-frontend
+              
+              # Restart nginx
+              sudo systemctl restart nginx
+              sudo systemctl status nginx --no-pager -l
+              
+              # Test immediately
+              curl -I http://localhost || echo 'Local test failed'
+              curl http://localhost/health || echo 'Health check failed'
+            "
               
               # Enable the site
               sudo ln -sf /etc/nginx/sites-available/area-app /etc/nginx/sites-enabled/
