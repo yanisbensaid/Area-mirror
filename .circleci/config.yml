@@ -256,46 +256,33 @@ jobs:
           name: Configure Nginx
           command: |
             ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "
-              # Create nginx config for React frontend + Laravel API
+              # Create simple nginx config that works
               sudo rm -f /etc/nginx/sites-available/area-app
               
-              # Write nginx config line by line
+              # Write nginx config line by line - Start with React frontend
               echo 'server {' | sudo tee /etc/nginx/sites-available/area-app
               echo '    listen 80 default_server;' | sudo tee -a /etc/nginx/sites-available/area-app
               echo '    server_name _;' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '    # Serve React frontend at root' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '    root /home/ubuntu/area-frontend;' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '    root /home/$SSH_USERNAME/area-frontend;' | sudo tee -a /etc/nginx/sites-available/area-app
               echo '    index index.html;' | sudo tee -a /etc/nginx/sites-available/area-app
               echo '' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '    # Handle React routing (SPA)' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '    # Serve React frontend - SPA routing' | sudo tee -a /etc/nginx/sites-available/area-app
               echo '    location / {' | sudo tee -a /etc/nginx/sites-available/area-app
               echo '        try_files \$uri \$uri/ /index.html;' | sudo tee -a /etc/nginx/sites-available/area-app
               echo '    }' | sudo tee -a /etc/nginx/sites-available/area-app
               echo '' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '    # Laravel API backend' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '    location /api {' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '        alias /home/ubuntu/area-backend/public;' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '        try_files \$uri \$uri/ @laravel;' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '    # API proxy to Laravel backend' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '    location /api/ {' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '        rewrite ^/api/(.*)\$ /\$1 break;' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '        proxy_pass http://127.0.0.1:8000;' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '        proxy_set_header Host \$host;' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '        proxy_set_header X-Real-IP \$remote_addr;' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;' | sudo tee -a /etc/nginx/sites-available/area-app
               echo '    }' | sudo tee -a /etc/nginx/sites-available/area-app
               echo '' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '    location @laravel {' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '        rewrite /api/?(.*) /index.php?\$1 last;' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '    }' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '    # PHP processing for Laravel API' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '    location ~ ^/api/(.+\.php)\$ {' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '        alias /home/ubuntu/area-backend/public;' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '        fastcgi_index index.php;' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '        include fastcgi_params;' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '        fastcgi_param SCRIPT_FILENAME /home/ubuntu/area-backend/public/index.php;' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '        fastcgi_param PATH_INFO \$1;' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '    }' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '    # Health check endpoint' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '    # Health check' | sudo tee -a /etc/nginx/sites-available/area-app
               echo '    location /health {' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '        return 200 \"OK\";' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '        return 200 \"Frontend OK\";' | sudo tee -a /etc/nginx/sites-available/area-app
               echo '        add_header Content-Type text/plain;' | sudo tee -a /etc/nginx/sites-available/area-app
               echo '    }' | sudo tee -a /etc/nginx/sites-available/area-app
               echo '}' | sudo tee -a /etc/nginx/sites-available/area-app
@@ -322,6 +309,17 @@ jobs:
               
               # Restart nginx to apply changes
               sudo systemctl restart nginx
+              
+              # Start Laravel development server in background for API
+              cd /home/$SSH_USERNAME/area-backend
+              nohup php artisan serve --host=127.0.0.1 --port=8000 > laravel.log 2>&1 &
+              echo 'Laravel server started on port 8000'
+              
+              # Wait a moment for the server to start
+              sleep 3
+              
+              # Test Laravel server
+              curl -I http://127.0.0.1:8000 || echo 'Laravel server not responding'
               
               # Verify PHP-FPM is running
               sudo systemctl status php8.2-fpm --no-pager || echo 'PHP-FPM not running!'
