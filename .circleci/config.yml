@@ -82,7 +82,11 @@ jobs:
           command: cd frontend && npm run lint || echo "Linting issues found but continuing"
       - run:
           name: Build Frontend
-          command: cd frontend && npm run build
+          command: |
+            cd frontend
+            # Set up production environment variables
+            echo 'VITE_API_URL=http://144.24.201.112/api' > .env
+            npm run build
       - persist_to_workspace:
           root: frontend
           paths:
@@ -252,27 +256,44 @@ jobs:
           name: Configure Nginx
           command: |
             ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "
-              # Create basic nginx config for Laravel
+              # Create nginx config for React frontend + Laravel API
               sudo rm -f /etc/nginx/sites-available/area-app
               
               # Write nginx config line by line
               echo 'server {' | sudo tee /etc/nginx/sites-available/area-app
               echo '    listen 80 default_server;' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '    root /home/ubuntu/area-backend/public;' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '    index index.php index.html;' | sudo tee -a /etc/nginx/sites-available/area-app
               echo '    server_name _;' | sudo tee -a /etc/nginx/sites-available/area-app
               echo '' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '    # Serve React frontend at root' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '    root /home/ubuntu/area-frontend;' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '    index index.html;' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '    # Handle React routing (SPA)' | sudo tee -a /etc/nginx/sites-available/area-app
               echo '    location / {' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '        try_files \$uri \$uri/ /index.php?\$query_string;' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '        try_files \$uri \$uri/ /index.html;' | sudo tee -a /etc/nginx/sites-available/area-app
               echo '    }' | sudo tee -a /etc/nginx/sites-available/area-app
               echo '' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '    location ~ \.php\$ {' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '    # Laravel API backend' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '    location /api {' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '        alias /home/ubuntu/area-backend/public;' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '        try_files \$uri \$uri/ @laravel;' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '    }' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '    location @laravel {' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '        rewrite /api/?(.*) /index.php?\$1 last;' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '    }' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '    # PHP processing for Laravel API' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '    location ~ ^/api/(.+\.php)\$ {' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '        alias /home/ubuntu/area-backend/public;' | sudo tee -a /etc/nginx/sites-available/area-app
               echo '        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;' | sudo tee -a /etc/nginx/sites-available/area-app
               echo '        fastcgi_index index.php;' | sudo tee -a /etc/nginx/sites-available/area-app
-              echo '        fastcgi_param SCRIPT_FILENAME \$realpath_root\$fastcgi_script_name;' | sudo tee -a /etc/nginx/sites-available/area-app
               echo '        include fastcgi_params;' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '        fastcgi_param SCRIPT_FILENAME /home/ubuntu/area-backend/public/index.php;' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '        fastcgi_param PATH_INFO \$1;' | sudo tee -a /etc/nginx/sites-available/area-app
               echo '    }' | sudo tee -a /etc/nginx/sites-available/area-app
               echo '' | sudo tee -a /etc/nginx/sites-available/area-app
+              echo '    # Health check endpoint' | sudo tee -a /etc/nginx/sites-available/area-app
               echo '    location /health {' | sudo tee -a /etc/nginx/sites-available/area-app
               echo '        return 200 \"OK\";' | sudo tee -a /etc/nginx/sites-available/area-app
               echo '        add_header Content-Type text/plain;' | sudo tee -a /etc/nginx/sites-available/area-app
@@ -528,9 +549,9 @@ jobs:
               echo '=== CHECKING FILE OWNERSHIP ==='
               ls -la /home/$SSH_USERNAME/area-backend-prod/public/index.php
               
-              # Update production Nginx configuration to point to Laravel
-              sudo sed -i 's|/home/$SSH_USERNAME/area-frontend|/home/$SSH_USERNAME/area-frontend-prod|g' /etc/nginx/sites-available/area-app
-              sudo sed -i 's|/home/$SSH_USERNAME/area-backend/public|/home/$SSH_USERNAME/area-backend-prod/public|g' /etc/nginx/sites-available/area-app
+              # Update production Nginx configuration to point to production directories
+              sudo sed -i 's|/home/$SSH_USERNAME/area-frontend[^-]|/home/$SSH_USERNAME/area-frontend-prod|g' /etc/nginx/sites-available/area-app
+              sudo sed -i 's|/home/$SSH_USERNAME/area-backend[^-]|/home/$SSH_USERNAME/area-backend-prod|g' /etc/nginx/sites-available/area-app
               
               # Restart production services
               sudo systemctl restart php8.2-fpm
