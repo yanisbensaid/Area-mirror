@@ -1,21 +1,20 @@
 # 🌐 AREA - Laravel API + React Frontend
 
 [![CircleCI](https://circleci.com/gh/EthanBranchereau/area-cicd-mirror.svg?style=shield)](https://circleci.com/gh/EthanBranchereau/area-cicd-mirror)
-
-AREA est un projet **web** développé dans le cadre d'un projet étudiant avec une pipeline CI/CD complète.
+AREA is a **web** project developed as part of a student assignment, featuring a complete CI/CD pipeline.
 
 > **🔒 Security Note**: Repository history has been cleaned to remove accidentally committed SSH credentials (September 17, 2025).
 
 ## 🚀 CI/CD Workflow
 
-Ce projet utilise un **workflow staging → production** avec CircleCI :
+This project uses a **staging → production workflow** with CircleCI:
 
-- **Staging** : https://github.com/EthanBranchereau/area-cicd-mirror (Tests et validation)
-- **Production** : http://144.24.201.112/ (Déploiement automatique)
+- **Staging**: https://github.com/EthanBranchereau/area-cicd-mirror (Testing and validation)
+- **Production**: http://144.24.201.112/ (Automatic deployment)
 
-**👥 Pour l'équipe** : Voir [TEAM_WORKFLOW.md](./TEAM_WORKFLOW.md) pour le processus de développement.
+**👥 For the team**: See [TEAM_WORKFLOW.md](./TEAM_WORKFLOW.md) for the development process.
 
-> **🔄 MIGRATION PostgreSQL** : Le projet utilise maintenant PostgreSQL au lieu de SQLite. Voir la section [Database Setup](#database-setup) ci-dessous.
+> **🔄 PostgreSQL MIGRATION**: The project now uses PostgreSQL instead of SQLite. See the [Database Setup](#database-setup) section below.
 
 ## Project Structure
 
@@ -31,7 +30,7 @@ Ce projet utilise un **workflow staging → production** avec CircleCI :
 - Composer
 - Node.js 18+
 - npm
-- **PostgreSQL 15+** (nouveau)
+- **PostgreSQL 15+** (new)
 
 ### Two Servers ran
 
@@ -105,7 +104,7 @@ Deployments are managed automatically through CircleCI:
 
 - **Environment**: Server specified by environment variables
 - **Trigger**: Automatic on push to `main` branch
-  
+
 - **Deployment Process**:
   1. Backend deployment with optimized dependencies
   2. Database migrations and cache optimization
@@ -138,7 +137,7 @@ To test the CI/CD workflows:
    cp .env.example .env
    php artisan key:generate
    php artisan test
-   
+
    # Test frontend
    cd frontend
    echo 'VITE_API_URL=http://localhost:8000' > .env
@@ -150,14 +149,14 @@ To test the CI/CD workflows:
    - Create a pull request to the `main` branch
    - Check GitHub Actions tab to monitor workflow runs
    - Address any failures in the CI workflows
-   
+
 3. **Deployment Testing**
    - Go to Actions tab > Deploy workflow > "Run workflow"
    - Select "staging" environment
    - Monitor deployment progress
    - Check backend at http://[your-server-ip]:8000/api/test
    - Check frontend at http://[your-server-ip]
-   
+
 4. **Troubleshooting**
    - Check server logs: `cat ~/area-backend.log`
    - Verify Nginx configuration: `sudo nginx -t`
@@ -166,64 +165,63 @@ To test the CI/CD workflows:
 
 ---REA
 
-AREA est un projet **web** développé dans le cadre d’un projet étudiant.
-L’objectif est de créer une application moderne, robuste et efficace grâce à une stack technique complète.
+AREA is a **web** project developed as part of a student assignment.
+The goal is to create a modern, robust, and efficient application using a complete technical stack.
 
 ---
 
-## 🚀 Technologies utilisées
+## 🚀 Technologies Used
 
-- **Frontend :** [React](https://reactjs.org/)
-- **Backend :** [Laravel](https://laravel.com/)
-- **Liaison Front/Back :** [Inertia.js](https://inertiajs.com/)
-- **Base de données :** [PostgreSQL](https://www.postgresql.org/)
+- **Frontend:** [React](https://reactjs.org/)
+- **Backend:** [Laravel](https://laravel.com/)
+- **Frontend/Backend Bridge:** [Inertia.js](https://inertiajs.com/)
+- **Database:** [PostgreSQL](https://www.postgresql.org/)
 
-👉 Pour une analyse détaillée et comparative des choix techniques, consultez le fichier [**BENCHMARK.md**](./BENCHMARK.md).
-
----
-
-## 📌 Objectifs du projet
-
-- Développer une application web moderne et réactive.
-- Utiliser une architecture claire et maintenable.
-- Mettre en place une base de données robuste et scalable.
-- Favoriser la rapidité de développement avec une stack adaptée.
+👉 For a detailed analysis and comparison of technical choices, see [**BENCHMARK.md**](./BENCHMARK.md).
 
 ---
 
-## � CI/CD Pipeline
+## 📌 Project Objectives
 
-Le projet utilise CircleCI pour l'intégration continue et le déploiement continu.
-
-### Workflow CI/CD
-
-1. **Backend CI**: Teste et valide le code du backend Laravel
-   - Installation des dépendances PHP
-   - Préparation de l'environnement Laravel
-   - Exécution des migrations
-   - Exécution des tests
-
-2. **Frontend CI**: Teste et build le frontend React
-   - Installation des dépendances Node.js
-   - Exécution du linter ESLint
-   - Construction du build de production
-
-3. **Déploiement**: Déploie les applications backend et frontend
-   - Se déclenche uniquement sur la branche `main`
-   - Nécessite que les jobs CI backend et frontend réussissent
-   - Déploie le backend vers le serveur
-   - Déploie le frontend vers le serveur
-
-### Variables d'environnement CircleCI requises
-
-Pour que le déploiement fonctionne, les variables d'environnement suivantes doivent être configurées dans CircleCI:
-
-- `SSH_HOST`: Adresse IP ou nom d'hôte du serveur
-- `SSH_USERNAME`: Nom d'utilisateur SSH
-- `SSH_KEY`: Clé SSH privée pour l'authentification
-- `DB_PASSWORD`: Mot de passe de la base de données PostgreSQL
+- Develop a modern and responsive web application.
+- Use a clear and maintainable architecture.
+- Set up a robust and scalable database.
+- Enable rapid development with an adapted stack.
 
 ---
 
-## �📂 Structure du projet
+## 🚀 CI/CD Pipeline
 
+The project uses CircleCI for continuous integration and deployment.
+
+### CI/CD Workflow
+
+1. **Backend CI:** Tests and validates Laravel backend code
+   - Installs PHP dependencies
+   - Prepares the Laravel environment
+   - Runs migrations
+   - Executes tests
+
+2. **Frontend CI:** Tests and builds the React frontend
+   - Installs Node.js dependencies
+   - Runs ESLint linter
+   - Builds the production bundle
+
+3. **Deployment:** Deploys backend and frontend applications
+   - Triggered only on the `main` branch
+   - Requires successful backend and frontend CI jobs
+   - Deploys backend to the server
+   - Deploys frontend to the server
+
+### Required CircleCI Environment Variables
+
+To enable deployment, configure the following environment variables in CircleCI:
+
+- `SSH_HOST`: Server IP address or hostname
+- `SSH_USERNAME`: SSH username
+- `SSH_KEY`: SSH private key for authentication
+- `DB_PASSWORD`: PostgreSQL database password
+
+---
+
+## 📂 Project Structure
