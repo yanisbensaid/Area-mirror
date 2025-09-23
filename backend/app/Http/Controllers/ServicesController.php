@@ -182,4 +182,19 @@ class ServicesController extends Controller
 
         console.log("showReactions called successfully with id: ", id);
     }
+
+    /**
+     * Display the specified service by ID, including its actions and reactions.
+     */
+    public function destroy(Services $service): JsonResponse
+    {
+        if (!$service) {
+            return response()->json(['message' => 'Service not found'], 404);
+        }
+
+        // Delete the service
+        $service->delete();
+
+        return response()->json(['message' => 'Service and its associated actions and reactions deleted successfully'], 200);
+    }
 }
