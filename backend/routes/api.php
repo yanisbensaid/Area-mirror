@@ -23,6 +23,8 @@ Route::post('/services', [ServicesController::class, 'store']);
 Route::post('/services/{service}/actions', [ServicesController::class, 'storeActions']);
 Route::post('/services/{service}/reactions', [ServicesController::class, 'storeReactions']);
 
+Route::delete('/services/{service}', [ServicesController::class, 'destroy']);
+
 Route::get('/services', [ServicesController::class, 'index']);
 Route::get('/services/{service}', [ServicesController::class, 'show']);
 Route::get('/services/{service}/actions', [ServicesController::class, 'showActions']);
