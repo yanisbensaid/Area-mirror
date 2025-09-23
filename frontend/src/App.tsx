@@ -7,6 +7,7 @@ import ExplorePage from './pages/ExplorePage'
 import ServicePage from './pages/ServicePage'
 import ServicesPage from './pages/ServicesPage'
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage'
+import TermsOfServicePage from './pages/TermsOfServicePage'
 
 function App() {
   return (
@@ -51,6 +52,13 @@ function App() {
             <>
               <Navbar />
               <PrivacyPolicyPage />
+              <BottomBar />
+            </>
+          } />
+          <Route path="/terms-of-service" element={
+            <>
+              <Navbar />
+              <TermsOfServicePage />
               <BottomBar />
             </>
           } />
