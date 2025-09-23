@@ -96,13 +96,17 @@ Chosen palette from [Coolors](https://coolors.co/palettes/trending):
 
 Our palette :![palette](./img/color_palette.png)
 
-| Role            | HEX       | Usage                           |
-|-----------------|-----------|---------------------------------|
-| **Primary**     | `#2a9d8f` | Main buttons, links, highlights |
-| **Secondary**   | `#264653` | Headers, footers, backgrounds   |
-| **Accent**      | `#e9c46a` | Badges, highlights              |
-| **Error/Alert** | `#e76f51` | Error messages, warnings        |
-| **Neutral**     | `#f4a261` | Backgrounds, cards, hover states |
+| Role              | HEX       | Usage                           |
+|-------------------|-----------|---------------------------------|
+| **Light**         | `#F8F9FA` | Main backgrounds, cards         |
+| **Light Gray**    | `#E9ECEF` | Secondary backgrounds           |
+| **Border Light**  | `#DEE2E6` | Light borders, dividers         |
+| **Border**        | `#CED4DA` | Input borders, separators       |
+| **Muted**         | `#ADB5BD` | Muted text, placeholders        |
+| **Secondary**     | `#6C757D` | Secondary text, icons           |
+| **Dark Gray**     | `#495057` | Primary text, headings          |
+| **Darker**        | `#343A40` | Headers, navigation             |
+| **Dark**          | `#212529` | Main text, buttons              |
 
 👉 Ensure **contrast ratio ≥ 4.5:1** for accessibility
 
