@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AREA - Explorer les Services</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+            box-shadow: 0 0 30px rgba(0,0,0,0.3);
+        }
+
+        /* Header */
+        .header {
+            background: #1a1a2e;
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .logo {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #4facfe;
+            text-shadow: 0 0 10px rgba(79, 172, 254, 0.5);
+            text-decoration: none;
+        }
+
+        .nav {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            background: rgba(79, 172, 254, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .nav-link.active {
+            background: rgba(79, 172, 254, 0.3);
+        }
+
+        /* Page Header */
+        .page-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 3rem 2rem;
+        }
+
+        .page-header h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .page-header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Search and Filters */
+        .search-section {
+            background: #f8f9fa;
+            padding: 2rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .search-container {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .search-input {
+            flex: 1;
+            min-width: 300px;
+            padding: 1rem;
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+
+        .filter-select {
+            padding: 1rem;
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            background: white;
+            font-size: 1rem;
+            outline: none;
+            cursor: pointer;
+        }
+
+        /* Services Grid */
+        .services-section {
+            padding: 3rem 2rem;
+            background: white;
+        }
+
+        .category {
+            margin-bottom: 3rem;
+        }
+
+        .category-title {
+            font-size: 1.8rem;
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .service-card {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 15px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .service-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            border-color: #4facfe;
+        }
+
+        .service-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .service-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .service-info h3 {
+            font-size: 1.2rem;
+            color: #2c3e50;
+            margin-bottom: 0.3rem;
+        }
+
+        .service-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .status-available {
+            background: #28a745;
+        }
+
+        .status-coming-soon {
+            background: #ffc107;
+        }
+
+        .status-beta {
+            background: #6f42c1;
+        }
+
+        .service-description {
+            color: #6c757d;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+        }
+
+        .service-features {
+            margin-bottom: 1rem;
+        }
+
+        .feature-tag {
+            display: inline-block;
+            background: #e9ecef;
+            color: #495057;
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            margin: 0.2rem 0.2rem 0.2rem 0;
+        }
+
+        .service-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #4facfe, #00f2fe);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #6c757d;
+            border: 1px solid #e9ecef;
+        }
+
+        .btn-secondary:hover {
+            background: #f8f9fa;
+            color: #495057;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            background: #f8f9fa;
+            padding: 1.5rem 2rem;
+            border-top: 1px solid #e9ecef;
+            text-align: center;
+        }
+
+        .stats-container {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #4facfe;
+            margin-bottom: 0.3rem;
+        }
+
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .search-container {
+                flex-direction: column;
+            }
+            
+            .search-input {
+                min-width: 100%;
+            }
+            
+            .services-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-container {
+                gap: 1.5rem;
+            }
+            
+            .page-header h1 {
+                font-size: 2rem;
+            }
+        }
+
+        /* Custom Service Icons */
+        .gmail { background: linear-gradient(45deg, #ea4335, #fbbc05) !important; }
+        .slack { background: linear-gradient(45deg, #4a154b, #611f69) !important; }
+        .discord { background: linear-gradient(45deg, #5865f2, #7289da) !important; }
+        .github { background: linear-gradient(45deg, #24292e, #6cc644) !important; }
+        .spotify { background: linear-gradient(45deg, #1db954, #1ed760) !important; }
+        .weather { background: linear-gradient(45deg, #2196f3, #21cbf3) !important; }
+        .trello { background: linear-gradient(45deg, #0079bf, #026aa7) !important; }
+        .dropbox { background: linear-gradient(45deg, #0061ff, #0081ff) !important; }
+        .twitter { background: linear-gradient(45deg, #1da1f2, #0d8bd9) !important; }
+        .youtube { background: linear-gradient(45deg, #ff0000, #cc0000) !important; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <a href="index.html" class="logo">AREA</a>
+            <nav class="nav">
+                <a href="explore.html" class="nav-link active">Explore</a>
+                <a href="explore.html" class="nav-link">Services</a>
+                <a href="#" class="nav-link">À propos</a>
+                <a href="login.html" class="nav-link">Login</a>
+            </nav>
+        </header>
+
+        <!-- Page Header -->
+        <section class="page-header">
+            <h1>Explorer les Services</h1>
+            <p>Découvrez tous les services disponibles pour créer vos automatisations personnalisées</p>
+        </section>
+
+        <!-- Search and Filters -->
+        <section class="search-section">
+            <div class="search-container">
+                <input type="text" class="search-input" placeholder="Rechercher un service..." id="searchInput">
+                <select class="filter-select" id="categoryFilter">
+                    <option value="all">Toutes les catégories</option>
+                    <option value="communication">Communication</option>
+                    <option value="productivity">Productivité</option>
+                    <option value="social">Réseaux Sociaux</option>
+                    <option value="development">Développement</option>
+                    <option value="media">Média</option>
+                    <option value="utilities">Utilitaires</option>
+                </select>
+                <select class="filter-select" id="statusFilter">
+                    <option value="all">Tous les statuts</option>
+                    <option value="available">Disponible</option>
+                    <option value="coming-soon">Bientôt</option>
+                    <option value="beta">Bêta</option>
+                </select>
+            </div>
+        </section>
+
+        <!-- Services -->
+        <section class="services-section">
+            <!-- Communication -->
+            <div class="category" data-category="communication">
+                <h2 class="category-title">📧 Communication</h2>
+                <div class="services-grid">
+                    <div class="service-card" data-status="available">
+                        <div class="service-header">
+                            <div class="service-icon gmail">📧</div>
+                            <div class="service-info">
+                                <h3>Gmail</h3>
+                                <div class="service-status">
+                                    <span class="status-dot status-available"></span>
+                                    <span>Disponible</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="service-description">
+                            Automatisez vos emails avec Gmail. Recevez des notifications, transférez des messages, ou organisez votre boîte de réception.
+                        </p>
+                        <div class="service-features">
+                            <span class="feature-tag">Nouveau email</span>
+                            <span class="feature-tag">Envoyer email</span>
+                            <span class="feature-tag">Étiquettes</span>
+                        </div>
+                        <div class="service-actions">
+                            <button class="btn btn-primary" onclick="alert('Fonctionnalité de démonstration')">Connecter</button>
+                            <button class="btn btn-secondary" onclick="alert('Plus d\'informations sur Gmail')">En savoir plus</button>
+                        </div>
+                    </div>
+
+                    <div class="service-card" data-status="available">
+                        <div class="service-header">
+                            <div class="service-icon slack">💬</div>
+                            <div class="service-info">
+                                <h3>Slack</h3>
+                                <div class="service-status">
+                                    <span class="status-dot status-available"></span>
+                                    <span>Disponible</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="service-description">
+                            Intégrez Slack dans vos workflows. Envoyez des messages automatiques, créez des rappels, et restez connecté avec votre équipe.
+                        </p>
+                        <div class="service-features">
+                            <span class="feature-tag">Messages</span>
+                            <span class="feature-tag">Canaux</span>
+                            <span class="feature-tag">Statut</span>
+                        </div>
+                        <div class="service-actions">
+                            <button class="btn btn-primary" onclick="alert('Fonctionnalité de démonstration')">Connecter</button>
+                            <button class="btn btn-secondary" onclick="alert('Plus d\'informations sur Slack')">En savoir plus</button>
+                        </div>
+                    </div>
+
+                    <div class="service-card" data-status="available">
+                        <div class="service-header">
+                            <div class="service-icon discord">🎮</div>
+                            <div class="service-info">
+                                <h3>Discord</h3>
+                                <div class="service-status">
+                                    <span class="status-dot status-available"></span>
+                                    <span>Disponible</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="service-description">
+                            Automatisez Discord pour votre communauté gaming. Messages automatiques, modération, et notifications.
+                        </p>
+                        <div class="service-features">
+                            <span class="feature-tag">Messages</span>
+                            <span class="feature-tag">Serveurs</span>
+                            <span class="feature-tag">Webhooks</span>
+                        </div>
+                        <div class="service-actions">
+                            <button class="btn btn-primary" onclick="alert('Fonctionnalité de démonstration')">Connecter</button>
+                            <button class="btn btn-secondary" onclick="alert('Plus d\'informations sur Discord')">En savoir plus</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Development -->
+            <div class="category" data-category="development">
+                <h2 class="category-title">💻 Développement</h2>
+                <div class="services-grid">
+                    <div class="service-card" data-status="available">
+                        <div class="service-header">
+                            <div class="service-icon github">🐙</div>
+                            <div class="service-info">
+                                <h3>GitHub</h3>
+                                <div class="service-status">
+                                    <span class="status-dot status-available"></span>
+                                    <span>Disponible</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="service-description">
+                            Automatisez votre workflow de développement. Notifications de commits, création d'issues, synchronisation de repos.
+                        </p>
+                        <div class="service-features">
+                            <span class="feature-tag">Push</span>
+                            <span class="feature-tag">Issues</span>
+                            <span class="feature-tag">Pull Requests</span>
+                        </div>
+                        <div class="service-actions">
+                            <button class="btn btn-primary" onclick="alert('Fonctionnalité de démonstration')">Connecter</button>
+                            <button class="btn btn-secondary" onclick="alert('Plus d\'informations sur GitHub')">En savoir plus</button>
+                        </div>
+                    </div>
+
+                    <div class="service-card" data-status="coming-soon">
+                        <div class="service-header">
+                            <div class="service-icon">🦊</div>
+                            <div class="service-info">
+                                <h3>GitLab</h3>
+                                <div class="service-status">
+                                    <span class="status-dot status-coming-soon"></span>
+                                    <span>Bientôt disponible</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="service-description">
+                            Intégration GitLab pour vos projets. CI/CD automatisé, notifications de pipeline, gestion des merge requests.
+                        </p>
+                        <div class="service-features">
+                            <span class="feature-tag">CI/CD</span>
+                            <span class="feature-tag">Merge Requests</span>
+                            <span class="feature-tag">Pipelines</span>
+                        </div>
+                        <div class="service-actions">
+                            <button class="btn btn-primary" disabled>Bientôt disponible</button>
+                            <button class="btn btn-secondary" onclick="alert('Vous serez notifié quand GitLab sera disponible!')">Être notifié</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Productivity -->
+            <div class="category" data-category="productivity">
+                <h2 class="category-title">📋 Productivité</h2>
+                <div class="services-grid">
+                    <div class="service-card" data-status="available">
+                        <div class="service-header">
+                            <div class="service-icon trello">📋</div>
+                            <div class="service-info">
+                                <h3>Trello</h3>
+                                <div class="service-status">
+                                    <span class="status-dot status-available"></span>
+                                    <span>Disponible</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="service-description">
+                            Organisez vos projets avec Trello. Créez des cartes automatiquement, déplacez des tâches, synchronisez vos boards.
+                        </p>
+                        <div class="service-features">
+                            <span class="feature-tag">Cartes</span>
+                            <span class="feature-tag">Listes</span>
+                            <span class="feature-tag">Boards</span>
+                        </div>
+                        <div class="service-actions">
+                            <button class="btn btn-primary" onclick="alert('Fonctionnalité de démonstration')">Connecter</button>
+                            <button class="btn btn-secondary" onclick="alert('Plus d\\'informations sur Trello')">En savoir plus</button>
+                        </div>
+                    </div>
+
+                    <div class="service-card" data-status="beta">
+                        <div class="service-header">
+                            <div class="service-icon dropbox">📦</div>
+                            <div class="service-info">
+                                <h3>Dropbox</h3>
+                                <div class="service-status">
+                                    <span class="status-dot status-beta"></span>
+                                    <span>Version Bêta</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="service-description">
+                            Synchronisez et automatisez vos fichiers Dropbox. Sauvegarde automatique, partage de liens, organisation de dossiers.
+                        </p>
+                        <div class="service-features">
+                            <span class="feature-tag">Fichiers</span>
+                            <span class="feature-tag">Dossiers</span>
+                            <span class="feature-tag">Partage</span>
+                        </div>
+                        <div class="service-actions">
+                            <button class="btn btn-primary" onclick="alert('Version bêta - Fonctionnalités limitées')">Tester la bêta</button>
+                            <button class="btn btn-secondary" onclick="alert('Plus d\\'informations sur Dropbox')">En savoir plus</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Media -->
+            <div class="category" data-category="media">
+                <h2 class="category-title">🎵 Média & Divertissement</h2>
+                <div class="services-grid">
+                    <div class="service-card" data-status="available">
+                        <div class="service-header">
+                            <div class="service-icon spotify">🎵</div>
+                            <div class="service-info">
+                                <h3>Spotify</h3>
+                                <div class="service-status">
+                                    <span class="status-dot status-available"></span>
+                                    <span>Disponible</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="service-description">
+                            Contrôlez votre musique Spotify. Créez des playlists automatiques, partagez vos titres préférés, synchronisez votre écoute.
+                        </p>
+                        <div class="service-features">
+                            <span class="feature-tag">Playlists</span>
+                            <span class="feature-tag">Lectures</span>
+                            <span class="feature-tag">Favoris</span>
+                        </div>
+                        <div class="service-actions">
+                            <button class="btn btn-primary" onclick="alert('Fonctionnalité de démonstration')">Connecter</button>
+                            <button class="btn btn-secondary" onclick="alert('Plus d\\'informations sur Spotify')">En savoir plus</button>
+                        </div>
+                    </div>
+
+                    <div class="service-card" data-status="coming-soon">
+                        <div class="service-header">
+                            <div class="service-icon youtube">📺</div>
+                            <div class="service-info">
+                                <h3>YouTube</h3>
+                                <div class="service-status">
+                                    <span class="status-dot status-coming-soon"></span>
+                                    <span>Bientôt disponible</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="service-description">
+                            Automatisez votre chaîne YouTube. Notifications de nouvelles vidéos, gestion des commentaires, statistiques automatiques.
+                        </p>
+                        <div class="service-features">
+                            <span class="feature-tag">Vidéos</span>
+                            <span class="feature-tag">Commentaires</span>
+                            <span class="feature-tag">Analytics</span>
+                        </div>
+                        <div class="service-actions">
+                            <button class="btn btn-primary" disabled>Bientôt disponible</button>
+                            <button class="btn btn-secondary" onclick="alert('Vous serez notifié quand YouTube sera disponible!')">Être notifié</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Utilities -->
+            <div class="category" data-category="utilities">
+                <h2 class="category-title">🛠️ Utilitaires</h2>
+                <div class="services-grid">
+                    <div class="service-card" data-status="available">
+                        <div class="service-header">
+                            <div class="service-icon weather">🌤️</div>
+                            <div class="service-info">
+                                <h3>OpenWeather</h3>
+                                <div class="service-status">
+                                    <span class="status-dot status-available"></span>
+                                    <span>Disponible</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="service-description">
+                            Intégrez la météo dans vos automatisations. Alertes météo, prévisions quotidiennes, conditions en temps réel.
+                        </p>
+                        <div class="service-features">
+                            <span class="feature-tag">Prévisions</span>
+                            <span class="feature-tag">Alertes</span>
+                            <span class="feature-tag">Conditions</span>
+                        </div>
+                        <div class="service-actions">
+                            <button class="btn btn-primary" onclick="alert('Fonctionnalité de démonstration')">Connecter</button>
+                            <button class="btn btn-secondary" onclick="alert('Plus d\\'informations sur OpenWeather')">En savoir plus</button>
+                        </div>
+                    </div>
+
+                    <div class="service-card" data-status="available">
+                        <div class="service-header">
+                            <div class="service-icon">📅</div>
+                            <div class="service-info">
+                                <h3>Google Calendar</h3>
+                                <div class="service-status">
+                                    <span class="status-dot status-available"></span>
+                                    <span>Disponible</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="service-description">
+                            Synchronisez vos calendriers. Créez des événements automatiques, recevez des rappels, organisez votre planning.
+                        </p>
+                        <div class="service-features">
+                            <span class="feature-tag">Événements</span>
+                            <span class="feature-tag">Rappels</span>
+                            <span class="feature-tag">Invitations</span>
+                        </div>
+                        <div class="service-actions">
+                            <button class="btn btn-primary" onclick="alert('Fonctionnalité de démonstration')">Connecter</button>
+                            <button class="btn btn-secondary" onclick="alert('Plus d\\'informations sur Google Calendar')">En savoir plus</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats -->
+        <section class="stats-bar">
+            <div class="stats-container">
+                <div class="stat-item">
+                    <div class="stat-number">24</div>
+                    <div class="stat-label">Services disponibles</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">8</div>
+                    <div class="stat-label">Bientôt disponibles</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">1M+</div>
+                    <div class="stat-label">Automatisations créées</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">99.9%</div>
+                    <div class="stat-label">Fiabilité</div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // Search functionality
+        const searchInput = document.getElementById('searchInput');
+        const categoryFilter = document.getElementById('categoryFilter');
+        const statusFilter = document.getElementById('statusFilter');
+
+        function filterServices() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const selectedCategory = categoryFilter.value;
+            const selectedStatus = statusFilter.value;
+
+            // Filter categories
+            const categories = document.querySelectorAll('.category');
+            categories.forEach(category => {
+                const categoryName = category.dataset.category;
+                const shouldShowCategory = selectedCategory === 'all' || selectedCategory === categoryName;
+                
+                if (shouldShowCategory) {
+                    category.style.display = 'block';
+                } else {
+                    category.style.display = 'none';
+                    return;
+                }
+
+                // Filter services within category
+                const services = category.querySelectorAll('.service-card');
+                let visibleServices = 0;
+
+                services.forEach(service => {
+                    const serviceName = service.querySelector('h3').textContent.toLowerCase();
+                    const serviceDescription = service.querySelector('.service-description').textContent.toLowerCase();
+                    const serviceStatus = service.dataset.status;
+
+                    const matchesSearch = serviceName.includes(searchTerm) || serviceDescription.includes(searchTerm);
+                    const matchesStatus = selectedStatus === 'all' || selectedStatus === serviceStatus;
+
+                    if (matchesSearch && matchesStatus) {
+                        service.style.display = 'block';
+                        visibleServices++;
+                    } else {
+                        service.style.display = 'none';
+                    }
+                });
+
+                // Hide category if no visible services
+                if (visibleServices === 0) {
+                    category.style.display = 'none';
+                }
+            });
+        }
+
+        searchInput.addEventListener('input', filterServices);
+        categoryFilter.addEventListener('change', filterServices);
+        statusFilter.addEventListener('change', filterServices);
+
+        // Service card animations
+        document.addEventListener('DOMContentLoaded', function() {
+            const serviceCards = document.querySelectorAll('.service-card');
+            serviceCards.forEach((card, index) => {
+                card.style.animationDelay = `${index * 0.1}s`;
+                card.style.animation = 'fadeInUp 0.6s ease forwards';
+            });
+        });
+
+        // Add CSS for animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(30px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

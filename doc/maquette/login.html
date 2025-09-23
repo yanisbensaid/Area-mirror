@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AREA - Connexion</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            max-width: 900px;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            min-height: 600px;
+        }
+
+        .login-left {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 3rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-left::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: repeating-linear-gradient(
+                45deg,
+                rgba(255,255,255,0.1) 0px,
+                rgba(255,255,255,0.1) 1px,
+                transparent 1px,
+                transparent 20px
+            );
+            animation: float 20s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+        }
+
+        .login-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .logo {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .login-left h2 {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .login-left p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+
+        .features-list {
+            list-style: none;
+        }
+
+        .features-list li {
+            margin-bottom: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .features-list li::before {
+            content: '✓';
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .login-right {
+            padding: 3rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .login-header h1 {
+            font-size: 2rem;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .login-header p {
+            color: #6c757d;
+            font-size: 1rem;
+        }
+
+        .social-login {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .social-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.8rem;
+            padding: 1rem;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            background: white;
+            color: #495057;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .social-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-color: #4facfe;
+        }
+
+        .social-btn.google {
+            border-color: #ea4335;
+            color: #ea4335;
+        }
+
+        .social-btn.google:hover {
+            background: #ea4335;
+            color: white;
+        }
+
+        .social-btn.github {
+            border-color: #24292e;
+            color: #24292e;
+        }
+
+        .social-btn.github:hover {
+            background: #24292e;
+            color: white;
+        }
+
+        .social-btn.discord {
+            border-color: #5865f2;
+            color: #5865f2;
+        }
+
+        .social-btn.discord:hover {
+            background: #5865f2;
+            color: white;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 1.5rem 0;
+            color: #6c757d;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #e9ecef;
+        }
+
+        .divider span {
+            padding: 0 1rem;
+            background: white;
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-label {
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .form-input {
+            padding: 1rem;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .form-input:focus {
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+
+        .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 1rem 0;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #4facfe;
+        }
+
+        .forgot-password {
+            color: #4facfe;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .forgot-password:hover {
+            text-decoration: underline;
+        }
+
+        .login-btn {
+            background: linear-gradient(45deg, #4facfe, #00f2fe);
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+        }
+
+        .signup-link {
+            text-align: center;
+            margin-top: 1.5rem;
+            color: #6c757d;
+        }
+
+        .signup-link a {
+            color: #4facfe;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .signup-link a:hover {
+            text-decoration: underline;
+        }
+
+        .back-link {
+            position: absolute;
+            top: 2rem;
+            left: 2rem;
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            z-index: 2;
+        }
+
+        .back-link:hover {
+            color: white;
+            transform: translateX(-5px);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .login-container {
+                grid-template-columns: 1fr;
+                max-width: 400px;
+                margin: 1rem;
+            }
+
+            .login-left {
+                padding: 2rem;
+                text-align: center;
+            }
+
+            .login-right {
+                padding: 2rem;
+            }
+
+            .logo {
+                font-size: 2rem;
+            }
+
+            .login-left h2 {
+                font-size: 1.4rem;
+            }
+
+            .login-left p {
+                font-size: 1rem;
+            }
+
+            .back-link {
+                position: relative;
+                top: 0;
+                left: 0;
+                margin-bottom: 1rem;
+                justify-content: center;
+            }
+        }
+
+        /* Loading animation */
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .loading .login-btn {
+            background: #6c757d;
+            position: relative;
+        }
+
+        .loading .login-btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            border: 2px solid transparent;
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            transform: translate(-50%, -50%);
+        }
+
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        /* Success message */
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid #c3e6cb;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid #f5c6cb;
+            margin-bottom: 1rem;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-left">
+            <a href="index.html" class="back-link">
+                ← Retour à l'accueil
+            </a>
+            <div class="login-content">
+                <div class="logo">AREA</div>
+                <h2>Bienvenue sur AREA</h2>
+                <p>Automatisez vos tâches quotidiennes et connectez tous vos services préférés en quelques clics.</p>
+                
+                <ul class="features-list">
+                    <li>Plus de 100 services intégrés</li>
+                    <li>Automatisations illimitées</li>
+                    <li>Interface intuitive et moderne</li>
+                    <li>Sécurité et confidentialité garanties</li>
+                    <li>Support 24/7</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="login-right">
+            <div class="login-header">
+                <h1>Connexion</h1>
+                <p>Connectez-vous à votre compte AREA</p>
+            </div>
+
+            <div id="messages">
+                <div class="success-message" id="successMessage">
+                    Connexion réussie ! Redirection en cours...
+                </div>
+                <div class="error-message" id="errorMessage">
+                    Email ou mot de passe incorrect. Veuillez réessayer.
+                </div>
+            </div>
+
+            <div class="social-login">
+                <button class="social-btn google" onclick="socialLogin('google')">
+                    <span>🔑</span>
+                    Continuer avec Google
+                </button>
+                <button class="social-btn github" onclick="socialLogin('github')">
+                    <span>🐙</span>
+                    Continuer avec GitHub
+                </button>
+                <button class="social-btn discord" onclick="socialLogin('discord')">
+                    <span>🎮</span>
+                    Continuer avec Discord
+                </button>
+            </div>
+
+            <div class="divider">
+                <span>ou</span>
+            </div>
+
+            <form class="login-form" id="loginForm" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label class="form-label" for="email">Adresse email</label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        class="form-input" 
+                        placeholder="votre@email.com"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="password">Mot de passe</label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        class="form-input" 
+                        placeholder="••••••••"
+                        required
+                    >
+                </div>
+
+                <div class="form-options">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="remember" name="remember">
+                        <label for="remember">Se souvenir de moi</label>
+                    </div>
+                    <a href="#" class="forgot-password">Mot de passe oublié ?</a>
+                </div>
+
+                <button type="submit" class="login-btn">
+                    Se connecter
+                </button>
+            </form>
+
+            <div class="signup-link">
+                Pas encore de compte ? <a href="#" onclick="showSignupMessage()">Créer un compte</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function handleLogin(event) {
+            event.preventDefault();
+            
+            const form = document.getElementById('loginForm');
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            // Simulate loading
+            form.classList.add('loading');
+            hideMessages();
+            
+            // Simulate API call
+            setTimeout(() => {
+                form.classList.remove('loading');
+                
+                // Demo credentials
+                if (email === 'demo@area.com' && password === 'demo123') {
+                    showSuccess();
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 2000);
+                } else {
+                    showError();
+                }
+            }, 1500);
+        }
+
+        function socialLogin(provider) {
+            // Simulate social login
+            console.log('Tentative de connexion avec ' + provider);
+            
+            // Add loading state
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span>⏳</span> Connexion...';
+            btn.style.opacity = '0.7';
+            btn.style.pointerEvents = 'none';
+            
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.style.opacity = '1';
+                btn.style.pointerEvents = 'auto';
+                
+                showSuccess();
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 2000);
+            }, 2000);
+        }
+
+        function showSuccess() {
+            document.getElementById('successMessage').style.display = 'block';
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        function showError() {
+            document.getElementById('errorMessage').style.display = 'block';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        function hideMessages() {
+            document.getElementById('successMessage').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        function showSignupMessage() {
+            alert('La création de compte sera bientôt disponible ! 🚀\n\nEn attendant, vous pouvez utiliser les identifiants de démonstration :\nEmail: demo@area.com\nMot de passe: demo123');
+        }
+
+        // Add some interactive effects
+        document.addEventListener('DOMContentLoaded', function() {
+            // Form validation feedback
+            const inputs = document.querySelectorAll('.form-input');
+            inputs.forEach(input => {
+                input.addEventListener('blur', function() {
+                    if (this.value && this.checkValidity()) {
+                        this.style.borderColor = '#28a745';
+                    } else if (this.value) {
+                        this.style.borderColor = '#dc3545';
+                    } else {
+                        this.style.borderColor = '#e9ecef';
+                    }
+                });
+                
+                input.addEventListener('focus', function() {
+                    this.style.borderColor = '#4facfe';
+                });
+            });
+
+            // Show demo credentials hint
+            setTimeout(() => {
+                const hint = document.createElement('div');
+                hint.style.cssText = `
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    background: #4facfe;
+                    color: white;
+                    padding: 1rem;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                    font-size: 0.9rem;
+                    max-width: 250px;
+                    z-index: 1000;
+                    animation: slideIn 0.5s ease;
+                `;
+                hint.innerHTML = `
+                    <strong>💡 Astuce</strong><br>
+                    Identifiants de démo :<br>
+                    <code>demo@area.com</code><br>
+                    <code>demo123</code>
+                `;
+                
+                document.body.appendChild(hint);
+                
+                // Auto-hide after 10 seconds
+                setTimeout(() => {
+                    hint.style.animation = 'slideOut 0.5s ease';
+                    setTimeout(() => hint.remove(), 500);
+                }, 10000);
+                
+                // Hide on click
+                hint.addEventListener('click', () => {
+                    hint.style.animation = 'slideOut 0.5s ease';
+                    setTimeout(() => hint.remove(), 500);
+                });
+            }, 2000);
+        });
+
+        // Add CSS animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            
+            @keyframes slideOut {
+                from {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

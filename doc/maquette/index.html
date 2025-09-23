@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AREA - Automatisez votre quotidien</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+            box-shadow: 0 0 30px rgba(0,0,0,0.3);
+        }
+
+        /* Header */
+        .header {
+            background: #1a1a2e;
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .logo {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #4facfe;
+            text-shadow: 0 0 10px rgba(79, 172, 254, 0.5);
+        }
+
+        .nav {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            background: rgba(79, 172, 254, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .login-btn {
+            background: linear-gradient(45deg, #4facfe, #00f2fe);
+            color: white !important;
+            padding: 0.8rem 1.5rem !important;
+            border-radius: 25px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(79, 172, 254, 0.4);
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 4rem 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            opacity: 0.1;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .hero p {
+            font-size: 1.3rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            color: white;
+            padding: 1rem 2rem;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.3);
+            margin: 0 0.5rem;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+        }
+
+        .cta-secondary {
+            background: transparent;
+            border: 2px solid white;
+            color: white;
+        }
+
+        .cta-secondary:hover {
+            background: white;
+            color: #667eea;
+        }
+
+        /* Services Section */
+        .services {
+            padding: 4rem 2rem;
+            background: #f8f9fa;
+        }
+
+        .services h2 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+            color: #2c3e50;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .service-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .service-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+
+        .service-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border-radius: 50%;
+            margin: 0 auto 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .service-name {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .explore-btn {
+            display: block;
+            background: linear-gradient(45deg, #4facfe, #00f2fe);
+            color: white;
+            padding: 1rem 2rem;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: bold;
+            text-align: center;
+            max-width: 200px;
+            margin: 2rem auto 0;
+            transition: all 0.3s ease;
+        }
+
+        .explore-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(79, 172, 254, 0.3);
+        }
+
+        /* How it works */
+        .how-it-works {
+            padding: 4rem 2rem;
+            background: white;
+        }
+
+        .how-it-works h2 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+            color: #2c3e50;
+        }
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .step {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .step-number {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 0 auto 1rem;
+        }
+
+        .step h3 {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            color: #2c3e50;
+        }
+
+        .step p {
+            color: #6c757d;
+            line-height: 1.6;
+        }
+
+        /* Dashboard Preview */
+        .dashboard-preview {
+            padding: 4rem 2rem;
+            background: #f8f9fa;
+        }
+
+        .dashboard-preview h2 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+            color: #2c3e50;
+        }
+
+        .dashboard-mockup {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .dashboard-header {
+            background: #1a1a2e;
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .dashboard-body {
+            padding: 2rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .applet-list {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 1.5rem;
+        }
+
+        .applet-item {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .status-active {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .status-error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        /* Footer */
+        .footer {
+            background: #1a1a2e;
+            color: white;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+            
+            .nav {
+                gap: 1rem;
+            }
+            
+            .services-grid {
+                grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero, .services, .how-it-works {
+            animation: fadeInUp 0.8s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">AREA</div>
+            <nav class="nav">
+                <a href="explore.html" class="nav-link">Explore</a>
+                <a href="explore.html" class="nav-link">Services</a>
+                <a href="#" class="nav-link">À propos</a>
+                <a href="login.html" class="nav-link login-btn">Login</a>
+            </nav>
+        </header>
+
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="hero-content">
+                <h1>AREA</h1>
+                <p>Automatisez vos tâches quotidiennes en connectant vos applications favorites. Créez des applets personnalisés sans programmation.</p>
+                <a href="explore.html" class="cta-button">Commencer gratuitement</a>
+                <a href="#how-it-works" class="cta-button cta-secondary">En savoir plus</a>
+            </div>
+        </section>
+
+        <!-- Services Section -->
+        <section class="services">
+            <h2>Services Disponibles</h2>
+            <div class="services-grid">
+                <div class="service-card" onclick="location.href='explore.html'">
+                    <div class="service-icon">📧</div>
+                    <div class="service-name">Gmail</div>
+                    <div class="service-desc">Email</div>
+                </div>
+                <div class="service-card" onclick="location.href='explore.html'">
+                    <div class="service-icon">💬</div>
+                    <div class="service-name">Slack</div>
+                    <div class="service-desc">Chat</div>
+                </div>
+                <div class="service-card" onclick="location.href='explore.html'">
+                    <div class="service-icon">🎮</div>
+                    <div class="service-name">Discord</div>
+                    <div class="service-desc">Gaming</div>
+                </div>
+                <div class="service-card" onclick="location.href='explore.html'">
+                    <div class="service-icon">🐙</div>
+                    <div class="service-name">GitHub</div>
+                    <div class="service-desc">Code</div>
+                </div>
+                <div class="service-card" onclick="location.href='explore.html'">
+                    <div class="service-icon">🎵</div>
+                    <div class="service-name">Spotify</div>
+                    <div class="service-desc">Musique</div>
+                </div>
+                <div class="service-card" onclick="location.href='explore.html'">
+                    <div class="service-icon">🌤️</div>
+                    <div class="service-name">Weather</div>
+                    <div class="service-desc">Météo</div>
+                </div>
+            </div>
+            <a href="explore.html" class="explore-btn">Explore all</a>
+        </section>
+
+        <!-- How it works -->
+        <section class="how-it-works" id="how-it-works">
+            <h2>Comment ça marche ?</h2>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h3>Choisir un déclencheur</h3>
+                    <p>Sélectionnez l'événement qui activera votre applet (nouveau email, message Slack, etc.)</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h3>Définir une action</h3>
+                    <p>Choisissez ce qui se passera quand le déclencheur s'active (envoyer notification, sauvegarder fichier, etc.)</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h3>Activer l'applet</h3>
+                    <p>Votre automatisation fonctionne ! Elle s'exécute automatiquement selon vos paramètres.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dashboard Preview -->
+        <section class="dashboard-preview">
+            <h2>Tableau de bord</h2>
+            <div class="dashboard-mockup">
+                <div class="dashboard-header">
+                    <div class="logo">AREA Dashboard</div>
+                    <div>👤 Profil</div>
+                </div>
+                <div class="dashboard-body">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number">12</div>
+                            <div>Applets actifs</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">247</div>
+                            <div>Exécutions</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">99%</div>
+                            <div>Fiabilité</div>
+                        </div>
+                    </div>
+                    <div class="applet-list">
+                        <h3>Mes Applets</h3>
+                        <div class="applet-item">
+                            <span>📧 → 💬 Gmail vers Slack</span>
+                            <span class="status-active">Actif</span>
+                        </div>
+                        <div class="applet-item">
+                            <span>🐙 → 📧 GitHub vers Email</span>
+                            <span class="status-active">Actif</span>
+                        </div>
+                        <div class="applet-item">
+                            <span>🌤️ → 📱 Météo vers SMS</span>
+                            <span class="status-error">Erreur</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; 2025 AREA - Automatisez votre quotidien</p>
+        </footer>
+    </div>
+
+    <script>
+        // Animations simples
+        document.addEventListener('DOMContentLoaded', function() {
+            const serviceCards = document.querySelectorAll('.service-card');
+            serviceCards.forEach((card, index) => {
+                card.style.animationDelay = `${index * 0.1}s`;
+                card.style.animation = 'fadeInUp 0.6s ease forwards';
+            });
+
+            // Effet hover sur les boutons
+            const buttons = document.querySelectorAll('.cta-button, .login-btn, .explore-btn');
+            buttons.forEach(button => {
+                button.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-3px) scale(1.05)';
+                });
+                
+                button.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+
+            // Smooth scroll pour le lien "En savoir plus"
+            document.querySelector('a[href="#how-it-works"]').addEventListener('click', function(e) {
+                e.preventDefault();
+                document.getElementById('how-it-works').scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+    </script>
+</body>
+</html>
