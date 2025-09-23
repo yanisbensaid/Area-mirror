@@ -147,58 +147,6 @@ export default function HomePage() {
             </svg>
           </div>
         </div>
-
-          {/* Services Logos Section */}
-          <div className="mt-16 pt-12 border-t border-gray-200">
-            <h3 
-              className="text-2xl font-medium text-gray-900 text-center mb-8"
-              style={{ fontFamily: 'Inter, sans-serif' }}
-            >
-              Available Services
-            </h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-              {services.map((service) => (
-                <Link
-                  key={service.name}
-                  to={service.path}
-                  className="group flex flex-col items-center p-4 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 cursor-pointer"
-                >
-                  <div className="w-12 h-12 mb-3 transition-transform duration-200 group-hover:scale-110">
-                    <img 
-                      src={service.logo} 
-                      alt={`${service.name} logo`}
-                      className="w-full h-full object-contain"
-                    />
-                  </div>
-                  <span 
-                    className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors duration-200"
-                    style={{ fontFamily: 'Inter, sans-serif' }}
-                  >
-                    {service.name}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Scroll Indicator Arrow */}
-        <div className="flex justify-center mt-12">
-          <div className="animate-bounce">
-            <svg 
-              className="w-8 h-8 text-gray-400 hover:text-gray-600 transition-colors duration-200" 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M19 14l-7 7m0 0l-7-7" 
-              />
-            </svg>
-          </div>
         </div>
       </div>
 
