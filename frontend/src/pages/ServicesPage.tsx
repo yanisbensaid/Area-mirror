@@ -117,18 +117,18 @@ export default function ServicesPage() {
   })
 
   return (
-    <main className="pt-20 px-4 bg-gray-50 min-h-screen">
-      <div className="max-w-6xl mx-auto py-12">
+    <main className="pt-16 md:pt-20 px-4 bg-gray-50 min-h-screen">
+      <div className="max-w-6xl mx-auto py-6 md:py-12">
         {/* Header */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-8 md:mb-12">
           <h1 
-            className="text-4xl sm:text-5xl font-semibold text-gray-900 mb-4"
+            className="text-3xl sm:text-4xl md:text-5xl font-semibold text-gray-900 mb-3 md:mb-4"
             style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.2' }}
           >
             All Services
           </h1>
           <p 
-            className="text-xl text-gray-600 max-w-2xl mx-auto"
+            className="text-lg sm:text-xl md:text-xl text-gray-600 max-w-2xl mx-auto px-2"
             style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.5' }}
           >
             Discover all available services and apps you can connect with AREA to create powerful automations
@@ -136,37 +136,37 @@ export default function ServicesPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm text-center">
-            <div className="text-2xl font-semibold text-gray-900 mb-1">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
+                    <div className="bg-white rounded-lg p-3 md:p-4 border border-gray-200 shadow-sm text-center">
+            <div className="text-xl md:text-2xl font-semibold text-gray-900 mb-1">
               {services.length}
             </div>
-            <div className="text-sm text-gray-600">Total Services</div>
+            <div className="text-xs md:text-sm text-gray-600">Total Services</div>
           </div>
-          <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm text-center">
-            <div className="text-2xl font-semibold text-gray-900 mb-1">
+          <div className="bg-white rounded-lg p-3 md:p-4 border border-gray-200 shadow-sm text-center">
+            <div className="text-xl md:text-2xl font-semibold text-gray-900 mb-1">
               {services.filter(s => s.isPopular).length}
             </div>
-            <div className="text-sm text-gray-600">Popular Services</div>
+            <div className="text-xs md:text-sm text-gray-600">Popular Services</div>
           </div>
-          <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm text-center">
-            <div className="text-2xl font-semibold text-gray-900 mb-1">
+          <div className="bg-white rounded-lg p-3 md:p-4 border border-gray-200 shadow-sm text-center">
+            <div className="text-xl md:text-2xl font-semibold text-gray-900 mb-1">
               {categories.length - 1}
             </div>
-            <div className="text-sm text-gray-600">Categories</div>
+            <div className="text-xs md:text-sm text-gray-600">Categories</div>
           </div>
-          <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm text-center">
-            <div className="text-2xl font-semibold text-gray-900 mb-1">
+          <div className="bg-white rounded-lg p-3 md:p-4 border border-gray-200 shadow-sm text-center">
+            <div className="text-xl md:text-2xl font-semibold text-gray-900 mb-1">
               {services.reduce((sum, service) => sum + service.automationCount, 0)}
             </div>
-            <div className="text-sm text-gray-600">Total Automations</div>
+            <div className="text-xs md:text-sm text-gray-600">Automations</div>
           </div>
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm mb-8">
+        <div className="bg-white rounded-xl p-4 md:p-6 border border-gray-200 shadow-sm mb-6 md:mb-8">
           {/* Search Bar */}
-          <div className="mb-6">
+          <div className="mb-4 md:mb-6">
             <label 
               htmlFor="search" 
               className="block text-sm font-medium text-gray-700 mb-2"
@@ -176,7 +176,7 @@ export default function ServicesPage() {
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="h-4 w-4 md:h-5 md:w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
@@ -185,7 +185,7 @@ export default function ServicesPage() {
                 id="search"
                 value={searchQuery}
                 onChange={handleSearchChange}
-                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all duration-200"
+                className="block w-full pl-10 pr-3 py-2 md:py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all duration-200 text-sm md:text-base"
                 placeholder="Search by name, description, or tags..."
                 style={{ fontFamily: 'Inter, sans-serif' }}
               />
@@ -205,7 +205,7 @@ export default function ServicesPage() {
                 <button
                   key={category}
                   onClick={() => handleCategoryChange(category)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  className={`px-3 py-1 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all duration-200 ${
                     selectedCategory === category
                       ? 'bg-gray-900 text-white shadow-sm'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
@@ -284,16 +284,16 @@ export default function ServicesPage() {
         </div>
 
         {/* Services Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {filteredServices.map((service) => (
             <Link
               key={service.id}
               to={`/services/${service.id}`}
-              className="group bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 hover:transform hover:scale-105"
+              className="group bg-white rounded-xl p-4 md:p-6 border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 hover:transform hover:scale-105"
             >
               {/* Header with logo and popular badge */}
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-16 h-16 flex-shrink-0">
+              <div className="flex items-start justify-between mb-3 md:mb-4">
+                <div className="w-12 h-12 md:w-16 md:h-16 flex-shrink-0">
                   <img 
                     src={service.logo} 
                     alt={`${service.name} logo`}
@@ -308,22 +308,22 @@ export default function ServicesPage() {
               </div>
 
               {/* Content */}
-              <div className="mb-4">
+              <div className="mb-3 md:mb-4">
                 <h3 
-                  className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-gray-700 transition-colors duration-300"
+                  className="text-lg md:text-xl font-semibold text-gray-900 mb-2 group-hover:text-gray-700 transition-colors duration-300"
                   style={{ fontFamily: 'Inter, sans-serif' }}
                 >
                   {service.name}
                 </h3>
                 <p 
-                  className="text-gray-600 text-sm leading-relaxed mb-3"
+                  className="text-gray-600 text-sm md:text-base leading-relaxed mb-3"
                   style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.4' }}
                 >
                   {service.description}
                 </p>
 
                 {/* Category and automation count */}
-                <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center justify-between text-xs md:text-sm">
                   <span className="text-gray-500" style={{ fontFamily: 'Inter, sans-serif' }}>
                     {service.category}
                   </span>
@@ -334,7 +334,7 @@ export default function ServicesPage() {
               </div>
 
               {/* Tags */}
-              <div className="flex flex-wrap gap-2 mb-4">
+              <div className="flex flex-wrap gap-2 mb-3 md:mb-4">
                 {service.tags.slice(0, 3).map((tag) => (
                   <span 
                     key={tag}
@@ -347,7 +347,7 @@ export default function ServicesPage() {
               </div>
 
               {/* Action button */}
-              <div className="pt-4 border-t border-gray-200">
+              <div className="pt-3 md:pt-4 border-t border-gray-200">
                 <div className="flex items-center text-gray-600 group-hover:text-gray-800 transition-colors duration-200">
                   <span 
                     className="text-sm font-medium"

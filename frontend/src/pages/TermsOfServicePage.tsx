@@ -4,29 +4,29 @@ export default function TermsOfServicePage() {
   const lastUpdated = "September 23, 2025"
 
   return (
-    <main className="pt-20 px-4 bg-gray-50 min-h-screen">
-      <div className="max-w-4xl mx-auto py-12">
+    <main className="pt-16 md:pt-20 px-4 bg-gray-50 min-h-screen">
+      <div className="max-w-4xl mx-auto py-6 md:py-12">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6 md:mb-8">
           <Link 
             to="/" 
-            className="inline-flex items-center text-gray-600 hover:text-gray-800 transition-colors duration-200 mb-6"
+            className="inline-flex items-center text-gray-600 hover:text-gray-800 transition-colors duration-200 mb-4 md:mb-6"
             style={{ fontFamily: 'Inter, sans-serif' }}
           >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 md:w-5 md:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             Back to Home
           </Link>
           
           <h1 
-            className="text-4xl sm:text-5xl font-semibold text-gray-900 mb-4"
+            className="text-3xl sm:text-4xl md:text-5xl font-semibold text-gray-900 mb-3 md:mb-4"
             style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.2' }}
           >
             Terms of Service
           </h1>
           <p 
-            className="text-lg text-gray-600"
+            className="text-base md:text-lg text-gray-600"
             style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.5' }}
           >
             Last updated: {lastUpdated}
@@ -34,25 +34,25 @@ export default function TermsOfServicePage() {
         </div>
 
         {/* Content */}
-        <div className="bg-white rounded-xl p-8 border border-gray-200 shadow-sm">
+        <div className="bg-white rounded-xl p-4 md:p-8 border border-gray-200 shadow-sm">
           <div className="prose prose-gray max-w-none">
             
             {/* Introduction */}
-            <section className="mb-8">
+            <section className="mb-6 md:mb-8">
               <h2 
-                className="text-2xl font-semibold text-gray-900 mb-4"
+                className="text-xl md:text-2xl font-semibold text-gray-900 mb-3 md:mb-4"
                 style={{ fontFamily: 'Inter, sans-serif' }}
               >
                 Agreement to Terms
               </h2>
               <p 
-                className="text-gray-700 leading-relaxed mb-4"
+                className="text-gray-700 leading-relaxed mb-3 md:mb-4 text-sm md:text-base"
                 style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.6' }}
               >
                 Welcome to AREA! These Terms of Service ("Terms") govern your use of our automation platform and services operated by AREA Team ("we," "our," or "us"). By accessing or using our service, you agree to be bound by these Terms.
               </p>
               <p 
-                className="text-gray-700 leading-relaxed"
+                className="text-gray-700 leading-relaxed text-sm md:text-base"
                 style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.6' }}
               >
                 If you disagree with any part of these terms, then you may not access the service.
@@ -60,39 +60,39 @@ export default function TermsOfServicePage() {
             </section>
 
             {/* Description of Service */}
-            <section className="mb-8">
+            <section className="mb-6 md:mb-8">
               <h2 
-                className="text-2xl font-semibold text-gray-900 mb-4"
+                className="text-xl md:text-2xl font-semibold text-gray-900 mb-3 md:mb-4"
                 style={{ fontFamily: 'Inter, sans-serif' }}
               >
                 Description of Service
               </h2>
               <p 
-                className="text-gray-700 leading-relaxed mb-4"
+                className="text-gray-700 leading-relaxed mb-3 md:mb-4 text-sm md:text-base"
                 style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.6' }}
               >
                 AREA is an automation platform that allows users to create workflows by connecting different applications and services. Our service enables you to:
               </p>
-              <ul className="list-disc pl-6 mb-4 space-y-2">
-                <li className="text-gray-700" style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.6' }}>
+              <ul className="list-disc pl-6 mb-3 md:mb-4 space-y-1 md:space-y-2">
+                <li className="text-gray-700 text-sm md:text-base" style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.6' }}>
                   Connect and integrate various third-party applications and services
                 </li>
-                <li className="text-gray-700" style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.6' }}>
+                <li className="text-gray-700 text-sm md:text-base" style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.6' }}>
                   Create automated workflows and triggers between connected services
                 </li>
-                <li className="text-gray-700" style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.6' }}>
+                <li className="text-gray-700 text-sm md:text-base" style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.6' }}>
                   Monitor and manage your automation workflows
                 </li>
-                <li className="text-gray-700" style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.6' }}>
+                <li className="text-gray-700 text-sm md:text-base" style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.6' }}>
                   Access analytics and performance metrics for your automations
                 </li>
               </ul>
             </section>
 
             {/* User Accounts */}
-            <section className="mb-8">
+            <section className="mb-6 md:mb-8">
               <h2 
-                className="text-2xl font-semibold text-gray-900 mb-4"
+                className="text-xl md:text-2xl font-semibold text-gray-900 mb-3 md:mb-4"
                 style={{ fontFamily: 'Inter, sans-serif' }}
               >
                 User Accounts
