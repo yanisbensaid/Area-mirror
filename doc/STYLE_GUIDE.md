@@ -111,12 +111,19 @@ Our palette :![palette](./img/color_palette.png)
 👉 Ensure **contrast ratio ≥ 4.5:1** for accessibility
 
 ### 5.2 Typography
-- Primary font: **Inter** (fallback: sans-serif)
-- Sizes:
-  - H1 → **32px**
-  - H2 → **24px**
-  - Body → **16px**
-  - Small → **14px**
+- **Primary font**: **Inter** (fallback: sans-serif)
+- **Font weights**: Regular (400), Medium (500), Semi-bold (600), Bold (700)
+
+#### Font Sizes & Hierarchy
+| Element    | Size   | Weight    | Line Height | Usage                        |
+|------------|--------|-----------|-------------|------------------------------|
+| **H1**     | 32px   | Semi-bold | 1.2         | Page titles, main headings   |
+| **H2**     | 24px   | Semi-bold | 1.3         | Section headings             |
+| **H3**     | 20px   | Medium    | 1.3         | Subsection headings          |
+| **H4**     | 18px   | Medium    | 1.4         | Component titles             |
+| **Body**   | 16px   | Regular   | 1.5         | Main content, paragraphs     |
+| **Small**  | 14px   | Regular   | 1.4         | Secondary text, descriptions |
+| **Caption**| 12px   | Regular   | 1.3         | Labels, captions, metadata   |
 
 ### 5.3 Spacing & Layout
 - Use **8px spacing system** (multiples of 8)
