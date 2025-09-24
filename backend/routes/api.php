@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ApiTestController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ServicesController;
+use App\Http\Controllers\MailController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -32,6 +33,9 @@ Route::get('/services/{service}', [ServicesController::class, 'show']);
 Route::get('/services/{service}/actions', [ServicesController::class, 'showActions']);
 Route::get('/services/{service}/reactions', [ServicesController::class, 'showReactions']);
 
+// Mail endpoints
+Route::post('/mail/test', [MailController::class, 'testEmail']);
+
 // Example protected route
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -39,4 +43,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/protected', function () {
         return response()->json(['message' => 'This is a protected route!']);
     });
+
+    // Protected mail endpoints
+    Route::post('/mail/welcome', [MailController::class, 'sendWelcomeEmail']);
+    Route::post('/mail/notification', [MailController::class, 'sendNotificationEmail']);
+    Route::post('/mail/bulk', [MailController::class, 'sendBulkEmail']);
 });
