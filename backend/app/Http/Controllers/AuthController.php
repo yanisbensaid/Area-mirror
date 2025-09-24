@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Mail\WelcomeMail;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -17,7 +19,7 @@ class AuthController extends Controller
             'email' => 'required|string|email|max:255|unique:users,email',
             'password' => 'required|string|min:8|max:255',
         ]);
-        
+
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
@@ -25,6 +27,14 @@ class AuthController extends Controller
         ]);
 
         $token = $user->createToken('auth-token')->plainTextToken;
+
+        // Send welcome email (optional - can be disabled in production if needed)
+        try {
+            Mail::to($user->email)->send(new WelcomeMail($user));
+        } catch (\Exception $e) {
+            // Log the error but don't fail the registration
+            \Log::warning('Failed to send welcome email to ' . $user->email . ': ' . $e->getMessage());
+        }
 
         return response()->json([
             'token' => $token,
