@@ -184,7 +184,7 @@ class ServicesController extends Controller
     }
 
     /**
-     * Display the specified service by ID, including its actions and reactions.
+     * Destroy the specified service by ID, including its actions and reactions.
      */
     public function destroy(Services $service): JsonResponse
     {
@@ -196,5 +196,45 @@ class ServicesController extends Controller
         $service->delete();
 
         return response()->json(['message' => 'Service and its associated actions and reactions deleted successfully'], 200);
+    }
+
+    /**
+     * Destroy a specified action of the specified service by ID.
+     */
+    public function destroyAction(Services $service, $actionId): JsonResponse
+    {
+        if (!$service) {
+            return response()->json(['message' => 'Service not found'], 404);
+        }
+
+        $action = $service->actions()->find($actionId);
+
+        if (!$action) {
+            return response()->json(['message' => 'Action not found'], 404);
+        }
+
+        $action->delete();
+
+        return response()->json(['message' => 'Action deleted successfully'], 200);
+    }
+
+    /**
+     * Destroy a specified reaction of the specified service by ID.
+     */
+    public function destroyReaction(Services $service, $reactionId): JsonResponse
+    {
+        if (!$service) {
+            return response()->json(['message' => 'Service not found'], 404);
+        }
+
+        $reaction = $service->reactions()->find($reactionId);
+
+        if (!$reaction) {
+            return response()->json(['message' => 'Reaction not found'], 404);
+        }
+
+        $reaction->delete();
+
+        return response()->json(['message' => 'Reaction deleted successfully'], 200);
     }
 }
