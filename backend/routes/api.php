@@ -24,6 +24,8 @@ Route::post('/services/{service}/actions', [ServicesController::class, 'storeAct
 Route::post('/services/{service}/reactions', [ServicesController::class, 'storeReactions']);
 
 Route::delete('/services/{service}', [ServicesController::class, 'destroy']);
+Route::delete('/services/{service}/actions/{action}', [ServicesController::class, 'destroyAction']);
+Route::delete('/services/{service}/reactions/{reaction}', [ServicesController::class, 'destroyReaction']);
 
 Route::get('/services', [ServicesController::class, 'index']);
 Route::get('/services/{service}', [ServicesController::class, 'show']);
