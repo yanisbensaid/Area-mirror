@@ -1,14 +1,59 @@
-import { Link, useLocation } from 'react-router-dom'
-import { useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 
 export default function Navbar() {
   const location = useLocation()
+  const navigate = useNavigate()
   const isExplorePage = location.pathname === '/explore'
   const isServicesPage = location.pathname === '/services'
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [user, setUser] = useState<any>(null)
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false)
+
+  // Check authentication status on component mount and location change
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    const userData = localStorage.getItem('user')
+    if (token && userData) {
+      setIsAuthenticated(true)
+      setUser(JSON.parse(userData))
+    } else {
+      setIsAuthenticated(false)
+      setUser(null)
+    }
+  }, [location.pathname])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element
+      if (showProfileDropdown && !target.closest('.profile-dropdown-container')) {
+        setShowProfileDropdown(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showProfileDropdown])
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen)
+  }
+
+  const toggleProfileDropdown = () => {
+    setShowProfileDropdown(!showProfileDropdown)
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    setIsAuthenticated(false)
+    setUser(null)
+    setShowProfileDropdown(false)
+    navigate('/')
   }
 
   const closeMobileMenu = () => {
@@ -65,14 +110,50 @@ export default function Navbar() {
               )}
             </Link>
 
-            {/* Bouton Login */}
-            <Link
-              to="/login"
-              className="bg-white hover:bg-gray-100 text-gray-900 px-4 lg:px-6 py-2 rounded-lg font-medium transition-all duration-200 border border-white hover:border-gray-100"
-              style={{ fontFamily: 'Inter, sans-serif' }}
-            >
-              Login
-            </Link>
+            {/* Login Button or Profile Bubble */}
+            {isAuthenticated ? (
+              <div className="relative profile-dropdown-container">
+                <button
+                  onClick={toggleProfileDropdown}
+                  className="flex items-center space-x-2 bg-gray-800 hover:bg-gray-700 text-white px-3 py-2 rounded-lg transition-all duration-200 border border-gray-600 hover:border-gray-500"
+                >
+                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-medium text-sm">
+                    {user?.name?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                  <span className="text-sm font-medium" style={{ fontFamily: 'Inter, sans-serif' }}>
+                    {user?.name || 'User'}
+                  </span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {/* Dropdown Menu */}
+                {showProfileDropdown && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+                    <div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-100">
+                      <div className="font-medium">{user?.name}</div>
+                      <div className="text-gray-500 text-xs">{user?.email}</div>
+                    </div>
+                    <button
+                      onClick={handleLogout}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200"
+                      style={{ fontFamily: 'Inter, sans-serif' }}
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link
+                to="/login"
+                className="bg-white hover:bg-gray-100 text-gray-900 px-4 lg:px-6 py-2 rounded-lg font-medium transition-all duration-200 border border-white hover:border-gray-100"
+                style={{ fontFamily: 'Inter, sans-serif' }}
+              >
+                Login
+              </Link>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -101,8 +182,8 @@ export default function Navbar() {
                 to="/explore"
                 onClick={closeMobileMenu}
                 className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-200 ${
-                  isExplorePage 
-                    ? 'bg-gray-800 text-white' 
+                  isExplorePage
+                    ? 'bg-gray-800 text-white'
                     : 'text-gray-300 hover:text-white hover:bg-gray-700'
                 }`}
                 style={{ fontFamily: 'Inter, sans-serif' }}
@@ -113,22 +194,47 @@ export default function Navbar() {
                 to="/services"
                 onClick={closeMobileMenu}
                 className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-200 ${
-                  isServicesPage 
-                    ? 'bg-gray-800 text-white' 
+                  isServicesPage
+                    ? 'bg-gray-800 text-white'
                     : 'text-gray-300 hover:text-white hover:bg-gray-700'
                 }`}
                 style={{ fontFamily: 'Inter, sans-serif' }}
               >
                 Services
               </Link>
-              <Link
-                to="/login"
-                onClick={closeMobileMenu}
-                className="block px-3 py-2 mt-3 bg-white hover:bg-gray-100 text-gray-900 rounded-md text-base font-medium transition-colors duration-200 text-center"
-                style={{ fontFamily: 'Inter, sans-serif' }}
-              >
-                Login
-              </Link>
+              {/* Mobile Login/Profile */}
+              {isAuthenticated ? (
+                <div className="mt-3 border-t border-gray-700 pt-3">
+                  <div className="flex items-center px-3 py-2 mb-2">
+                    <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-medium text-sm mr-3">
+                      {user?.name?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                    <div>
+                      <div className="text-white text-sm font-medium">{user?.name || 'User'}</div>
+                      <div className="text-gray-400 text-xs">{user?.email}</div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      handleLogout()
+                      closeMobileMenu()
+                    }}
+                    className="block w-full text-left px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md text-base font-medium transition-colors duration-200"
+                    style={{ fontFamily: 'Inter, sans-serif' }}
+                  >
+                    Logout
+                  </button>
+                </div>
+              ) : (
+                <Link
+                  to="/login"
+                  onClick={closeMobileMenu}
+                  className="block px-3 py-2 mt-3 bg-white hover:bg-gray-100 text-gray-900 rounded-md text-base font-medium transition-colors duration-200 text-center"
+                  style={{ fontFamily: 'Inter, sans-serif' }}
+                >
+                  Login
+                </Link>
+              )}
             </div>
           </div>
         )}
