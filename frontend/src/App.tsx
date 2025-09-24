@@ -8,6 +8,8 @@ import ServicePage from './pages/ServicePage'
 import ServicesPage from './pages/ServicesPage'
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage'
 import TermsOfServicePage from './pages/TermsOfServicePage'
+import CookiePolicyPage from './pages/CookiePolicyPage'
+import AboutUsPage from './pages/AboutUsPage'
 
 function App() {
   return (
@@ -59,6 +61,20 @@ function App() {
             <>
               <Navbar />
               <TermsOfServicePage />
+              <BottomBar />
+            </>
+          } />
+          <Route path="/cookie-policy" element={
+            <>
+              <Navbar />
+              <CookiePolicyPage />
+              <BottomBar />
+            </>
+          } />
+          <Route path="/about-us" element={
+            <>
+              <Navbar />
+              <AboutUsPage />
               <BottomBar />
             </>
           } />
