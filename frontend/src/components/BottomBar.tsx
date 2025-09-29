@@ -11,7 +11,7 @@ export default function BottomBar() {
       { name: 'Pricing', href: '#' }
     ],
     company: [
-      { name: 'About Us', href: '#' },
+      { name: 'About Us', href: '/about-us' },
       { name: 'Blog', href: '#' },
       { name: 'Careers', href: '#' },
       { name: 'Contact', href: '#' }
@@ -25,7 +25,7 @@ export default function BottomBar() {
     legal: [
       { name: 'Privacy Policy', href: '/privacy-policy' },
       { name: 'Terms of Service', href: '/terms-of-service' },
-      { name: 'Cookie Policy', href: '#' },
+      { name: 'Cookie Policy', href: '/cookie-policy' },
       { name: 'GDPR', href: '#' }
     ]
   }
@@ -151,13 +151,23 @@ export default function BottomBar() {
             <ul className="space-y-3">
               {footerLinks.company.map((link) => (
                 <li key={link.name}>
-                  <a
-                    href={link.href}
-                    className="text-gray-300 hover:text-white transition-colors duration-200"
-                    style={{ fontFamily: 'Inter, sans-serif' }}
-                  >
-                    {link.name}
-                  </a>
+                  {link.href.startsWith('/') ? (
+                    <Link
+                      to={link.href}
+                      className="text-gray-300 hover:text-white transition-colors duration-200"
+                      style={{ fontFamily: 'Inter, sans-serif' }}
+                    >
+                      {link.name}
+                    </Link>
+                  ) : (
+                    <a
+                      href={link.href}
+                      className="text-gray-300 hover:text-white transition-colors duration-200"
+                      style={{ fontFamily: 'Inter, sans-serif' }}
+                    >
+                      {link.name}
+                    </a>
+                  )}
                 </li>
               ))}
             </ul>
@@ -197,13 +207,23 @@ export default function BottomBar() {
             <ul className="space-y-3">
               {footerLinks.legal.map((link) => (
                 <li key={link.name}>
-                  <a
-                    href={link.href}
-                    className="text-gray-300 hover:text-white transition-colors duration-200"
-                    style={{ fontFamily: 'Inter, sans-serif' }}
-                  >
-                    {link.name}
-                  </a>
+                  {link.href.startsWith('/') ? (
+                    <Link
+                      to={link.href}
+                      className="text-gray-300 hover:text-white transition-colors duration-200"
+                      style={{ fontFamily: 'Inter, sans-serif' }}
+                    >
+                      {link.name}
+                    </Link>
+                  ) : (
+                    <a
+                      href={link.href}
+                      className="text-gray-300 hover:text-white transition-colors duration-200"
+                      style={{ fontFamily: 'Inter, sans-serif' }}
+                    >
+                      {link.name}
+                    </a>
+                  )}
                 </li>
               ))}
             </ul>
