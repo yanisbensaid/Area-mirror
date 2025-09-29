@@ -10,6 +10,8 @@ import PrivacyPolicyPage from './pages/PrivacyPolicyPage'
 import TermsOfServicePage from './pages/TermsOfServicePage'
 import CookiePolicyPage from './pages/CookiePolicyPage'
 import AboutUsPage from './pages/AboutUsPage'
+import DashboardPage from './pages/DashboardPage'
+import CreateServicePage from './pages/CreateServicePage'
 
 function App() {
   return (
@@ -41,6 +43,20 @@ function App() {
             <>
               <Navbar />
               <ServicePage />
+              <BottomBar />
+            </>
+          } />
+          <Route path="/dashboard" element={
+            <>
+              <Navbar />
+              <DashboardPage />
+              <BottomBar />
+            </>
+          } />
+          <Route path="/createService" element={
+            <>
+              <Navbar />
+              <CreateServicePage />
               <BottomBar />
             </>
           } />

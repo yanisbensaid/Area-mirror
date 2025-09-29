@@ -6,6 +6,7 @@ use App\Models\Services;
 use App\Models\Actions;
 use App\Models\Reactions;
 use App\Models\User;
+use App\Services\IconService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -22,7 +23,16 @@ class ServicesController extends Controller
             'description' => 'nullable|string',
             'status' => 'required|in:active,inactive',
             'auth_type' => 'required|string|max:255',
+            'icon_url' => 'nullable|url',
         ]);
+
+        // If no icon_url provided, try to automatically find one
+        if (empty($validated['icon_url'])) {
+            $autoIcon = IconService::findIconForService($validated['name']);
+            if ($autoIcon) {
+                $validated['icon_url'] = $autoIcon;
+            }
+        }
 
         $service = Services::create($validated);
 

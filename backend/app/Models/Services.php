@@ -15,6 +15,7 @@ class Services extends Model
         'description',
         'status',
         'auth_type',
+        'icon_url',
     ];
 
     public function actions(): HasMany

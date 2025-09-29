@@ -1,5 +1,28 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+
+interface DatabaseService {
+  id: number
+  name: string
+  description: string | null
+  status: 'active' | 'inactive'
+  auth_type: string
+  icon_url: string | null
+  actions: Array<{
+    id: number
+    name: string
+    description: string | null
+    service_id: number
+  }>
+  reactions: Array<{
+    id: number
+    name: string
+    description: string | null
+    service_id: number
+  }>
+  created_at: string
+  updated_at: string
+}
 
 interface Service {
   id: string
@@ -11,81 +34,98 @@ interface Service {
   automationCount: number
   isPopular: boolean
   tags: string[]
+  status: 'active' | 'inactive'
+  auth_type: string
 }
 
-const services: Service[] = [
-  {
-    id: 'spotify',
-    name: 'Spotify',
-    logo: '/app_logo/spotify.png',
-    description: 'Connect your music experience with automation for playlists, liked songs, new releases, and music recommendations.',
-    category: 'Entertainment',
-    color: 'from-green-500 to-green-600',
-    automationCount: 4,
-    isPopular: true,
-    tags: ['music', 'streaming', 'playlists', 'entertainment']
-  },
-  {
-    id: 'steam',
-    name: 'Steam',
-    logo: '/app_logo/steam.png',
-    description: 'Automate your gaming experience with notifications for game updates, friend activities, and achievement unlocks.',
-    category: 'Gaming',
-    color: 'from-gray-600 to-gray-700',
-    automationCount: 3,
-    isPopular: false,
-    tags: ['gaming', 'notifications', 'friends', 'achievements']
-  },
-  {
-    id: 'telegram',
-    name: 'Telegram',
-    logo: '/app_logo/telegram.png',
-    description: 'Set up automated messaging, channel notifications, and bot interactions for seamless communication.',
-    category: 'Communication',
-    color: 'from-blue-400 to-blue-500',
-    automationCount: 3,
-    isPopular: true,
-    tags: ['messaging', 'notifications', 'communication', 'bots']
-  },
-  {
-    id: 'twitch',
-    name: 'Twitch',
-    logo: '/app_logo/twitch.png',
-    description: 'Automate your streaming workflow with notifications for new followers, stream alerts, and chat moderation.',
-    category: 'Entertainment',
-    color: 'from-purple-500 to-purple-600',
-    automationCount: 2,
-    isPopular: false,
-    tags: ['streaming', 'gaming', 'notifications', 'entertainment']
-  },
-  {
-    id: 'youtube',
-    name: 'YouTube',
-    logo: '/app_logo/youtube.png',
-    description: 'Connect your YouTube channel with automation for new uploads, subscriber milestones, and comment management.',
-    category: 'Entertainment',
-    color: 'from-red-500 to-red-600',
-    automationCount: 4,
-    isPopular: true,
-    tags: ['video', 'content', 'streaming', 'entertainment']
-  },
-  {
-    id: 'mail',
-    name: 'Mail',
-    logo: '/app_logo/mail.png',
-    description: 'Automate your email workflows with triggers and actions for incoming emails, sending notifications, and managing your inbox.',
-    category: 'Productivity',
-    color: 'from-blue-500 to-blue-600',
-    automationCount: 3,
-    isPopular: true,
-    tags: ['email', 'notifications', 'productivity', 'inbox']
+// Helper function to transform database service to frontend service
+const transformDatabaseService = (dbService: DatabaseService): Service => {
+  const totalAutomations = dbService.actions.length + dbService.reactions.length;
+  
+  return {
+    id: dbService.id.toString(),
+    name: dbService.name,
+    logo: dbService.icon_url || `/app_logo/${dbService.name.toLowerCase().replace(/\s+/g, '')}.png`,
+    description: dbService.description || `${dbService.name} service integration`,
+    category: getCategoryFromAuthType(dbService.auth_type),
+    color: getColorFromName(dbService.name),
+    automationCount: totalAutomations,
+    isPopular: totalAutomations > 2,
+    tags: [dbService.auth_type.toLowerCase(), dbService.name.toLowerCase()],
+    status: dbService.status,
+    auth_type: dbService.auth_type
+  };
+};
+
+// Helper function to determine category based on auth type or name
+const getCategoryFromAuthType = (authType: string): string => {
+  const authTypeMap: { [key: string]: string } = {
+    'OAuth2': 'Social',
+    'API Key': 'Development',
+    'Token': 'Communication',
+    'Basic Auth': 'Productivity',
+    'None': 'Utility'
+  };
+  return authTypeMap[authType] || 'General';
+};
+
+// Helper function to generate colors based on service name
+const getColorFromName = (name: string): string => {
+  const colors = [
+    'from-blue-500 to-blue-600',
+    'from-green-500 to-green-600',
+    'from-purple-500 to-purple-600',
+    'from-red-500 to-red-600',
+    'from-yellow-500 to-yellow-600',
+    'from-indigo-500 to-indigo-600',
+    'from-pink-500 to-pink-600',
+    'from-teal-500 to-teal-600'
+  ];
+  
+  // Use name hash to consistently assign colors
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
   }
-]
+  return colors[Math.abs(hash) % colors.length];
+};
 
 export default function ServicesPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('All')
   const [showPopularOnly, setShowPopularOnly] = useState(false)
+  const [services, setServices] = useState<Service[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Fetch services from API
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('http://localhost:8000/api/services');
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch services: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        const dbServices: DatabaseService[] = data.server.services;
+        const transformedServices = dbServices.map(transformDatabaseService);
+        
+        setServices(transformedServices);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching services:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load services');
+        setServices([]); // Show empty list on error
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchServices();
+  }, []);
 
   // Get unique categories
   const categories = ['All', ...Array.from(new Set(services.map(service => service.category)))]
@@ -135,33 +175,65 @@ export default function ServicesPage() {
           </p>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
-                    <div className="bg-white rounded-lg p-3 md:p-4 border border-gray-200 shadow-sm text-center">
-            <div className="text-xl md:text-2xl font-semibold text-gray-900 mb-1">
-              {services.length}
-            </div>
-            <div className="text-xs md:text-sm text-gray-600">Total Services</div>
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <span className="ml-3 text-gray-600" style={{ fontFamily: 'Inter, sans-serif' }}>
+              Loading services...
+            </span>
           </div>
-          <div className="bg-white rounded-lg p-3 md:p-4 border border-gray-200 shadow-sm text-center">
-            <div className="text-xl md:text-2xl font-semibold text-gray-900 mb-1">
-              {services.filter(s => s.isPopular).length}
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div className="flex">
+              <svg className="h-5 w-5 text-red-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800" style={{ fontFamily: 'Inter, sans-serif' }}>
+                  Failed to load services
+                </h3>
+                <p className="mt-1 text-sm text-red-700" style={{ fontFamily: 'Inter, sans-serif' }}>
+                  {error}
+                </p>
+              </div>
             </div>
-            <div className="text-xs md:text-sm text-gray-600">Popular Services</div>
           </div>
-          <div className="bg-white rounded-lg p-3 md:p-4 border border-gray-200 shadow-sm text-center">
-            <div className="text-xl md:text-2xl font-semibold text-gray-900 mb-1">
-              {categories.length - 1}
+        )}
+
+        {/* Content - only show when not loading */}
+        {!loading && (
+          <>
+            {/* Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
+              <div className="bg-white rounded-lg p-3 md:p-4 border border-gray-200 shadow-sm text-center">
+                <div className="text-xl md:text-2xl font-semibold text-gray-900 mb-1">
+                  {services.length}
+                </div>
+                <div className="text-xs md:text-sm text-gray-600">Total Services</div>
+              </div>
+              <div className="bg-white rounded-lg p-3 md:p-4 border border-gray-200 shadow-sm text-center">
+                <div className="text-xl md:text-2xl font-semibold text-gray-900 mb-1">
+                  {services.filter(s => s.isPopular).length}
+                </div>
+                <div className="text-xs md:text-sm text-gray-600">Popular Services</div>
+              </div>
+              <div className="bg-white rounded-lg p-3 md:p-4 border border-gray-200 shadow-sm text-center">
+                <div className="text-xl md:text-2xl font-semibold text-gray-900 mb-1">
+                  {categories.length - 1}
+                </div>
+                <div className="text-xs md:text-sm text-gray-600">Categories</div>
+              </div>
+              <div className="bg-white rounded-lg p-3 md:p-4 border border-gray-200 shadow-sm text-center">
+                <div className="text-xl md:text-2xl font-semibold text-gray-900 mb-1">
+                  {services.reduce((sum, service) => sum + service.automationCount, 0)}
+                </div>
+                <div className="text-xs md:text-sm text-gray-600">Automations</div>
+              </div>
             </div>
-            <div className="text-xs md:text-sm text-gray-600">Categories</div>
-          </div>
-          <div className="bg-white rounded-lg p-3 md:p-4 border border-gray-200 shadow-sm text-center">
-            <div className="text-xl md:text-2xl font-semibold text-gray-900 mb-1">
-              {services.reduce((sum, service) => sum + service.automationCount, 0)}
-            </div>
-            <div className="text-xs md:text-sm text-gray-600">Automations</div>
-          </div>
-        </div>
 
         {/* Search and Filters */}
         <div className="bg-white rounded-xl p-4 md:p-6 border border-gray-200 shadow-sm mb-6 md:mb-8">
@@ -365,7 +437,7 @@ export default function ServicesPage() {
         </div>
 
         {/* No results */}
-        {filteredServices.length === 0 && (
+        {filteredServices.length === 0 && !error && (
           <div className="text-center py-12">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -392,6 +464,8 @@ export default function ServicesPage() {
               Clear filters
             </button>
           </div>
+        )}
+          </>
         )}
       </div>
     </main>

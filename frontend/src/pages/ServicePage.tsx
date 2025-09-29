@@ -1,85 +1,224 @@
 import { useParams, Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 import { automationExamples } from '../components/AutomationExamples'
+
+interface DatabaseService {
+  id: number
+  name: string
+  description: string | null
+  status: 'active' | 'inactive'
+  auth_type: string
+  actions: Array<{
+    id: number
+    name: string
+    description: string | null
+    service_id: number
+  }>
+  reactions: Array<{
+    id: number
+    name: string
+    description: string | null
+    service_id: number
+  }>
+  created_at: string
+  updated_at: string
+}
 
 interface ServiceInfo {
   name: string
   logo: string
   description: string
   color: string
+  status: 'active' | 'inactive'
+  auth_type: string
+  actions: Array<{
+    id: number
+    name: string
+    description: string | null
+  }>
+  reactions: Array<{
+    id: number
+    name: string
+    description: string | null
+  }>
 }
 
-const serviceData: Record<string, ServiceInfo> = {
+// Helper function to generate colors based on service name
+const getColorFromName = (name: string): string => {
+  const colors = [
+    'from-blue-500 to-blue-600',
+    'from-green-500 to-green-600',
+    'from-purple-500 to-purple-600',
+    'from-red-500 to-red-600',
+    'from-yellow-500 to-yellow-600',
+    'from-indigo-500 to-indigo-600',
+    'from-pink-500 to-pink-600',
+    'from-teal-500 to-teal-600'
+  ];
+  
+  // Use name hash to consistently assign colors
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
+};
+
+// Transform database service to ServiceInfo
+const transformDatabaseService = (dbService: DatabaseService): ServiceInfo => {
+  return {
+    name: dbService.name,
+    logo: `/app_logo/${dbService.name.toLowerCase().replace(/\s+/g, '')}.png`,
+    description: dbService.description || `${dbService.name} service integration`,
+    color: getColorFromName(dbService.name),
+    status: dbService.status,
+    auth_type: dbService.auth_type,
+    actions: dbService.actions,
+    reactions: dbService.reactions
+  };
+};
+
+// Fallback service data for compatibility with old hardcoded services
+const fallbackServiceData: Record<string, ServiceInfo> = {
   google: {
     name: 'Google',
     logo: '/app_logo/google.png',
     description: 'Integrate with Google services like Gmail, Drive, Calendar, and more to create powerful automation workflows.',
-    color: 'from-blue-500 to-red-500'
+    color: 'from-blue-500 to-red-500',
+    status: 'active',
+    auth_type: 'OAuth2',
+    actions: [],
+    reactions: []
   },
   github: {
     name: 'GitHub',
     logo: '/app_logo/github.png',
     description: 'Automate your development workflow with GitHub triggers for commits, pull requests, issues, and repository events.',
-    color: 'from-gray-800 to-gray-900'
-  },
-  outlook: {
-    name: 'Outlook',
-    logo: '/app_logo/outlook.png',
-    description: 'Connect your Outlook email and calendar to create automated workflows for enhanced productivity.',
-    color: 'from-blue-600 to-blue-700'
+    color: 'from-gray-800 to-gray-900',
+    status: 'active',
+    auth_type: 'OAuth2',
+    actions: [],
+    reactions: []
   },
   mail: {
     name: 'Mail',
     logo: '/app_logo/mail.png',
     description: 'Automate your email workflows with triggers and actions for incoming emails, sending notifications, and managing your inbox.',
-    color: 'from-blue-500 to-blue-600'
+    color: 'from-blue-500 to-blue-600',
+    status: 'active',
+    auth_type: 'OAuth2',
+    actions: [],
+    reactions: []
   },
   spotify: {
     name: 'Spotify',
     logo: '/app_logo/spotify.png',
     description: 'Connect your music experience with automation for playlists, liked songs, new releases, and music recommendations.',
-    color: 'from-green-500 to-green-600'
-  },
-  steam: {
-    name: 'Steam',
-    logo: '/app_logo/steam.png',
-    description: 'Automate your gaming experience with notifications for game updates, friend activities, and achievement unlocks.',
-    color: 'from-gray-600 to-gray-700'
+    color: 'from-green-500 to-green-600',
+    status: 'active',
+    auth_type: 'OAuth2',
+    actions: [],
+    reactions: []
   },
   telegram: {
     name: 'Telegram',
     logo: '/app_logo/telegram.png',
     description: 'Set up automated messaging, channel notifications, and bot interactions for seamless communication.',
-    color: 'from-blue-400 to-blue-500'
-  },
-  twitch: {
-    name: 'Twitch',
-    logo: '/app_logo/twitch.png',
-    description: 'Automate your streaming workflow with notifications for new followers, stream alerts, and chat moderation.',
-    color: 'from-purple-500 to-purple-600'
-  },
-  youtube: {
-    name: 'YouTube',
-    logo: '/app_logo/youtube.png',
-    description: 'Connect your YouTube channel with automation for new uploads, subscriber milestones, and comment management.',
-    color: 'from-red-500 to-red-600'
+    color: 'from-blue-400 to-blue-500',
+    status: 'active',
+    auth_type: 'OAuth2',
+    actions: [],
+    reactions: []
   }
-}
+};
 
 export default function ServicePage() {
   const { serviceName } = useParams<{ serviceName: string }>()
-  
-  if (!serviceName || !serviceData[serviceName]) {
+  const [service, setService] = useState<ServiceInfo | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchService = async () => {
+      if (!serviceName) {
+        setError('No service specified');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        
+        // Check if serviceName is a number (database ID) or a string (legacy name)
+        const isNumericId = /^\d+$/.test(serviceName);
+        
+        if (isNumericId) {
+          // Fetch from database API using ID
+          const response = await fetch(`http://localhost:8000/api/services/${serviceName}`);
+          
+          if (!response.ok) {
+            throw new Error(`Service not found: ${response.status}`);
+          }
+          
+          const data = await response.json();
+          const dbService: DatabaseService = data.server.service;
+          const transformedService = transformDatabaseService(dbService);
+          setService(transformedService);
+        } else {
+          // Use fallback data for legacy service names
+          const fallbackService = fallbackServiceData[serviceName.toLowerCase()];
+          if (fallbackService) {
+            setService(fallbackService);
+          } else {
+            throw new Error('Service not found in fallback data');
+          }
+        }
+        
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching service:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load service');
+        setService(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchService();
+  }, [serviceName]);
+
+  if (loading) {
+    return (
+      <main className="pt-20 px-4 bg-gray-50 min-h-screen">
+        <div className="max-w-4xl mx-auto py-12">
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <span className="ml-3 text-gray-600" style={{ fontFamily: 'Inter, sans-serif' }}>
+              Loading service...
+            </span>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (error || !service) {
     return (
       <main className="pt-20 px-4 bg-gray-50 min-h-screen">
         <div className="max-w-4xl mx-auto py-12 text-center">
           <h1 className="text-4xl font-semibold text-gray-900 mb-4">Service Not Found</h1>
-          <Link to="/" className="text-gray-600 hover:text-gray-800">← Back to Home</Link>
+          <p className="text-gray-600 mb-6">{error || 'The requested service could not be found.'}</p>
+          <Link 
+            to="/services" 
+            className="text-blue-600 hover:text-blue-800 font-medium"
+            style={{ fontFamily: 'Inter, sans-serif' }}
+          >
+            ← Back to Services
+          </Link>
         </div>
       </main>
-    )
+    );
   }
-
-  const service = serviceData[serviceName]
   
   // Filter automations that involve this service (as trigger OR action)
   const serviceAutomations = automationExamples.filter(automation => 

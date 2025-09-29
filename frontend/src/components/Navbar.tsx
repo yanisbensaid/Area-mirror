@@ -1,5 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
+import { ChartColumn } from 'lucide-react'
+import { useCurrentUser } from '../hooks/useCurrentUser'
 
 export default function Navbar() {
   const location = useLocation()
@@ -7,22 +9,10 @@ export default function Navbar() {
   const isExplorePage = location.pathname === '/explore'
   const isServicesPage = location.pathname === '/services'
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [user, setUser] = useState<any>(null)
   const [showProfileDropdown, setShowProfileDropdown] = useState(false)
 
-  // Check authentication status on component mount and location change
-  useEffect(() => {
-    const token = localStorage.getItem('token')
-    const userData = localStorage.getItem('user')
-    if (token && userData) {
-      setIsAuthenticated(true)
-      setUser(JSON.parse(userData))
-    } else {
-      setIsAuthenticated(false)
-      setUser(null)
-    }
-  }, [location.pathname])
+  // Get current user information
+  const { user, isLoggedIn } = useCurrentUser()
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -50,10 +40,9 @@ export default function Navbar() {
   const handleLogout = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
-    setIsAuthenticated(false)
-    setUser(null)
     setShowProfileDropdown(false)
     navigate('/')
+    // The useCurrentUser hook will automatically update when token is removed
   }
 
   const closeMobileMenu = () => {
@@ -111,7 +100,7 @@ export default function Navbar() {
             </Link>
 
             {/* Login Button or Profile Bubble */}
-            {isAuthenticated ? (
+            {isLoggedIn ? (
               <div className="relative profile-dropdown-container">
                 <button
                   onClick={toggleProfileDropdown}
@@ -135,6 +124,19 @@ export default function Navbar() {
                       <div className="font-medium">{user?.name}</div>
                       <div className="text-gray-500 text-xs">{user?.email}</div>
                     </div>
+                    {user?.is_admin ? (
+                      <div>
+                        <Link
+                          to="/dashboard"
+                          onClick={() => setShowProfileDropdown(false)}
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200"
+                          style={{ fontFamily: 'Inter, sans-serif' }}
+                        >
+                          <ChartColumn size={16} />
+                          <span>Dashboard</span>
+                        </Link>
+                      </div>
+                    ) : null}
                     <button
                       onClick={handleLogout}
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200"
@@ -203,7 +205,7 @@ export default function Navbar() {
                 Services
               </Link>
               {/* Mobile Login/Profile */}
-              {isAuthenticated ? (
+              {isLoggedIn ? (
                 <div className="mt-3 border-t border-gray-700 pt-3">
                   <div className="flex items-center px-3 py-2 mb-2">
                     <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-medium text-sm mr-3">
