@@ -22,6 +22,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
+        'role_assigned_at',
     ];
 
     /**
@@ -44,6 +46,67 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'role_assigned_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Constants for user roles
+     */
+    const ROLE_USER = 'user';
+    const ROLE_ADMIN = 'admin';
+
+    /**
+     * Check if user is admin
+     */
+    public function isAdmin(): bool
+    {
+        return $this->role === self::ROLE_ADMIN;
+    }
+
+    /**
+     * Check if user is regular user
+     */
+    public function isUser(): bool
+    {
+        return $this->role === self::ROLE_USER;
+    }
+
+    /**
+     * Assign admin role to user
+     */
+    public function makeAdmin(): void
+    {
+        $this->update([
+            'role' => self::ROLE_ADMIN,
+            'role_assigned_at' => now(),
+        ]);
+    }
+
+    /**
+     * Assign user role to user
+     */
+    public function makeUser(): void
+    {
+        $this->update([
+            'role' => self::ROLE_USER,
+            'role_assigned_at' => now(),
+        ]);
+    }
+
+    /**
+     * Get all admin users
+     */
+    public static function admins()
+    {
+        return static::where('role', self::ROLE_ADMIN);
+    }
+
+    /**
+     * Get all regular users
+     */
+    public static function regularUsers()
+    {
+        return static::where('role', self::ROLE_USER);
     }
 }
