@@ -1,17 +1,24 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import BottomBar from './components/BottomBar'
-import HomePage from './pages/HomePage'
-import LoginPage from './pages/LoginPage'
-import ExplorePage from './pages/ExplorePage'
-import ServicePage from './pages/ServicePage'
-import ServicesPage from './pages/ServicesPage'
-import PrivacyPolicyPage from './pages/PrivacyPolicyPage'
-import TermsOfServicePage from './pages/TermsOfServicePage'
-import CookiePolicyPage from './pages/CookiePolicyPage'
-import AboutUsPage from './pages/AboutUsPage'
-import DashboardPage from './pages/DashboardPage'
-import CreateServicePage from './pages/CreateServicePage'
+import HomePage from './pages/home/HomePage'
+import LoginPage from './pages/auth/LoginPage'
+import ExplorePage from './pages/home/ExplorePage'
+import ServicePage from './pages/services/ServicePage'
+import ServicesPage from './pages/services/ServicesPage'
+import PrivacyPolicyPage from './pages/legal/PrivacyPolicyPage'
+import TermsOfServicePage from './pages/legal/TermsOfServicePage'
+import CookiePolicyPage from './pages/legal/CookiePolicyPage'
+import AboutUsPage from './pages/home/AboutUsPage'
+import DashboardPage from './pages/home/DashboardPage'
+import CreateServicePage from './pages/services/CreateServicePage'
+import EditService from './pages/services/EditService'
+import CreateAutomation from './pages/automations/CreateAutomation'
+import AddAction from './pages/services/AddAction'
+import AddReaction from './pages/services/AddReaction'
+import EditActions from './pages/services/EditActions'
+import EditReactions from './pages/services/EditReactions'
+import ManageAutomations from './pages/automations/ManageAutomations'
 
 function App() {
   return (
@@ -43,6 +50,55 @@ function App() {
             <>
               <Navbar />
               <ServicePage />
+              <BottomBar />
+            </>
+          } />
+          <Route path="/editService/:serviceId" element={
+            <>
+              <Navbar />
+              <EditService />
+              <BottomBar />
+            </>
+          } />
+          <Route path="/addActions/:serviceId" element={
+            <>
+              <Navbar />
+              <AddAction />
+              <BottomBar />
+            </>
+          } />
+          <Route path="/addReactions/:serviceId" element={
+            <>
+              <Navbar />
+              <AddReaction />
+              <BottomBar />
+            </>
+          } />
+          <Route path="/editActions/:serviceId" element={
+            <>
+              <Navbar />
+              <EditActions />
+              <BottomBar />
+            </>
+          } />
+          <Route path="/editReactions/:serviceId" element={
+            <>
+              <Navbar />
+              <EditReactions />
+              <BottomBar />
+            </>
+          } />
+          <Route path="/createAutomation/:serviceId?" element={
+            <>
+              <Navbar />
+              <CreateAutomation />
+              <BottomBar />
+            </>
+          } />
+          <Route path="/manageAutomations/:serviceId" element={
+            <>
+              <Navbar />
+              <ManageAutomations />
               <BottomBar />
             </>
           } />
