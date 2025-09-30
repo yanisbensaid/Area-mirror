@@ -7,6 +7,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ServicesController;
 use App\Http\Controllers\ServiceConnectionController;
 use App\Http\Controllers\TestController;
+use App\Http\Controllers\AutomationController;
 use App\Http\Controllers\MailController;
 use App\Http\Controllers\UserController;
 
@@ -27,6 +28,11 @@ Route::get('/services', [ServicesController::class, 'index']);
 Route::get('/services/{service}', [ServicesController::class, 'show']);
 Route::get('/services/{service}/actions', [ServicesController::class, 'showActions']);
 Route::get('/services/{service}/reactions', [ServicesController::class, 'showReactions']);
+Route::get('/services/{service}/automations', [AutomationController::class, 'getAutomationsForService']);
+Route::get('/services/{service}/automations', [AutomationController::class, 'getAutomationsForService']);
+
+// Public automation endpoints
+Route::get('/automations', [AutomationController::class, 'index']);
 
 // New service integration endpoints
 Route::get('/services/available', [ServiceConnectionController::class, 'availableServices']);
@@ -62,6 +68,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/telegram/messages', [TestController::class, 'testTelegramMessages']);
         Route::get('/health', [TestController::class, 'healthCheck']);
     });
+    // User automation management
+    Route::resource('automations', AutomationController::class)->except(['index']);
 
     // Admin only routes
     Route::middleware('admin')->group(function () {
@@ -74,8 +82,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Services management (admin only)
         Route::post('/services', [ServicesController::class, 'store']);
-        Route::post('/services/{service}/actions', [ServicesController::class, 'storeActions']);
-        Route::post('/services/{service}/reactions', [ServicesController::class, 'storeReactions']);
+        Route::put('/services/{service}', [ServicesController::class, 'update']);
+        Route::post('/services/{service}/actions', [ServicesController::class, 'storeAction']);
+        Route::post('/services/{service}/reactions', [ServicesController::class, 'storeReaction']);
 
         Route::delete('/services/{service}', [ServicesController::class, 'destroy']);
         Route::delete('/services/{service}/actions/{action}', [ServicesController::class, 'destroyAction']);

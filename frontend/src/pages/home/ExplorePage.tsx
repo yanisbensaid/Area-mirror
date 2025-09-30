@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import AutomationExamples, { automationExamples } from '../components/AutomationExamples'
+import AutomationExamples, { automationExamples } from '../../components/AutomationExamples'
 
 export default function ExplorePage() {
   const [searchQuery, setSearchQuery] = useState('')

@@ -1,4 +1,4 @@
-import AutomationExamples from '../components/AutomationExamples'
+import AutomationExamples from '../../components/AutomationExamples'
 import { Link } from 'react-router-dom'
 
 export default function HomePage() {
