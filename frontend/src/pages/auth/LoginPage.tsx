@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../../contexts/AuthContext'
 
 export default function LoginPage() {
   const navigate = useNavigate()
+  const { login } = useAuth()
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -82,10 +84,9 @@ export default function LoginPage() {
       const data = await response.json()
 
       if (response.ok && data.token) {
-        // Store the token in localStorage
-        localStorage.setItem('token', data.token)
-        localStorage.setItem('user', JSON.stringify(data.user))
-
+        // Use the auth context's login function
+        await login(data.token)
+        
         // Handle "Remember me" functionality (only for login)
         if (!isSignUp && rememberMe) {
           // Save credentials for future logins
