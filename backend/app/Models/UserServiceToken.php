@@ -173,6 +173,11 @@ class UserServiceToken extends Model
             'access_token' => $this->getDecryptedAccessToken(),
         ];
 
+        // For Telegram service, also add bot_token
+        if ($this->service_name === 'Telegram') {
+            $credentials['bot_token'] = $this->getDecryptedAccessToken();
+        }
+
         if ($this->refresh_token) {
             $credentials['refresh_token'] = $this->getDecryptedRefreshToken();
         }

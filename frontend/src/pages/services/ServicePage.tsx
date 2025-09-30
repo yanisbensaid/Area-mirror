@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
+import { apiService } from '../../services/api';
 
 interface DatabaseService {
   id: number;
@@ -56,6 +57,13 @@ export default function ServicePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Telegram message state
+  const [chatId, setChatId] = useState('');
+  const [messageText, setMessageText] = useState('');
+  const [authToken, setAuthToken] = useState('');
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const [messageResult, setMessageResult] = useState<{ success: boolean; message: string } | null>(null);
+
   useEffect(() => {
     const fetchServiceAndAutomations = async () => {
       if (!serviceName) {
@@ -97,6 +105,42 @@ export default function ServicePage() {
 
     fetchServiceAndAutomations();
   }, [serviceName]);
+
+  const handleSendTelegramMessage = async () => {
+    if (!chatId || !messageText || !authToken) {
+      setMessageResult({
+        success: false,
+        message: 'Please fill in all fields (Chat ID, Message, and Auth Token)',
+      });
+      return;
+    }
+
+    setSendingMessage(true);
+    setMessageResult(null);
+
+    try {
+      const response = await apiService.telegram.sendMessage(
+        { chat_id: chatId, text: messageText },
+        authToken
+      );
+
+      setMessageResult({
+        success: true,
+        message: 'Message sent successfully!',
+      });
+
+      // Clear form after successful send
+      setMessageText('');
+    } catch (error: any) {
+      setMessageResult({
+        success: false,
+        message: error.response?.data?.message || 'Failed to send message',
+      });
+    } finally {
+      setSendingMessage(false);
+    }
+  };
+
   if (loading) {
     return (
       <main className="pt-20 px-4 bg-gray-50 min-h-screen">
@@ -292,6 +336,114 @@ export default function ServicePage() {
             </div>
           </div>
         </div>
+        )}
+
+        {/* Telegram Message Sender - Only show for Telegram service */}
+        {service && service.name.toLowerCase() === 'telegram' && (
+          <div className="mb-8 bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+            <h2
+              className="text-2xl font-semibold text-gray-900 mb-6"
+              style={{ fontFamily: 'Inter, sans-serif' }}
+            >
+              📱 Send Telegram Message
+            </h2>
+
+            <div className="space-y-4">
+              {/* Chat ID Input */}
+              <div>
+                <label
+                  htmlFor="chatId"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                  style={{ fontFamily: 'Inter, sans-serif' }}
+                >
+                  Chat ID
+                </label>
+                <input
+                  type="text"
+                  id="chatId"
+                  value={chatId}
+                  onChange={(e) => setChatId(e.target.value)}
+                  placeholder="e.g., 1744435104"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  style={{ fontFamily: 'Inter, sans-serif' }}
+                />
+              </div>
+
+              {/* Message Input */}
+              <div>
+                <label
+                  htmlFor="messageText"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                  style={{ fontFamily: 'Inter, sans-serif' }}
+                >
+                  Message
+                </label>
+                <textarea
+                  id="messageText"
+                  value={messageText}
+                  onChange={(e) => setMessageText(e.target.value)}
+                  placeholder="Enter your message here..."
+                  rows={4}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  style={{ fontFamily: 'Inter, sans-serif' }}
+                />
+              </div>
+
+              {/* Auth Token Input */}
+              <div>
+                <label
+                  htmlFor="authToken"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                  style={{ fontFamily: 'Inter, sans-serif' }}
+                >
+                  Bearer Token
+                </label>
+                <input
+                  type="text"
+                  id="authToken"
+                  value={authToken}
+                  onChange={(e) => setAuthToken(e.target.value)}
+                  placeholder="e.g., 1|kZKuB2MrIN8audDeFkfOURofUkc3Pwp3edBVgThV79d50be6"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  style={{ fontFamily: 'Inter, sans-serif' }}
+                />
+              </div>
+
+              {/* Send Button */}
+              <button
+                onClick={handleSendTelegramMessage}
+                disabled={sendingMessage}
+                className={`w-full py-3 px-6 rounded-lg font-medium transition-colors duration-200 ${
+                  sendingMessage
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                }`}
+                style={{ fontFamily: 'Inter, sans-serif' }}
+              >
+                {sendingMessage ? 'Sending...' : 'Send Message'}
+              </button>
+
+              {/* Result Message */}
+              {messageResult && (
+                <div
+                  className={`p-4 rounded-lg ${
+                    messageResult.success
+                      ? 'bg-green-50 border border-green-200'
+                      : 'bg-red-50 border border-red-200'
+                  }`}
+                >
+                  <p
+                    className={`text-sm ${
+                      messageResult.success ? 'text-green-800' : 'text-red-800'
+                    }`}
+                    style={{ fontFamily: 'Inter, sans-serif' }}
+                  >
+                    {messageResult.message}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
         )}
 
         {/* Automations */}
