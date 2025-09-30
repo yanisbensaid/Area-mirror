@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -108,5 +109,43 @@ class User extends Authenticatable
     public static function regularUsers()
     {
         return static::where('role', self::ROLE_USER);
+    }
+
+    /**
+     * Get the service tokens for this user
+     */
+    public function serviceTokens(): HasMany
+    {
+        return $this->hasMany(UserServiceToken::class);
+    }
+
+    /**
+     * Get active service tokens for this user
+     */
+    public function activeServiceTokens(): HasMany
+    {
+        return $this->serviceTokens()->active();
+    }
+
+    /**
+     * Get a service token for a specific service
+     */
+    public function getServiceToken(string $serviceName): ?UserServiceToken
+    {
+        return $this->serviceTokens()
+            ->forService($serviceName)
+            ->active()
+            ->first();
+    }
+
+    /**
+     * Check if user has a valid token for a service
+     */
+    public function hasServiceToken(string $serviceName): bool
+    {
+        return $this->serviceTokens()
+            ->forService($serviceName)
+            ->valid()
+            ->exists();
     }
 }

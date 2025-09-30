@@ -5,6 +5,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ApiTestController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ServicesController;
+use App\Http\Controllers\ServiceConnectionController;
+use App\Http\Controllers\TestController;
 use App\Http\Controllers\MailController;
 use App\Http\Controllers\UserController;
 
@@ -26,6 +28,10 @@ Route::get('/services/{service}', [ServicesController::class, 'show']);
 Route::get('/services/{service}/actions', [ServicesController::class, 'showActions']);
 Route::get('/services/{service}/reactions', [ServicesController::class, 'showReactions']);
 
+// New service integration endpoints
+Route::get('/services/available', [ServiceConnectionController::class, 'availableServices']);
+Route::get('/services/info/{service}', [ServiceConnectionController::class, 'serviceInfo']);
+
 // Mail endpoints
 Route::post('/mail/test', [MailController::class, 'testEmail']);
 
@@ -41,6 +47,21 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/mail/welcome', [MailController::class, 'sendWelcomeEmail']);
     Route::post('/mail/notification', [MailController::class, 'sendNotificationEmail']);
     Route::post('/mail/bulk', [MailController::class, 'sendBulkEmail']);
+
+    // Service connection management
+    Route::post('/services/connect', [ServiceConnectionController::class, 'connectService']);
+    Route::delete('/services/{service}/disconnect', [ServiceConnectionController::class, 'disconnectService']);
+    Route::post('/services/{service}/test', [ServiceConnectionController::class, 'testConnection']);
+    Route::get('/services/connected', [ServiceConnectionController::class, 'connectedServices']);
+
+    // Testing endpoints for development
+    Route::prefix('test')->group(function () {
+        Route::post('/telegram/send', [TestController::class, 'testTelegramSend']);
+        Route::get('/telegram/info', [TestController::class, 'testTelegramInfo']);
+        Route::post('/telegram/photo', [TestController::class, 'testTelegramPhoto']);
+        Route::post('/telegram/messages', [TestController::class, 'testTelegramMessages']);
+        Route::get('/health', [TestController::class, 'healthCheck']);
+    });
 
     // Admin only routes
     Route::middleware('admin')->group(function () {
