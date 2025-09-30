@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { ChartColumn } from 'lucide-react'
-import { useCurrentUser } from '../hooks/useCurrentUser'
+import { useAuth } from '../contexts/AuthContext'
 
 export default function Navbar() {
   const location = useLocation()
@@ -11,8 +11,8 @@ export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [showProfileDropdown, setShowProfileDropdown] = useState(false)
 
-  // Get current user information
-  const { user, isLoggedIn } = useCurrentUser()
+  // Get current user information and auth functions
+  const { user, isLoggedIn, logout } = useAuth()
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -38,11 +38,9 @@ export default function Navbar() {
   }
 
   const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
+    logout() // Use the auth context's logout function
     setShowProfileDropdown(false)
     navigate('/')
-    // The useCurrentUser hook will automatically update when token is removed
   }
 
   const closeMobileMenu = () => {
