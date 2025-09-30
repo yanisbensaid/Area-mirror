@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Services;
-use App\Models\Actions;
-use App\Models\Reactions;
+use App\Models\Service;
+use App\Models\Action;
+use App\Models\Reaction;
 use App\Models\User;
 use App\Services\IconService;
 use Illuminate\Http\JsonResponse;
@@ -34,7 +34,7 @@ class ServicesController extends Controller
             }
         }
 
-        $service = Services::create($validated);
+        $service = Service::create($validated);
 
         return response()->json([
             'message' => 'Service created successfully',
@@ -43,11 +43,46 @@ class ServicesController extends Controller
     }
 
     /**
+     * Update an existing service in storage.
+     */
+    public function update(Request $request, $id): JsonResponse
+    {
+        $service = Service::find($id);
+
+        if (!$service) {
+            return response()->json(['message' => 'Service not found'], 404);
+        }
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255|unique:services,name,' . $id,
+            'description' => 'nullable|string',
+            'status' => 'required|in:active,inactive',
+            'auth_type' => 'required|string|max:255',
+            'icon_url' => 'nullable|url',
+        ]);
+
+        // If no icon_url provided, try to automatically find one (only if name changed)
+        if (empty($validated['icon_url']) && $validated['name'] !== $service->name) {
+            $autoIcon = IconService::findIconForService($validated['name']);
+            if ($autoIcon) {
+                $validated['icon_url'] = $autoIcon;
+            }
+        }
+
+        $service->update($validated);
+
+        return response()->json([
+            'message' => 'Service updated successfully',
+            'service' => $service->fresh(),
+        ], 200);
+    }
+
+    /**
      * Store a newly created Action in storage.
      */
     public function storeActions(Request $request, $id): JsonResponse
     {
-        $service = Services::find($id);
+        $service = Service::find($id);
 
         if (!$service) {
             return response()->json(['message' => 'Service not found'], 404);
@@ -59,7 +94,7 @@ class ServicesController extends Controller
         ]);
 
         $validated['service_id'] = $service->id;
-        $action = Actions::create($validated);
+        $action = Action::create($validated);
 
         return response()->json([
             'message' => 'Action created successfully',
@@ -72,7 +107,7 @@ class ServicesController extends Controller
      */
     public function storeReactions(Request $request, $id): JsonResponse
     {
-        $service = Services::find($id);
+        $service = Service::find($id);
 
         if (!$service) {
             return response()->json(['message' => 'Service not found'], 404);
@@ -84,7 +119,7 @@ class ServicesController extends Controller
         ]);
 
         $validated['service_id'] = $service->id;
-        $reaction = Reactions::create($validated);
+        $reaction = Reaction::create($validated);
 
         return response()->json([
             'message' => 'Reaction created successfully',
@@ -97,7 +132,7 @@ class ServicesController extends Controller
      */
     public function index(): JsonResponse
     {
-        $services = Services::with(['actions', 'reactions'])->get()
+        $services = Service::with(['actions', 'reactions'])->get()
             ->sortBy('id'); // Sort services by ID
 
         return response()->json([
@@ -118,7 +153,7 @@ class ServicesController extends Controller
      */
     public function show($id): JsonResponse
     {
-        $service = Services::with(['actions', 'reactions'])->find($id);
+        $service = Service::with(['actions', 'reactions'])->find($id);
 
         if (!$service) {
             return response()->json(['message' => 'Service not found'], 404);
@@ -142,7 +177,7 @@ class ServicesController extends Controller
      */
     public function showActions($id): JsonResponse
     {
-        $service = Services::with('actions')->find($id);
+        $service = Service::with('actions')->find($id);
 
         if (!$service) {
             return response()->json(['message' => 'Service not found'], 404);
@@ -170,7 +205,7 @@ class ServicesController extends Controller
      */
     public function showReactions($id): JsonResponse
     {
-        $service = Services::with('reactions')->find($id);
+        $service = Service::with('reactions')->find($id);
 
         if (!$service) {
             return response()->json(['message' => 'Service not found'], 404);
@@ -194,9 +229,65 @@ class ServicesController extends Controller
     }
 
     /**
+     * Store a new action for a service.
+     */
+    public function storeAction(Request $request, $serviceId): JsonResponse
+    {
+        $service = Service::find($serviceId);
+        
+        if (!$service) {
+            return response()->json(['message' => 'Service not found'], 404);
+        }
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'required|string',
+            'trigger_type' => 'nullable|string|max:255',
+            'trigger_config' => 'nullable|array',
+        ]);
+
+        $validated['service_id'] = $serviceId;
+
+        $action = Action::create($validated);
+
+        return response()->json([
+            'message' => 'Action created successfully',
+            'action' => $action,
+        ], 201);
+    }
+
+    /**
+     * Store a new reaction for a service.
+     */
+    public function storeReaction(Request $request, $serviceId): JsonResponse
+    {
+        $service = Service::find($serviceId);
+        
+        if (!$service) {
+            return response()->json(['message' => 'Service not found'], 404);
+        }
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'required|string',
+            'action_type' => 'nullable|string|max:255',
+            'action_config' => 'nullable|array',
+        ]);
+
+        $validated['service_id'] = $serviceId;
+
+        $reaction = Reaction::create($validated);
+
+        return response()->json([
+            'message' => 'Reaction created successfully',
+            'reaction' => $reaction,
+        ], 201);
+    }
+
+    /**
      * Destroy the specified service by ID, including its actions and reactions.
      */
-    public function destroy(Services $service): JsonResponse
+    public function destroy(Service $service): JsonResponse
     {
         if (!$service) {
             return response()->json(['message' => 'Service not found'], 404);
@@ -211,7 +302,7 @@ class ServicesController extends Controller
     /**
      * Destroy a specified action of the specified service by ID.
      */
-    public function destroyAction(Services $service, $actionId): JsonResponse
+    public function destroyAction(Service $service, $actionId): JsonResponse
     {
         if (!$service) {
             return response()->json(['message' => 'Service not found'], 404);
@@ -231,7 +322,7 @@ class ServicesController extends Controller
     /**
      * Destroy a specified reaction of the specified service by ID.
      */
-    public function destroyReaction(Services $service, $reactionId): JsonResponse
+    public function destroyReaction(Service $service, $reactionId): JsonResponse
     {
         if (!$service) {
             return response()->json(['message' => 'Service not found'], 404);

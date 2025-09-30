@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Services;
+use App\Models\Service;
 use App\Services\IconService;
 use Illuminate\Console\Command;
 
@@ -29,7 +29,7 @@ class UpdateServiceIcons extends Command
     {
         $force = $this->option('force');
         
-        $query = Services::query();
+        $query = Service::query();
         if (!$force) {
             $query->where(function($q) {
                 $q->whereNull('icon_url')->orWhere('icon_url', '');

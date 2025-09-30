@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { useCurrentUser } from '../hooks/useCurrentUser'
+import { useCurrentUser } from '../../hooks/useCurrentUser'
 import { Plus, ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface DatabaseService {

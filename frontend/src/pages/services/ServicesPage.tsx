@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { useCurrentUser } from '../../hooks/useCurrentUser'
 
 interface DatabaseService {
   id: number
@@ -91,6 +92,7 @@ const getColorFromName = (name: string): string => {
 };
 
 export default function ServicesPage() {
+  const { isAdmin } = useCurrentUser()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('All')
   const [showPopularOnly, setShowPopularOnly] = useState(false)

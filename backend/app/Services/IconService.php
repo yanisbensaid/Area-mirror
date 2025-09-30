@@ -48,6 +48,7 @@ class IconService
                 'notion' => 'notion.so',
                 'trello' => 'trello.com',
                 'twitch' => 'twitch.tv',
+                'pornhub' => 'pornhub.com',
             ];
 
             $domain = $domainMap[$cleanName] ?? $cleanName . '.com';
