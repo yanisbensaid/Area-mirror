@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { useCurrentUser } from '../../hooks/useCurrentUser'
 
 interface DatabaseService {
   id: number
@@ -42,7 +41,7 @@ interface Service {
 // Helper function to transform database service to frontend service
 const transformDatabaseService = (dbService: DatabaseService): Service => {
   const totalAutomations = dbService.actions.length + dbService.reactions.length;
-  
+
   return {
     id: dbService.id.toString(),
     name: dbService.name,
@@ -82,7 +81,7 @@ const getColorFromName = (name: string): string => {
     'from-pink-500 to-pink-600',
     'from-teal-500 to-teal-600'
   ];
-  
+
   // Use name hash to consistently assign colors
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
@@ -92,7 +91,6 @@ const getColorFromName = (name: string): string => {
 };
 
 export default function ServicesPage() {
-  const { isAdmin } = useCurrentUser()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('All')
   const [showPopularOnly, setShowPopularOnly] = useState(false)
@@ -100,21 +98,25 @@ export default function ServicesPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 9
+
   // Fetch services from API
   useEffect(() => {
     const fetchServices = async () => {
       try {
         setLoading(true);
         const response = await fetch('http://localhost:8000/api/services');
-        
+
         if (!response.ok) {
           throw new Error(`Failed to fetch services: ${response.status}`);
         }
-        
+
         const data = await response.json();
         const dbServices: DatabaseService[] = data.server.services;
         const transformedServices = dbServices.map(transformDatabaseService);
-        
+
         setServices(transformedServices);
         setError(null);
       } catch (err) {
@@ -134,42 +136,75 @@ export default function ServicesPage() {
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value)
+    setCurrentPage(1) // Reset to first page when searching
   }
 
   const handleCategoryChange = (category: string) => {
     setSelectedCategory(category)
+    setCurrentPage(1) // Reset to first page when changing category
   }
 
   const clearFilters = () => {
     setSearchQuery('')
     setSelectedCategory('All')
     setShowPopularOnly(false)
+    setCurrentPage(1) // Reset to first page when clearing filters
   }
 
   // Filter services based on criteria
   const filteredServices = services.filter(service => {
     const matchesCategory = selectedCategory === 'All' || service.category === selectedCategory
-    const matchesSearch = !searchQuery || 
+    const matchesSearch = !searchQuery ||
       service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       service.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
       service.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
     const matchesPopular = !showPopularOnly || service.isPopular
-    
+
     return matchesCategory && matchesSearch && matchesPopular
   })
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredServices.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const currentServices = filteredServices.slice(startIndex, endIndex)
+
+  // Reset to page 1 if current page is beyond available pages
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1)
+    }
+  }, [currentPage, totalPages])
+
+  // Pagination functions
+  const goToPreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1)
+    }
+  }
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1)
+    }
+  }
+
+  const goToPage = (page: number) => {
+    setCurrentPage(page)
+  }
 
   return (
     <main className="pt-16 md:pt-20 px-4 bg-gray-50 min-h-screen">
       <div className="max-w-6xl mx-auto py-6 md:py-12">
         {/* Header */}
         <div className="text-center mb-8 md:mb-12">
-          <h1 
+          <h1
             className="text-3xl sm:text-4xl md:text-5xl font-semibold text-gray-900 mb-3 md:mb-4"
             style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.2' }}
           >
             All Services
           </h1>
-          <p 
+          <p
             className="text-lg sm:text-xl md:text-xl text-gray-600 max-w-2xl mx-auto px-2"
             style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.5' }}
           >
@@ -241,8 +276,8 @@ export default function ServicesPage() {
         <div className="bg-white rounded-xl p-4 md:p-6 border border-gray-200 shadow-sm mb-6 md:mb-8">
           {/* Search Bar */}
           <div className="mb-4 md:mb-6">
-            <label 
-              htmlFor="search" 
+            <label
+              htmlFor="search"
               className="block text-sm font-medium text-gray-700 mb-2"
               style={{ fontFamily: 'Inter, sans-serif' }}
             >
@@ -268,7 +303,7 @@ export default function ServicesPage() {
 
           {/* Category Filters */}
           <div className="mb-4">
-            <label 
+            <label
               className="block text-sm font-medium text-gray-700 mb-3"
               style={{ fontFamily: 'Inter, sans-serif' }}
             >
@@ -300,8 +335,8 @@ export default function ServicesPage() {
                 onChange={(e) => setShowPopularOnly(e.target.checked)}
                 className="h-4 w-4 text-gray-900 focus:ring-gray-500 border-gray-300 rounded"
               />
-              <label 
-                htmlFor="popular-toggle" 
+              <label
+                htmlFor="popular-toggle"
                 className="ml-2 text-sm text-gray-700"
                 style={{ fontFamily: 'Inter, sans-serif' }}
               >
@@ -314,7 +349,7 @@ export default function ServicesPage() {
           {(searchQuery || selectedCategory !== 'All' || showPopularOnly) && (
             <div className="flex items-center justify-between pt-4 border-t border-gray-200">
               <div className="flex items-center space-x-4">
-                <span 
+                <span
                   className="text-sm text-gray-600"
                   style={{ fontFamily: 'Inter, sans-serif' }}
                 >
@@ -347,19 +382,9 @@ export default function ServicesPage() {
           )}
         </div>
 
-        {/* Results Count */}
-        <div className="mb-6">
-          <p 
-            className="text-sm text-gray-600"
-            style={{ fontFamily: 'Inter, sans-serif' }}
-          >
-            Showing {filteredServices.length} of {services.length} services
-          </p>
-        </div>
-
         {/* Services Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-          {filteredServices.map((service) => (
+          {currentServices.map((service) => (
             <Link
               key={service.id}
               to={`/services/${service.id}`}
@@ -383,13 +408,13 @@ export default function ServicesPage() {
 
               {/* Content */}
               <div className="mb-3 md:mb-4">
-                <h3 
+                <h3
                   className="text-lg md:text-xl font-semibold text-gray-900 mb-2 group-hover:text-gray-700 transition-colors duration-300"
                   style={{ fontFamily: 'Inter, sans-serif' }}
                 >
                   {service.name}
                 </h3>
-                <p 
+                <p
                   className="text-gray-600 text-sm md:text-base leading-relaxed mb-3"
                   style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.4' }}
                 >
@@ -410,7 +435,7 @@ export default function ServicesPage() {
               {/* Tags */}
               <div className="flex flex-wrap gap-2 mb-3 md:mb-4">
                 {service.tags.slice(0, 3).map((tag) => (
-                  <span 
+                  <span
                     key={tag}
                     className="text-xs bg-gray-50 text-gray-600 px-2 py-1 rounded-md"
                     style={{ fontFamily: 'Inter, sans-serif' }}
@@ -423,7 +448,7 @@ export default function ServicesPage() {
               {/* Action button */}
               <div className="pt-3 md:pt-4 border-t border-gray-200">
                 <div className="flex items-center text-gray-600 group-hover:text-gray-800 transition-colors duration-200">
-                  <span 
+                  <span
                     className="text-sm font-medium"
                     style={{ fontFamily: 'Inter, sans-serif' }}
                   >
@@ -438,6 +463,117 @@ export default function ServicesPage() {
           ))}
         </div>
 
+        {/* Pagination Controls */}
+        {totalPages > 1 && filteredServices.length > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between mt-8 pt-6 border-t border-gray-200">
+            {/* Previous/Next buttons */}
+            <div className="flex items-center gap-2 mb-4 sm:mb-0">
+              <button
+                onClick={goToPreviousPage}
+                disabled={currentPage === 1}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
+                  currentPage === 1
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                }`}
+                style={{ fontFamily: 'Inter, sans-serif' }}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Previous
+              </button>
+
+              <button
+                onClick={goToNextPage}
+                disabled={currentPage === totalPages}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
+                  currentPage === totalPages
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                }`}
+                style={{ fontFamily: 'Inter, sans-serif' }}
+              >
+                Next
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Page numbers */}
+            <div className="flex items-center gap-1">
+              {/* Show first page if we're not near the beginning */}
+              {currentPage > 3 && (
+                <>
+                  <button
+                    onClick={() => goToPage(1)}
+                    className="w-10 h-10 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors duration-200"
+                    style={{ fontFamily: 'Inter, sans-serif' }}
+                  >
+                    1
+                  </button>
+                  {currentPage > 4 && (
+                    <span className="px-2 text-gray-400">...</span>
+                  )}
+                </>
+              )}
+
+              {/* Show pages around current page */}
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+
+                if (pageNum < 1 || pageNum > totalPages) return null;
+
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => goToPage(pageNum)}
+                    className={`w-10 h-10 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                      currentPage === pageNum
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                    style={{ fontFamily: 'Inter, sans-serif' }}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+
+              {/* Show last page if we're not near the end */}
+              {currentPage < totalPages - 2 && (
+                <>
+                  {currentPage < totalPages - 3 && (
+                    <span className="px-2 text-gray-400">...</span>
+                  )}
+                  <button
+                    onClick={() => goToPage(totalPages)}
+                    className="w-10 h-10 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors duration-200"
+                    style={{ fontFamily: 'Inter, sans-serif' }}
+                  >
+                    {totalPages}
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* Items per page info */}
+            <div className="text-sm text-gray-500 mt-4 sm:mt-0" style={{ fontFamily: 'Inter, sans-serif' }}>
+              {itemsPerPage} per page
+            </div>
+          </div>
+        )}
+
         {/* No results */}
         {filteredServices.length === 0 && !error && (
           <div className="text-center py-12">
@@ -446,13 +582,13 @@ export default function ServicesPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
-            <h3 
+            <h3
               className="text-xl font-medium text-gray-900 mb-2"
               style={{ fontFamily: 'Inter, sans-serif' }}
             >
               No services found
             </h3>
-            <p 
+            <p
               className="text-gray-600 mb-4"
               style={{ fontFamily: 'Inter, sans-serif' }}
             >
