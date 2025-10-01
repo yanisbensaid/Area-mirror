@@ -301,7 +301,7 @@ export default function DashboardPage() {
                           <img
                             src={service.logo}
                             alt={`${service.name} logo`}
-                            className="w-full h-full object-contain"
+                            className="w-full h-full object-contain rounded-lg"
                           />
                         </div>
                         <span

@@ -13,11 +13,11 @@ class IconService
     public static function findIconForService(string $serviceName): ?string
     {
         // Try different icon sources in order of preference
-        $iconUrl = self::tryLogoAPI($serviceName) ?:
+        $iconUrl = self::tryLocalIcons($serviceName) ?:
+                   self::tryLogoAPI($serviceName) ?:
                    self::tryBrandfetch($serviceName) ?:
                    self::trySimpleIconsAPI($serviceName) ?:
-                   self::tryGoogleIcons($serviceName) ?:
-                   self::tryLocalIcons($serviceName);
+                   self::tryGoogleIcons($serviceName);
 
         return $iconUrl;
     }
@@ -33,6 +33,7 @@ class IconService
             // Common domain mappings
             $domainMap = [
                 'google' => 'google.com',
+                'gmail' => 'gmail.com',
                 'github' => 'github.com',
                 'microsoft' => 'microsoft.com',
                 'spotify' => 'spotify.com',
@@ -49,6 +50,14 @@ class IconService
                 'trello' => 'trello.com',
                 'twitch' => 'twitch.tv',
                 'pornhub' => 'pornhub.com',
+                'steam' => 'steampowered.com',
+                'reddit' => 'reddit.com',
+                'pinterest' => 'pinterest.com',
+                'yahoo' => 'yahoo.com',
+                'ebay' => 'ebay.com',
+                'paypal' => 'paypal.com',
+                'airbnb' => 'airbnb.com',
+                'uber' => 'uber.com',
             ];
 
             $domain = $domainMap[$cleanName] ?? $cleanName . '.com';
