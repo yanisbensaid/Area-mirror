@@ -296,6 +296,95 @@ class TelegramService extends BaseService
     }
 
     /**
+     * Setup webhook for automatic chat_id detection
+     *
+     * @return bool Success status
+     */
+    public function setupWebhook(): bool
+    {
+        if (!$this->botToken) {
+            Log::error('Cannot setup webhook: bot token not set');
+            return false;
+        }
+
+        $webhookUrl = config('services.telegram.webhook_url');
+
+        if (!$webhookUrl) {
+            Log::warning('Telegram webhook URL not configured in services config');
+            return false;
+        }
+
+        try {
+            $response = $this->makeRequest(
+                'POST',
+                $this->baseUrl . $this->botToken . '/setWebhook',
+                [
+                    'url' => $webhookUrl,
+                    'drop_pending_updates' => true,
+                    'allowed_updates' => ['message'], // Only listen for messages
+                ]
+            );
+
+            if ($response->successful()) {
+                $data = $response->json();
+
+                Log::info('Telegram webhook configured successfully', [
+                    'webhook_url' => $webhookUrl,
+                    'description' => $data['description'] ?? null,
+                ]);
+
+                return $data['ok'] ?? false;
+            }
+
+            Log::error('Failed to setup Telegram webhook', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            return false;
+
+        } catch (\Exception $e) {
+            Log::error('Error setting up Telegram webhook', [
+                'error' => $e->getMessage(),
+                'webhook_url' => $webhookUrl,
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Get current webhook info
+     *
+     * @return array|null Webhook information
+     */
+    public function getWebhookInfo(): ?array
+    {
+        if (!$this->botToken) {
+            return null;
+        }
+
+        try {
+            $response = $this->makeRequest(
+                'GET',
+                $this->baseUrl . $this->botToken . '/getWebhookInfo'
+            );
+
+            if ($response->successful()) {
+                $data = $response->json();
+                return $data['result'] ?? null;
+            }
+
+            return null;
+
+        } catch (\Exception $e) {
+            Log::error('Error getting webhook info', [
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
+    }
+
+    /**
      * Execute an action (trigger)
      */
     public function executeAction(string $actionName, array $params): mixed

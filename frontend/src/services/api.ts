@@ -57,9 +57,20 @@ export const apiService = {
   getUser: () => api.get('/api/user'),
 
   telegram: {
-    sendMessage: (data: { chat_id: string; text: string }, token?: string) => {
+    sendMessage: (data: { chat_id?: string; text: string }, token?: string) => {
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       return api.post('/api/test/telegram/send', data, { headers });
+    },
+    connectBot: (botToken: string, token?: string) => {
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      return api.post('/api/services/connect', {
+        service: 'Telegram',
+        credentials: { bot_token: botToken }
+      }, { headers });
+    },
+    getStatus: (token?: string) => {
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      return api.get('/api/services/telegram/status', { headers });
     },
   },
 };

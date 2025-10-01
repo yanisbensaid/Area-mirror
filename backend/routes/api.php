@@ -10,6 +10,7 @@ use App\Http\Controllers\TestController;
 use App\Http\Controllers\AutomationController;
 use App\Http\Controllers\MailController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\TelegramWebhookController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -41,6 +42,9 @@ Route::get('/services/info/{service}', [ServiceConnectionController::class, 'ser
 // Mail endpoints
 Route::post('/mail/test', [MailController::class, 'testEmail']);
 
+// Webhook endpoints (public - no authentication)
+Route::post('/webhooks/telegram', [TelegramWebhookController::class, 'handle']);
+
 // Protected routes (requires authentication)
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -59,6 +63,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/services/{service}/disconnect', [ServiceConnectionController::class, 'disconnectService']);
     Route::post('/services/{service}/test', [ServiceConnectionController::class, 'testConnection']);
     Route::get('/services/connected', [ServiceConnectionController::class, 'connectedServices']);
+    Route::get('/services/telegram/status', [ServiceConnectionController::class, 'telegramStatus']);
 
     // Testing endpoints for development
     Route::prefix('test')->group(function () {

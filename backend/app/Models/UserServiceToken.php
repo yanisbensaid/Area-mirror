@@ -192,4 +192,35 @@ class UserServiceToken extends Model
 
         return array_filter($credentials, fn($value) => $value !== null);
     }
+
+    /**
+     * Get stored chat_id for Telegram service
+     */
+    public function getChatId(): ?string
+    {
+        return $this->additional_data['chat_id'] ?? null;
+    }
+
+    /**
+     * Store chat_id and user info for Telegram service
+     */
+    public function setChatId(string $chatId, array $userInfo = []): void
+    {
+        $data = $this->additional_data ?? [];
+        $data['chat_id'] = $chatId;
+        $data['username'] = $userInfo['username'] ?? null;
+        $data['first_name'] = $userInfo['first_name'] ?? null;
+        $data['detected_at'] = now()->toIso8601String();
+
+        $this->additional_data = $data;
+        $this->save();
+    }
+
+    /**
+     * Check if chat_id is stored
+     */
+    public function hasChatId(): bool
+    {
+        return !empty($this->getChatId());
+    }
 }

@@ -30,7 +30,7 @@ class TestController extends Controller
     {
         try {
             $validated = $request->validate([
-                'chat_id' => 'required|string',
+                'chat_id' => 'nullable|string', // Made optional - will use stored chat_id if not provided
                 'text' => 'required|string|max:4096',
                 'parse_mode' => 'nullable|string|in:Markdown,HTML',
             ]);
@@ -42,6 +42,16 @@ class TestController extends Controller
                 return response()->json([
                     'success' => false,
                     'message' => 'Telegram service not connected or token invalid',
+                ], 400);
+            }
+
+            // Use stored chat_id if not provided in request
+            $chatId = $validated['chat_id'] ?? $token->getChatId();
+
+            if (!$chatId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Please send /start to your bot first to complete setup, or provide a chat_id in the request',
                 ], 400);
             }
 
@@ -58,14 +68,14 @@ class TestController extends Controller
 
             // Send the message
             $result = $telegramService->executeReaction('send_message', [
-                'chat_id' => $validated['chat_id'],
+                'chat_id' => $chatId,
                 'text' => $validated['text'],
                 'parse_mode' => $validated['parse_mode'] ?? 'Markdown',
             ]);
 
             Log::info('Test message sent', [
                 'user_id' => $user->id,
-                'chat_id' => $validated['chat_id'],
+                'chat_id' => $chatId,
                 'success' => $result,
             ]);
 
@@ -73,9 +83,10 @@ class TestController extends Controller
                 'success' => $result,
                 'message' => $result ? 'Message sent successfully' : 'Failed to send message',
                 'data' => [
-                    'chat_id' => $validated['chat_id'],
+                    'chat_id' => $chatId,
                     'text' => $validated['text'],
                     'sent_at' => now()->toISOString(),
+                    'used_stored_chat_id' => !isset($validated['chat_id']),
                 ],
             ]);
 
@@ -159,7 +170,7 @@ class TestController extends Controller
     {
         try {
             $validated = $request->validate([
-                'chat_id' => 'required|string',
+                'chat_id' => 'nullable|string', // Made optional
                 'photo_url' => 'required|url',
                 'caption' => 'nullable|string|max:1024',
             ]);
@@ -174,12 +185,22 @@ class TestController extends Controller
                 ], 400);
             }
 
+            // Use stored chat_id if not provided
+            $chatId = $validated['chat_id'] ?? $token->getChatId();
+
+            if (!$chatId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Please send /start to your bot first to complete setup, or provide a chat_id in the request',
+                ], 400);
+            }
+
             $telegramService = $this->serviceManager->get('Telegram');
             $telegramService->setCredentials($token->getCredentialsArray());
 
             // Send the photo
             $result = $telegramService->executeReaction('send_photo', [
-                'chat_id' => $validated['chat_id'],
+                'chat_id' => $chatId,
                 'photo_url' => $validated['photo_url'],
                 'caption' => $validated['caption'] ?? null,
             ]);
@@ -188,9 +209,10 @@ class TestController extends Controller
                 'success' => $result,
                 'message' => $result ? 'Photo sent successfully' : 'Failed to send photo',
                 'data' => [
-                    'chat_id' => $validated['chat_id'],
+                    'chat_id' => $chatId,
                     'photo_url' => $validated['photo_url'],
                     'sent_at' => now()->toISOString(),
+                    'used_stored_chat_id' => !isset($validated['chat_id']),
                 ],
             ]);
 
@@ -212,7 +234,7 @@ class TestController extends Controller
     {
         try {
             $validated = $request->validate([
-                'chat_id' => 'required|string',
+                'chat_id' => 'nullable|string', // Made optional
             ]);
 
             $user = Auth::user();
@@ -225,21 +247,32 @@ class TestController extends Controller
                 ], 400);
             }
 
+            // Use stored chat_id if not provided
+            $chatId = $validated['chat_id'] ?? $token->getChatId();
+
+            if (!$chatId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Please send /start to your bot first to complete setup, or provide a chat_id in the request',
+                ], 400);
+            }
+
             $telegramService = $this->serviceManager->get('Telegram');
             $telegramService->setCredentials($token->getCredentialsArray());
 
             // Check for new messages
             $messages = $telegramService->executeAction('new_message_in_chat', [
-                'chat_id' => $validated['chat_id'],
+                'chat_id' => $chatId,
             ]);
 
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'chat_id' => $validated['chat_id'],
+                    'chat_id' => $chatId,
                     'messages' => $messages,
                     'count' => count($messages),
                     'checked_at' => now()->toISOString(),
+                    'used_stored_chat_id' => !isset($validated['chat_id']),
                 ],
             ]);
 

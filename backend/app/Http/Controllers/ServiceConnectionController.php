@@ -144,6 +144,13 @@ class ServiceConnectionController extends Controller
             $user = Auth::user();
             $this->storeServiceCredentials($user, $serviceName, $credentials);
 
+            // Special handling for Telegram: Setup webhook automatically
+            $instructions = null;
+            if ($serviceName === 'Telegram') {
+                $service->setupWebhook();
+                $instructions = 'Please send /start to your bot to complete setup and enable automatic message delivery.';
+            }
+
             Log::info('Service connected successfully', [
                 'service' => $serviceName,
                 'user_id' => $user->id,
@@ -152,6 +159,7 @@ class ServiceConnectionController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => "Successfully connected to $serviceName",
+                'instructions' => $instructions,
                 'data' => [
                     'service' => $serviceName,
                     'connected_at' => now()->toISOString(),
@@ -371,6 +379,65 @@ class ServiceConnectionController extends Controller
 
         if (!empty($rules)) {
             validator($credentials, $rules)->validate();
+        }
+    }
+
+    /**
+     * Get Telegram service status including chat_id detection status
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function telegramStatus(Request $request): JsonResponse
+    {
+        try {
+            $user = Auth::user();
+            $token = $user->getServiceToken('Telegram');
+
+            if (!$token) {
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'connected' => false,
+                        'setup_complete' => false,
+                        'chat_id_detected' => false,
+                        'instructions' => 'Please connect your Telegram bot first.',
+                    ]
+                ]);
+            }
+
+            $chatId = $token->getChatId();
+            $setupComplete = !empty($chatId);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'connected' => true,
+                    'setup_complete' => $setupComplete,
+                    'chat_id_detected' => $setupComplete,
+                    'chat_id' => $chatId,
+                    'user_info' => [
+                        'username' => $token->additional_data['username'] ?? null,
+                        'first_name' => $token->additional_data['first_name'] ?? null,
+                        'detected_at' => $token->additional_data['detected_at'] ?? null,
+                    ],
+                    'instructions' => $setupComplete
+                        ? 'Setup complete! Your bot is ready to use.'
+                        : 'Please send /start to your bot to complete setup.',
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to get Telegram status', [
+                'error' => $e->getMessage(),
+                'user_id' => Auth::id(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve Telegram status',
+                'error' => $e->getMessage(),
+            ], 500);
         }
     }
 

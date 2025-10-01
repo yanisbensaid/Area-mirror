@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
+import { useAuth } from '../../contexts/AuthContext';
 import { apiService } from '../../services/api';
 
 interface DatabaseService {
@@ -52,10 +53,20 @@ export default function ServicePage() {
   const { serviceName } = useParams<{ serviceName: string }>();
   const navigate = useNavigate();
   const { isAdmin } = useCurrentUser();
+  const { isLoggedIn } = useAuth();
   const [service, setService] = useState<DatabaseService | null>(null);
   const [automations, setAutomations] = useState<Automation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Telegram connection state
+  const [botToken, setBotToken] = useState('');
+  const [connectingBot, setConnectingBot] = useState(false);
+  const [connectionResult, setConnectionResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  // Telegram status state
+  const [telegramStatus, setTelegramStatus] = useState<any>(null);
+  const [loadingStatus, setLoadingStatus] = useState(false);
 
   // Telegram message state
   const [chatId, setChatId] = useState('');
@@ -106,11 +117,77 @@ export default function ServicePage() {
     fetchServiceAndAutomations();
   }, [serviceName]);
 
+  // Fetch Telegram status when logged in
+  useEffect(() => {
+    const fetchTelegramStatus = async () => {
+      if (service?.name.toLowerCase() === 'telegram' && isLoggedIn) {
+        setLoadingStatus(true);
+        try {
+          const token = localStorage.getItem('token');
+          const response = await apiService.telegram.getStatus(token || undefined);
+          setTelegramStatus(response.data.data);
+        } catch (error: any) {
+          console.error('Failed to fetch Telegram status:', error);
+        } finally {
+          setLoadingStatus(false);
+        }
+      }
+    };
+
+    fetchTelegramStatus();
+  }, [service, isLoggedIn]);
+
+  const handleConnectBot = async () => {
+    if (!botToken) {
+      setConnectionResult({
+        success: false,
+        message: 'Please enter your bot token',
+      });
+      return;
+    }
+
+    setConnectingBot(true);
+    setConnectionResult(null);
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await apiService.telegram.connectBot(botToken, token || undefined);
+
+      setConnectionResult({
+        success: true,
+        message: response.data.message + ' ' + (response.data.instructions || ''),
+      });
+
+      // Refresh status
+      setTimeout(async () => {
+        const statusResponse = await apiService.telegram.getStatus(token || undefined);
+        setTelegramStatus(statusResponse.data.data);
+      }, 1000);
+
+      setBotToken('');
+    } catch (error: any) {
+      setConnectionResult({
+        success: false,
+        message: error.response?.data?.message || 'Failed to connect bot',
+      });
+    } finally {
+      setConnectingBot(false);
+    }
+  };
+
   const handleSendTelegramMessage = async () => {
-    if (!chatId || !messageText || !authToken) {
+    if (!messageText) {
       setMessageResult({
         success: false,
-        message: 'Please fill in all fields (Chat ID, Message, and Auth Token)',
+        message: 'Please enter a message',
+      });
+      return;
+    }
+
+    if (!authToken && !isLoggedIn) {
+      setMessageResult({
+        success: false,
+        message: 'Please login or provide an auth token',
       });
       return;
     }
@@ -119,18 +196,32 @@ export default function ServicePage() {
     setMessageResult(null);
 
     try {
+      const token = authToken || localStorage.getItem('token');
       const response = await apiService.telegram.sendMessage(
-        { chat_id: chatId, text: messageText },
-        authToken
+        {
+          chat_id: chatId || undefined,
+          text: messageText
+        },
+        token || undefined
       );
 
       setMessageResult({
         success: true,
-        message: 'Message sent successfully!',
+        message: response.data.message || 'Message sent successfully!',
       });
 
       // Clear form after successful send
       setMessageText('');
+
+      // Show if used stored chat_id
+      if (response.data.data?.used_stored_chat_id) {
+        setTimeout(() => {
+          setMessageResult({
+            success: true,
+            message: `Message sent to your auto-detected chat! (Chat ID: ${response.data.data.chat_id})`,
+          });
+        }, 2000);
+      }
     } catch (error: any) {
       setMessageResult({
         success: false,
@@ -338,36 +429,164 @@ export default function ServicePage() {
         </div>
         )}
 
-        {/* Telegram Message Sender - Only show for Telegram service */}
+        {/* Telegram Bot Connection & Testing - Only show for Telegram service */}
         {service && service.name.toLowerCase() === 'telegram' && (
-          <div className="mb-8 bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-            <h2
-              className="text-2xl font-semibold text-gray-900 mb-6"
-              style={{ fontFamily: 'Inter, sans-serif' }}
-            >
-              📱 Send Telegram Message
-            </h2>
-
-            <div className="space-y-4">
-              {/* Chat ID Input */}
-              <div>
-                <label
-                  htmlFor="chatId"
-                  className="block text-sm font-medium text-gray-700 mb-2"
+          <>
+            {/* Connection Status */}
+            {isLoggedIn && (
+              <div className="mb-8 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-6 border border-blue-200 shadow-sm">
+                <h2
+                  className="text-2xl font-semibold text-gray-900 mb-4"
                   style={{ fontFamily: 'Inter, sans-serif' }}
                 >
-                  Chat ID
-                </label>
-                <input
-                  type="text"
-                  id="chatId"
-                  value={chatId}
-                  onChange={(e) => setChatId(e.target.value)}
-                  placeholder="e.g., 1744435104"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  style={{ fontFamily: 'Inter, sans-serif' }}
-                />
+                  🤖 Bot Connection Status
+                </h2>
+
+                {loadingStatus ? (
+                  <div className="flex items-center justify-center py-4">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  </div>
+                ) : telegramStatus ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-2xl">
+                        {telegramStatus.connected ? '✅' : '❌'}
+                      </span>
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          {telegramStatus.connected ? 'Bot Connected' : 'Bot Not Connected'}
+                        </p>
+                        <p className="text-sm text-gray-600">{telegramStatus.instructions}</p>
+                      </div>
+                    </div>
+
+                    {telegramStatus.chat_id_detected && (
+                      <div className="mt-4 bg-white rounded-lg p-4 border border-green-200">
+                        <p className="text-sm font-medium text-green-800 mb-2">
+                          ✨ Chat ID Auto-Detected!
+                        </p>
+                        <p className="text-xs text-gray-600">
+                          Chat ID: <code className="bg-gray-100 px-2 py-1 rounded">{telegramStatus.chat_id}</code>
+                        </p>
+                        {telegramStatus.user_info?.username && (
+                          <p className="text-xs text-gray-600 mt-1">
+                            Username: @{telegramStatus.user_info.username}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ) : null}
               </div>
+            )}
+
+            {/* Bot Connection Form */}
+            {isLoggedIn && (!telegramStatus || !telegramStatus.connected) && (
+              <div className="mb-8 bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                <h2
+                  className="text-2xl font-semibold text-gray-900 mb-6"
+                  style={{ fontFamily: 'Inter, sans-serif' }}
+                >
+                  🔗 Connect Your Telegram Bot
+                </h2>
+
+                <div className="space-y-4">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h3 className="font-medium text-blue-900 mb-2">📋 Setup Instructions:</h3>
+                    <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
+                      <li>Open Telegram and search for <strong>@BotFather</strong></li>
+                      <li>Send <code className="bg-blue-100 px-1 rounded">/newbot</code> and follow instructions</li>
+                      <li>Copy your bot token (looks like: <code className="bg-blue-100 px-1 rounded">123456789:ABC...</code>)</li>
+                      <li>Paste it below and click "Connect Bot"</li>
+                      <li>Send <code className="bg-blue-100 px-1 rounded">/start</code> to your bot to complete setup</li>
+                    </ol>
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="botToken"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                      style={{ fontFamily: 'Inter, sans-serif' }}
+                    >
+                      Bot Token
+                    </label>
+                    <input
+                      type="text"
+                      id="botToken"
+                      value={botToken}
+                      onChange={(e) => setBotToken(e.target.value)}
+                      placeholder="123456789:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      style={{ fontFamily: 'Inter, sans-serif' }}
+                    />
+                  </div>
+
+                  <button
+                    onClick={handleConnectBot}
+                    disabled={connectingBot}
+                    className={`w-full py-3 px-6 rounded-lg font-medium transition-colors duration-200 ${
+                      connectingBot
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : 'bg-blue-600 hover:bg-blue-700 text-white'
+                    }`}
+                    style={{ fontFamily: 'Inter, sans-serif' }}
+                  >
+                    {connectingBot ? 'Connecting...' : 'Connect Bot'}
+                  </button>
+
+                  {connectionResult && (
+                    <div
+                      className={`p-4 rounded-lg ${
+                        connectionResult.success
+                          ? 'bg-green-50 border border-green-200'
+                          : 'bg-red-50 border border-red-200'
+                      }`}
+                    >
+                      <p
+                        className={`text-sm ${
+                          connectionResult.success ? 'text-green-800' : 'text-red-800'
+                        }`}
+                        style={{ fontFamily: 'Inter, sans-serif' }}
+                      >
+                        {connectionResult.message}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Message Sender */}
+            <div className="mb-8 bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+              <h2
+                className="text-2xl font-semibold text-gray-900 mb-6"
+                style={{ fontFamily: 'Inter, sans-serif' }}
+              >
+                📱 Send Telegram Message
+              </h2>
+
+              <div className="space-y-4">
+                {/* Chat ID Input - Optional now */}
+                <div>
+                  <label
+                    htmlFor="chatId"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                    style={{ fontFamily: 'Inter, sans-serif' }}
+                  >
+                    Chat ID {isLoggedIn && telegramStatus?.chat_id_detected && (
+                      <span className="text-xs text-green-600 ml-2">(Optional - using auto-detected)</span>
+                    )}
+                  </label>
+                  <input
+                    type="text"
+                    id="chatId"
+                    value={chatId}
+                    onChange={(e) => setChatId(e.target.value)}
+                    placeholder={isLoggedIn && telegramStatus?.chat_id_detected ? "Using your auto-detected chat ID" : "e.g., 1744435104"}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    style={{ fontFamily: 'Inter, sans-serif' }}
+                  />
+                </div>
 
               {/* Message Input */}
               <div>
@@ -389,25 +608,27 @@ export default function ServicePage() {
                 />
               </div>
 
-              {/* Auth Token Input */}
-              <div>
-                <label
-                  htmlFor="authToken"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                  style={{ fontFamily: 'Inter, sans-serif' }}
-                >
-                  Bearer Token
-                </label>
-                <input
-                  type="text"
-                  id="authToken"
-                  value={authToken}
-                  onChange={(e) => setAuthToken(e.target.value)}
-                  placeholder="e.g., 1|kZKuB2MrIN8audDeFkfOURofUkc3Pwp3edBVgThV79d50be6"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  style={{ fontFamily: 'Inter, sans-serif' }}
-                />
-              </div>
+              {/* Auth Token Input - Optional if logged in */}
+              {!isLoggedIn && (
+                <div>
+                  <label
+                    htmlFor="authToken"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                    style={{ fontFamily: 'Inter, sans-serif' }}
+                  >
+                    Bearer Token
+                  </label>
+                  <input
+                    type="text"
+                    id="authToken"
+                    value={authToken}
+                    onChange={(e) => setAuthToken(e.target.value)}
+                    placeholder="e.g., 1|kZKuB2MrIN8audDeFkfOURofUkc3Pwp3edBVgThV79d50be6"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    style={{ fontFamily: 'Inter, sans-serif' }}
+                  />
+                </div>
+              )}
 
               {/* Send Button */}
               <button
@@ -444,6 +665,7 @@ export default function ServicePage() {
               )}
             </div>
           </div>
+          </>
         )}
 
         {/* Automations */}
