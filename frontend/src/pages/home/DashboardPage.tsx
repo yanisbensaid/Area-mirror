@@ -1,8 +1,8 @@
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useCurrentUser } from '../../hooks/useCurrentUser'
-import { Plus, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus } from 'lucide-react'
 
 interface DatabaseService {
   id: number
@@ -97,9 +97,34 @@ export default function DashboardPage() {
   const [services, setServices] = useState<Service[]>([])
   const [servicesLoading, setServicesLoading] = useState(true)
   const [servicesError, setServicesError] = useState<string | null>(null)
+  const [canScrollLeft, setCanScrollLeft] = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(false)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   // Get current user information
   const { user } = useCurrentUser()
+
+  // Check scroll position to update arrow visibility
+  const checkScrollPosition = () => {
+    if (scrollContainerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current
+      setCanScrollLeft(scrollLeft > 0)
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1)
+    }
+  }
+
+  // Scroll functions
+  const scrollLeft = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: -200, behavior: 'smooth' })
+    }
+  }
+
+  const scrollRight = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: 200, behavior: 'smooth' })
+    }
+  }
 
   // Fetch services from API
   useEffect(() => {
@@ -130,8 +155,12 @@ export default function DashboardPage() {
     fetchServices();
   }, []);
 
-  // Show all services (no limit)
-  const featuredServices = services;
+  // Check scroll position when services load
+  useEffect(() => {
+    if (!servicesLoading && services.length > 0) {
+      setTimeout(checkScrollPosition, 100)
+    }
+  }, [servicesLoading, services])
 
   return (
     <main className="pt-16 md:pt-20 px-4 bg-gray-50 min-h-screen">
@@ -174,7 +203,7 @@ export default function DashboardPage() {
           </div>
           <div className="bg-white rounded-lg p-3 md:p-4 border border-gray-200 shadow-sm text-center">
             <div className="text-xl md:text-2xl font-semibold text-gray-900 mb-1">
-              {featuredServices.length}
+              {services.length}
             </div>
             <div className="text-xs md:text-sm text-gray-600">Available Services</div>
           </div>
@@ -249,7 +278,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Services Grid - 4 Visible Services with Horizontal Scroll */}
+          {/* Services Grid - Horizontal Scroll */}
           {servicesLoading ? (
             <div className="flex justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
@@ -259,7 +288,7 @@ export default function DashboardPage() {
               <p className="text-red-600 mb-2">Error loading services</p>
               <p className="text-gray-500 text-sm">{servicesError}</p>
             </div>
-          ) : featuredServices.length === 0 ? (
+          ) : services.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-gray-500 mb-4">No services available yet</p>
               <Link
@@ -272,86 +301,79 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="relative">
-              {/* Fixed width container to show only 4 services - Centered with Animated Arrows */}
-              <div className="flex items-center justify-center gap-4">
-                {/* Left Arrow - Only show if there are more than 4 services */}
-                {featuredServices.length > 4 && (
-                  <div className="flex items-center">
-                    <ChevronLeft 
-                      className="w-6 h-6 text-purple-600 animate-pulse cursor-pointer hover:text-purple-700 transition-colors"
-                      style={{
-                        animation: 'bounceLeft 2s ease-in-out infinite'
-                      }}
-                    />
-                  </div>
-                )}
-
-                <div
-                  className="overflow-x-auto scrollbar-hide"
-                  style={{ width: '475px', maxWidth: '100%' }} // Fixed width for exactly 4 services
+              {/* Left Arrow */}
+              {canScrollLeft && (
+                <button
+                  onClick={scrollLeft}
+                  className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 bg-white rounded-full shadow-lg border border-gray-200 p-2 hover:bg-gray-50 transition-colors duration-200"
+                  style={{ marginLeft: '-16px' }}
                 >
-                  <div className="flex gap-6 pb-4" style={{ width: 'max-content' }}>
-                    {featuredServices.map((service, index) => (
-                      <Link
-                        key={service.id}
-                        to={`/services/${service.id}`}
-                        className="group flex flex-col items-center p-4 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 cursor-pointer flex-shrink-0 w-24"
-                      >
-                        <div className="w-12 h-12 mb-3 transition-transform duration-200 group-hover:scale-110">
-                          <img
-                            src={service.logo}
-                            alt={`${service.name} logo`}
-                            className="w-full h-full object-contain"
-                          />
-                        </div>
-                        <span
-                          className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors duration-200 text-center"
-                          style={{ fontFamily: 'Inter, sans-serif' }}
-                        >
-                          {service.name}
-                        </span>
-                        {index < 4 && (
-                          <div className="mt-1 flex items-center">
-                            <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                          </div>
-                        )}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
+                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+              )}
 
-                {/* Right Arrow - Only show if there are more than 4 services */}
-                {featuredServices.length > 4 && (
-                  <div className="flex items-center">
-                    <ChevronRight 
-                      className="w-6 h-6 text-purple-600 animate-pulse cursor-pointer hover:text-purple-700 transition-colors"
-                      style={{
-                        animation: 'bounceRight 2s ease-in-out infinite'
-                      }}
-                    />
-                  </div>
-                )}
+              {/* Right Arrow */}
+              {canScrollRight && (
+                <button
+                  onClick={scrollRight}
+                  className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 bg-white rounded-full shadow-lg border border-gray-200 p-2 hover:bg-gray-50 transition-colors duration-200"
+                  style={{ marginRight: '-16px' }}
+                >
+                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              )}
+
+              {/* Scrollable Container */}
+              <div
+                ref={scrollContainerRef}
+                className="overflow-x-auto pb-4 scrollbar-hide"
+                onScroll={checkScrollPosition}
+              >
+                <div className="flex gap-4 md:gap-6 min-w-max px-2">
+                  {services.map((service) => (
+                    <Link
+                      key={service.id}
+                      to={`/services/${service.id}`}
+                      className="group flex flex-col items-center p-3 md:p-4 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 cursor-pointer min-w-[100px] md:min-w-[120px] flex-shrink-0"
+                    >
+                      <div className="w-8 h-8 md:w-12 md:h-12 mb-2 md:mb-3 transition-transform duration-200 group-hover:scale-110">
+                        <img
+                          src={service.logo}
+                          alt={`${service.name} logo`}
+                          className="w-full h-full object-contain"
+                          onError={(e) => {
+                            e.currentTarget.src = '/app_logo/default.png'
+                          }}
+                        />
+                      </div>
+                      <span
+                        className="text-xs md:text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors duration-200 text-center"
+                        style={{ fontFamily: 'Inter, sans-serif' }}
+                      >
+                        {service.name}
+                      </span>
+                      {/* Service status indicator */}
+                      <div className="mt-1 flex items-center">
+                        <div className={`w-2 h-2 rounded-full ${service.status === 'active' ? 'bg-green-400' : 'bg-gray-400'}`}></div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
               </div>
 
-              {/* Scroll indicator */}
-              {featuredServices.length > 4 && (
-                <div className="flex items-center justify-between mt-4">
-                  <div className="flex items-center gap-2">
-                    <div className="flex gap-1">
-                      {Array.from({ length: Math.min(4, featuredServices.length) }, (_, i) => (
-                        <div key={i} className="w-2 h-2 bg-purple-600 rounded-full"></div>
-                      ))}
-                      {featuredServices.length > 4 && (
-                        <>
-                          <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-                          <span className="text-xs text-gray-500">+{featuredServices.length - 4} more</span>
-                        </>
-                      )}
-                    </div>
+              {/* Scroll hint for mobile */}
+              {!servicesLoading && services.length > 3 && !canScrollLeft && !canScrollRight && (
+                <div className="flex justify-center mt-4 md:hidden">
+                  <div className="flex items-center text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                    <span style={{ fontFamily: 'Inter, sans-serif' }}>Swipe to see more</span>
                   </div>
-                  <p className="text-sm text-gray-500">
-                    ← Scroll to see all {featuredServices.length} services
-                  </p>
                 </div>
               )}
             </div>

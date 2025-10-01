@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { useAuth } from '../../contexts/AuthContext';
@@ -45,7 +45,7 @@ interface Automation {
   };
   is_active: boolean;
   category: string;
-  tags: string[];
+  tags: string[] | string; // Can be JSON string or array
   popularity: number;
 }
 
@@ -101,7 +101,7 @@ export default function ServicePage() {
 
         if (automationsResponse.ok) {
           const automationsData = await automationsResponse.json();
-          setAutomations(automationsData);
+          setAutomations(automationsData.server.automations || []);
         }
 
         setError(null);
@@ -779,36 +779,68 @@ export default function ServicePage() {
 
                     {/* Tags */}
                     <div className="flex flex-wrap gap-2 mb-4">
-                      {automation.tags?.slice(0, 3).map((tag, index) => (
-                        <span
-                          key={index}
-                          className="text-xs bg-gray-50 text-gray-600 px-2 py-1 rounded-md"
-                          style={{ fontFamily: 'Inter, sans-serif' }}
-                        >
-                          {tag}
-                        </span>
-                      )) || (
-                        <>
-                          <span
-                            className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-md"
-                            style={{ fontFamily: 'Inter, sans-serif' }}
-                          >
-                            automation
-                          </span>
-                          <span
-                            className="text-xs bg-gray-50 text-gray-600 px-2 py-1 rounded-md"
-                            style={{ fontFamily: 'Inter, sans-serif' }}
-                          >
-                            {automation.trigger_service.name.toLowerCase()}
-                          </span>
-                          <span
-                            className="text-xs bg-gray-50 text-gray-600 px-2 py-1 rounded-md"
-                            style={{ fontFamily: 'Inter, sans-serif' }}
-                          >
-                            {automation.action_service.name.toLowerCase()}
-                          </span>
-                        </>
-                      )}
+                      {(() => {
+                        try {
+                          const parsedTags = typeof automation.tags === 'string' 
+                            ? JSON.parse(automation.tags) 
+                            : automation.tags;
+                          return Array.isArray(parsedTags) && parsedTags.length > 0 
+                            ? parsedTags.slice(0, 3).map((tag, index) => (
+                                <span
+                                  key={index}
+                                  className="text-xs bg-gray-50 text-gray-600 px-2 py-1 rounded-md"
+                                  style={{ fontFamily: 'Inter, sans-serif' }}
+                                >
+                                  {tag}
+                                </span>
+                              ))
+                            : (
+                              <>
+                                <span
+                                  className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-md"
+                                  style={{ fontFamily: 'Inter, sans-serif' }}
+                                >
+                                  automation
+                                </span>
+                                <span
+                                  className="text-xs bg-gray-50 text-gray-600 px-2 py-1 rounded-md"
+                                  style={{ fontFamily: 'Inter, sans-serif' }}
+                                >
+                                  {automation.trigger_service.name.toLowerCase()}
+                                </span>
+                                <span
+                                  className="text-xs bg-gray-50 text-gray-600 px-2 py-1 rounded-md"
+                                  style={{ fontFamily: 'Inter, sans-serif' }}
+                                >
+                                  {automation.action_service.name.toLowerCase()}
+                                </span>
+                              </>
+                            );
+                        } catch (error) {
+                          return (
+                            <>
+                              <span
+                                className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-md"
+                                style={{ fontFamily: 'Inter, sans-serif' }}
+                              >
+                                automation
+                              </span>
+                              <span
+                                className="text-xs bg-gray-50 text-gray-600 px-2 py-1 rounded-md"
+                                style={{ fontFamily: 'Inter, sans-serif' }}
+                              >
+                                {automation.trigger_service.name.toLowerCase()}
+                              </span>
+                              <span
+                                className="text-xs bg-gray-50 text-gray-600 px-2 py-1 rounded-md"
+                                style={{ fontFamily: 'Inter, sans-serif' }}
+                              >
+                                {automation.action_service.name.toLowerCase()}
+                              </span>
+                            </>
+                          );
+                        }
+                      })()}
                     </div>
                   </div>
 

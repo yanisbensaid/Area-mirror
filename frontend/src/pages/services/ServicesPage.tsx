@@ -368,10 +368,10 @@ export default function ServicesPage() {
               {/* Header with logo and popular badge */}
               <div className="flex items-start justify-between mb-3 md:mb-4">
                 <div className="w-12 h-12 md:w-16 md:h-16 flex-shrink-0">
-                  <img 
-                    src={service.logo} 
+                  <img
+                    src={service.logo}
                     alt={`${service.name} logo`}
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-contain rounded-lg"
                   />
                 </div>
                 {service.isPopular && (

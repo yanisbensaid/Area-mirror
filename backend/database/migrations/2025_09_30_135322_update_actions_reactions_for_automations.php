@@ -34,7 +34,7 @@ return new class extends Migration
             $table->json('trigger_config')->nullable()->after('trigger_type'); // Configuration for the trigger
         });
 
-        // Update reactions table to be more generic  
+        // Update reactions table to be more generic
         Schema::table('reactions', function (Blueprint $table) {
             $table->string('action_type')->nullable()->after('description'); // e.g., 'send_message', 'add_to_playlist', etc.
             $table->json('action_config')->nullable()->after('action_type'); // Configuration for the action

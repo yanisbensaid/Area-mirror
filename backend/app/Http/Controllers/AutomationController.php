@@ -18,7 +18,7 @@ class AutomationController extends Controller
     {
         $automations = Automation::with([
             'triggerService',
-            'actionService', 
+            'actionService',
             'action',
             'reaction',
             'user'
@@ -42,7 +42,15 @@ class AutomationController extends Controller
         ->orWhere('action_service_id', $serviceId)
         ->get();
 
-        return response()->json($automations);
+        return response()->json([
+            'client' => [
+                'host' => request()->ip()
+            ],
+            'server' => [
+                'current_time' => time(),
+                'automations' => $automations
+            ]
+        ]);
     }
 
     /**
