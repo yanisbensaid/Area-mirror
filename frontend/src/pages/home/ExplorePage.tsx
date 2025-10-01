@@ -38,6 +38,10 @@ export default function ExplorePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 9
+
   // Fetch automations from backend
   useEffect(() => {
     const fetchAutomations = async () => {
@@ -68,15 +72,18 @@ export default function ExplorePage() {
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value)
+    setCurrentPage(1) // Reset to first page when searching
   }
 
   const handleCategoryChange = (category: string) => {
     setSelectedCategory(category)
+    setCurrentPage(1) // Reset to first page when changing category
   }
 
   const clearFilters = () => {
     setSearchQuery('')
     setSelectedCategory('All')
+    setCurrentPage(1) // Reset to first page when clearing filters
   }
 
   // Helper function to parse tags
@@ -98,6 +105,31 @@ export default function ExplorePage() {
       parsedTags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
     return matchesCategory && matchesSearch
   })
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredAutomations.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const currentAutomations = filteredAutomations.slice(startIndex, endIndex)
+
+  // Pagination functions
+  const goToPage = (page: number) => {
+    setCurrentPage(page)
+    // Scroll to top when changing pages
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const goToPreviousPage = () => {
+    if (currentPage > 1) {
+      goToPage(currentPage - 1)
+    }
+  }
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      goToPage(currentPage + 1)
+    }
+  }
 
   if (loading) {
     return (
@@ -236,19 +268,30 @@ export default function ExplorePage() {
           )}
         </div>
 
-        {/* Results Count */}
-        <div className="mb-6">
+        {/* Results Count & Pagination Info */}
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <p
             className="text-sm text-gray-600"
             style={{ fontFamily: 'Inter, sans-serif' }}
           >
-            Showing {filteredAutomations.length} of {automations.length} automations
+            Showing {startIndex + 1}-{Math.min(endIndex, filteredAutomations.length)} of {filteredAutomations.length} automations
+            {filteredAutomations.length !== automations.length && (
+              <span className="text-gray-500"> (filtered from {automations.length} total)</span>
+            )}
           </p>
+          {totalPages > 1 && (
+            <p
+              className="text-sm text-gray-500"
+              style={{ fontFamily: 'Inter, sans-serif' }}
+            >
+              Page {currentPage} of {totalPages}
+            </p>
+          )}
         </div>
 
         {/* Automations Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredAutomations.map((automation) => (
+          {currentAutomations.map((automation) => (
             <div
               key={automation.id}
               className="group bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 hover:transform hover:scale-105 cursor-pointer"
@@ -435,6 +478,117 @@ export default function ExplorePage() {
             </div>
           ))}
         </div>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && filteredAutomations.length > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between mt-8 pt-6 border-t border-gray-200">
+            {/* Previous/Next buttons */}
+            <div className="flex items-center gap-2 mb-4 sm:mb-0">
+              <button
+                onClick={goToPreviousPage}
+                disabled={currentPage === 1}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
+                  currentPage === 1
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                }`}
+                style={{ fontFamily: 'Inter, sans-serif' }}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Previous
+              </button>
+
+              <button
+                onClick={goToNextPage}
+                disabled={currentPage === totalPages}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
+                  currentPage === totalPages
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                }`}
+                style={{ fontFamily: 'Inter, sans-serif' }}
+              >
+                Next
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Page numbers */}
+            <div className="flex items-center gap-1">
+              {/* Show first page if we're not near the beginning */}
+              {currentPage > 3 && (
+                <>
+                  <button
+                    onClick={() => goToPage(1)}
+                    className="w-10 h-10 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors duration-200"
+                    style={{ fontFamily: 'Inter, sans-serif' }}
+                  >
+                    1
+                  </button>
+                  {currentPage > 4 && (
+                    <span className="px-2 text-gray-400">...</span>
+                  )}
+                </>
+              )}
+
+              {/* Show pages around current page */}
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+
+                if (pageNum < 1 || pageNum > totalPages) return null;
+
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => goToPage(pageNum)}
+                    className={`w-10 h-10 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                      currentPage === pageNum
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                    style={{ fontFamily: 'Inter, sans-serif' }}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+
+              {/* Show last page if we're not near the end */}
+              {currentPage < totalPages - 2 && (
+                <>
+                  {currentPage < totalPages - 3 && (
+                    <span className="px-2 text-gray-400">...</span>
+                  )}
+                  <button
+                    onClick={() => goToPage(totalPages)}
+                    className="w-10 h-10 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors duration-200"
+                    style={{ fontFamily: 'Inter, sans-serif' }}
+                  >
+                    {totalPages}
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* Items per page info */}
+            <div className="text-sm text-gray-500 mt-4 sm:mt-0" style={{ fontFamily: 'Inter, sans-serif' }}>
+              {itemsPerPage} per page
+            </div>
+          </div>
+        )}
 
         {/* Empty state */}
         {filteredAutomations.length === 0 && !loading && (
