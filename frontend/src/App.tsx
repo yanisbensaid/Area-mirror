@@ -20,6 +20,7 @@ import AddReaction from './pages/services/AddReaction'
 import EditActions from './pages/services/EditActions'
 import EditReactions from './pages/services/EditReactions'
 import ManageAutomations from './pages/automations/ManageAutomations'
+import AREATemplatesPage from './pages/automations/AREATemplatesPage'
 
 function App() {
   return (
@@ -101,6 +102,13 @@ function App() {
             <>
               <Navbar />
               <ManageAutomations />
+              <BottomBar />
+            </>
+          } />
+          <Route path="/area-templates" element={
+            <>
+              <Navbar />
+              <AREATemplatesPage />
               <BottomBar />
             </>
           } />

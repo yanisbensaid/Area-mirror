@@ -11,6 +11,8 @@ use App\Http\Controllers\AutomationController;
 use App\Http\Controllers\MailController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\TelegramWebhookController;
+use App\Http\Controllers\OAuthController;
+use App\Http\Controllers\AreaController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -45,6 +47,9 @@ Route::post('/mail/test', [MailController::class, 'testEmail']);
 // Webhook endpoints (public - no authentication)
 Route::post('/webhooks/telegram', [TelegramWebhookController::class, 'handle']);
 
+// OAuth callback (public - user_id passed via state)
+Route::get('/oauth/youtube/callback', [OAuthController::class, 'handleYouTubeCallback']);
+
 // Protected routes (requires authentication)
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -64,6 +69,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/services/{service}/test', [ServiceConnectionController::class, 'testConnection']);
     Route::get('/services/connected', [ServiceConnectionController::class, 'connectedServices']);
     Route::get('/services/telegram/status', [ServiceConnectionController::class, 'telegramStatus']);
+
+    // OAuth routes for YouTube (redirect requires auth, callback is public)
+    Route::get('/oauth/youtube', [OAuthController::class, 'redirectToYouTube']);
+
+    // AREA management
+    Route::get('/areas', [AreaController::class, 'index']);
+    Route::get('/areas/templates', [AreaController::class, 'templates']);
+    Route::post('/areas', [AreaController::class, 'store']);
+    Route::post('/areas/{area}/toggle', [AreaController::class, 'toggle']);
+    Route::delete('/areas/{area}', [AreaController::class, 'destroy']);
 
     // Testing endpoints for development
     Route::prefix('test')->group(function () {

@@ -19,6 +19,7 @@ class AppServiceProvider extends ServiceProvider
 
             // Register all available services
             $manager->register(new TelegramService());
+            $manager->register(new \App\Services\Implementations\YouTubeService());
 
             // Future services can be registered here:
             // $manager->register(new GmailService());
