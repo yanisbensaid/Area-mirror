@@ -21,6 +21,7 @@ import EditActions from './pages/services/EditActions'
 import EditReactions from './pages/services/EditReactions'
 import ManageAutomations from './pages/automations/ManageAutomations'
 import AREATemplatesPage from './pages/automations/AREATemplatesPage'
+import YouTubeTelegramAreaPage from './pages/services/YouTubeTelegramAreaPage'
 
 function App() {
   return (
@@ -46,6 +47,13 @@ function App() {
             <>
               <Navbar />
               <ServicesPage />
+              <BottomBar />
+            </>
+          } />
+          <Route path="/area/:areaId" element={
+            <>
+              <Navbar />
+              <YouTubeTelegramAreaPage />
               <BottomBar />
             </>
           } />

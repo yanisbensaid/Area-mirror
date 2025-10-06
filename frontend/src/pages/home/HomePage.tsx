@@ -100,14 +100,6 @@ export default function HomePage() {
     .sort((a, b) => b.popularity - a.popularity)
     .slice(0, 3)
 
-  // Helper function to parse tags
-  const parseTags = (tags: string[] | string): string[] => {
-    try {
-      return typeof tags === 'string' ? JSON.parse(tags) : tags
-    } catch {
-      return []
-    }
-  }
   return (
     <main className="pt-16 md:pt-20 px-4 bg-gray-50 min-h-screen">
       {/* Hero Section */}

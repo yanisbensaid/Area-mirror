@@ -127,13 +127,23 @@ class YouTubeService extends BaseService
         }
 
         $lastVideoIds = $params['last_video_ids'] ?? [];
-        $cacheKey = "youtube_likes_" . md5($this->accessToken);
+        $isFirstRun = empty($lastVideoIds);
+
+        Log::info('YouTube check started', [
+            'last_video_ids_count' => count($lastVideoIds),
+            'is_first_run' => $isFirstRun,
+            'last_ids' => $lastVideoIds
+        ]);
 
         try {
-            // Try to get from cache first (valid for 10 minutes)
-            $likedVideos = Cache::remember($cacheKey, 600, function () {
-                return $this->fetchLikedVideos();
-            });
+            // Fetch liked videos without cache to get real-time data
+            // Cache was causing new likes to not be detected for 10 minutes
+            $likedVideos = $this->fetchLikedVideos();
+
+            Log::info('Fetched liked videos', [
+                'count' => count($likedVideos),
+                'video_ids' => array_column($likedVideos, 'video_id')
+            ]);
 
             if (empty($likedVideos)) {
                 return [];
@@ -142,11 +152,31 @@ class YouTubeService extends BaseService
             // Extract current video IDs
             $currentVideoIds = array_column($likedVideos, 'video_id');
 
+            // First run: Return special marker to initialize state without triggering
+            // The command will store current IDs but won't send notifications
+            if ($isFirstRun) {
+                Log::info('First run detected - initializing state', [
+                    'video_count' => count($currentVideoIds)
+                ]);
+
+                // Return videos with a special marker
+                return array_map(function($video) {
+                    $video['_is_initialization'] = true;
+                    return $video;
+                }, $likedVideos);
+            }
+
             // Find new likes (videos in current but not in last check)
             $newVideoIds = array_diff($currentVideoIds, $lastVideoIds);
 
+            Log::info('New videos detected', [
+                'count' => count($newVideoIds),
+                'new_ids' => array_values($newVideoIds)
+            ]);
+
             if (empty($newVideoIds)) {
-                return [];
+                // No new videos, but return current state for tracking
+                return ['_current_state' => $currentVideoIds];
             }
 
             // Filter to get only new liked videos
@@ -156,6 +186,10 @@ class YouTubeService extends BaseService
 
             // Increment quota usage
             $this->incrementQuotaUsage(1);
+
+            Log::info('Returning new likes', [
+                'count' => count($newLikes)
+            ]);
 
             return array_values($newLikes);
 

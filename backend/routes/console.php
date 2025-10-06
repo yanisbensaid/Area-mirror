@@ -8,8 +8,8 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Schedule AREA checks every 15 minutes
+// Schedule AREA checks every minute
 Schedule::command('areas:check')
-    ->everyFifteenMinutes()
+    ->everyMinute()
     ->withoutOverlapping()
     ->appendOutputTo(storage_path('logs/areas-check.log'));

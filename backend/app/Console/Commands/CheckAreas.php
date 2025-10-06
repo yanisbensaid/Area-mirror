@@ -96,27 +96,72 @@ class CheckAreas extends Command
             'last_video_ids' => $area->getLastCheckedVideoIds()
         ]);
 
+        Log::info('AREA check results', [
+            'area_id' => $area->id,
+            'last_video_ids' => $area->getLastCheckedVideoIds(),
+            'results_count' => count($results),
+            'results' => $results
+        ]);
+
         // Update last checked time
         $area->last_checked_at = now();
 
-        // If no new results, just save and return
+        // Handle empty results
         if (empty($results)) {
             $area->save();
             $this->info("ℹ️  No new triggers for AREA {$area->id}");
             return false;
         }
 
+        // Check for initialization marker (first run)
+        $isInitialization = isset($results[0]['_is_initialization']) && $results[0]['_is_initialization'] === true;
+
+        // Check for state update marker (no new videos but state exists)
+        $isStateUpdate = isset($results['_current_state']);
+
+        if ($isStateUpdate) {
+            // Update state with current video IDs
+            $currentState = $results['_current_state'];
+            $area->updateLastCheckedVideoIds(array_slice($currentState, -50));
+            $area->save();
+            $this->info("ℹ️  No new triggers for AREA {$area->id} - state updated");
+            Log::info('State updated', ['video_ids' => $currentState]);
+            return false;
+        }
+
+        if ($isInitialization) {
+            // First run - store IDs but don't trigger notifications
+            $videoIds = array_column($results, 'video_id');
+            $area->updateLastCheckedVideoIds(array_slice($videoIds, -50));
+            $area->save();
+            $this->info("✨ AREA {$area->id} initialized with " . count($videoIds) . " existing video(s)");
+            Log::info('AREA initialized', ['area_id' => $area->id, 'video_count' => count($videoIds)]);
+            return false;
+        }
+
+        // Check for duplicates before processing
+        $lastCheckedIds = $area->getLastCheckedVideoIds();
+        $newResults = array_filter($results, function($result) use ($lastCheckedIds) {
+            return !in_array($result['video_id'], $lastCheckedIds);
+        });
+
+        if (empty($newResults)) {
+            $area->save();
+            $this->info("ℹ️  No new triggers for AREA {$area->id} (all already processed)");
+            return false;
+        }
+
         // Update last checked video IDs
         $allVideoIds = array_merge(
-            $area->getLastCheckedVideoIds(),
-            array_column($results, 'video_id')
+            $lastCheckedIds,
+            array_column($newResults, 'video_id')
         );
         // Keep only last 50 video IDs to prevent unlimited growth
         $area->updateLastCheckedVideoIds(array_slice($allVideoIds, -50));
 
-        // Execute reactions
-        $this->info("🎯 Found " . count($results) . " new trigger(s), executing reactions...");
-        $this->executeReactions($area, $results, $serviceManager);
+        // Execute reactions with deduplicated results
+        $this->info("🎯 Found " . count($newResults) . " new trigger(s), executing reactions...");
+        $this->executeReactions($area, array_values($newResults), $serviceManager);
 
         return true;
     }

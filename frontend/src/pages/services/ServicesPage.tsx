@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import ServiceCard from '../../components/services/ServiceCard'
 
 interface DatabaseService {
   id: number
@@ -36,6 +36,18 @@ interface Service {
   tags: string[]
   status: 'active' | 'inactive'
   auth_type: string
+}
+
+interface AREATemplate {
+  id: string
+  name: string
+  description: string
+  action_service: string
+  reaction_service: string
+  services_connected: {
+    [key: string]: boolean
+  }
+  can_activate: boolean
 }
 
 // Helper function to transform database service to frontend service
@@ -95,6 +107,7 @@ export default function ServicesPage() {
   const [selectedCategory, setSelectedCategory] = useState('All')
   const [showPopularOnly, setShowPopularOnly] = useState(false)
   const [services, setServices] = useState<Service[]>([])
+  const [areaTemplates, setAreaTemplates] = useState<AREATemplate[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -102,34 +115,53 @@ export default function ServicesPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 9
 
-  // Fetch services from API
+  const token = localStorage.getItem('token')
+  const isLoggedIn = !!token
+
+  // Fetch services and AREA templates from API
   useEffect(() => {
-    const fetchServices = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:8000/api/services');
 
-        if (!response.ok) {
-          throw new Error(`Failed to fetch services: ${response.status}`);
+        // Fetch regular services
+        const servicesResponse = await fetch('http://localhost:8000/api/services');
+        if (!servicesResponse.ok) {
+          throw new Error(`Failed to fetch services: ${servicesResponse.status}`);
+        }
+        const servicesData = await servicesResponse.json();
+        const dbServices: DatabaseService[] = servicesData.server.services;
+        const transformedServices = dbServices.map(transformDatabaseService);
+        setServices(transformedServices);
+
+        // Fetch AREA templates (only if logged in)
+        if (isLoggedIn) {
+          const templatesResponse = await fetch('http://localhost:8000/api/areas/templates', {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Accept': 'application/json'
+            }
+          });
+          if (templatesResponse.ok) {
+            const templatesData = await templatesResponse.json();
+            if (templatesData.success) {
+              setAreaTemplates(templatesData.data);
+            }
+          }
         }
 
-        const data = await response.json();
-        const dbServices: DatabaseService[] = data.server.services;
-        const transformedServices = dbServices.map(transformDatabaseService);
-
-        setServices(transformedServices);
         setError(null);
       } catch (err) {
-        console.error('Error fetching services:', err);
+        console.error('Error fetching data:', err);
         setError(err instanceof Error ? err.message : 'Failed to load services');
-        setServices([]); // Show empty list on error
+        setServices([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchServices();
-  }, []);
+    fetchData();
+  }, [isLoggedIn, token]);
 
   // Get unique categories
   const categories = ['All', ...Array.from(new Set(services.map(service => service.category)))]
@@ -151,7 +183,7 @@ export default function ServicesPage() {
     setCurrentPage(1) // Reset to first page when clearing filters
   }
 
-  // Filter services based on criteria
+  // Filter services and AREA templates based on criteria
   const filteredServices = services.filter(service => {
     const matchesCategory = selectedCategory === 'All' || service.category === selectedCategory
     const matchesSearch = !searchQuery ||
@@ -163,11 +195,27 @@ export default function ServicesPage() {
     return matchesCategory && matchesSearch && matchesPopular
   })
 
+  const filteredAreas = areaTemplates.filter(area => {
+    const matchesSearch = !searchQuery ||
+      area.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      area.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      area.action_service.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      area.reaction_service.toLowerCase().includes(searchQuery.toLowerCase())
+
+    return matchesSearch
+  })
+
+  // Combine services and areas for display
+  const allItems = [...filteredServices, ...filteredAreas.map(area => ({
+    ...area,
+    type: 'area' as const
+  }))]
+
   // Pagination calculations
-  const totalPages = Math.ceil(filteredServices.length / itemsPerPage)
+  const totalPages = Math.ceil(allItems.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
-  const currentServices = filteredServices.slice(startIndex, endIndex)
+  const currentItems = allItems.slice(startIndex, endIndex)
 
   // Reset to page 1 if current page is beyond available pages
   useEffect(() => {
@@ -382,90 +430,50 @@ export default function ServicesPage() {
           )}
         </div>
 
-        {/* Services Grid */}
+        {/* Services and AREAs Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-          {currentServices.map((service) => (
-            <Link
-              key={service.id}
-              to={`/services/${service.id}`}
-              className="group bg-white rounded-xl p-4 md:p-6 border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 hover:transform hover:scale-105"
-            >
-              {/* Header with logo and popular badge */}
-              <div className="flex items-start justify-between mb-3 md:mb-4">
-                <div className="w-12 h-12 md:w-16 md:h-16 flex-shrink-0">
-                  <img
-                    src={service.logo}
-                    alt={`${service.name} logo`}
-                    className="w-full h-full object-contain rounded-lg"
-                  />
-                </div>
-                {service.isPopular && (
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                    Popular
-                  </span>
-                )}
-              </div>
-
-              {/* Content */}
-              <div className="mb-3 md:mb-4">
-                <h3
-                  className="text-lg md:text-xl font-semibold text-gray-900 mb-2 group-hover:text-gray-700 transition-colors duration-300"
-                  style={{ fontFamily: 'Inter, sans-serif' }}
-                >
-                  {service.name}
-                </h3>
-                <p
-                  className="text-gray-600 text-sm md:text-base leading-relaxed mb-3"
-                  style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.4' }}
-                >
-                  {service.description}
-                </p>
-
-                {/* Category and automation count */}
-                <div className="flex items-center justify-between text-xs md:text-sm">
-                  <span className="text-gray-500" style={{ fontFamily: 'Inter, sans-serif' }}>
-                    {service.category}
-                  </span>
-                  <span className="text-gray-500" style={{ fontFamily: 'Inter, sans-serif' }}>
-                    {service.automationCount} automations
-                  </span>
-                </div>
-              </div>
-
-              {/* Tags */}
-              <div className="flex flex-wrap gap-2 mb-3 md:mb-4">
-                {service.tags.slice(0, 3).map((tag) => (
-                  <span
-                    key={tag}
-                    className="text-xs bg-gray-50 text-gray-600 px-2 py-1 rounded-md"
-                    style={{ fontFamily: 'Inter, sans-serif' }}
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-
-              {/* Action button */}
-              <div className="pt-3 md:pt-4 border-t border-gray-200">
-                <div className="flex items-center text-gray-600 group-hover:text-gray-800 transition-colors duration-200">
-                  <span
-                    className="text-sm font-medium"
-                    style={{ fontFamily: 'Inter, sans-serif' }}
-                  >
-                    View automations
-                  </span>
-                  <svg className="w-4 h-4 ml-2 transform group-hover:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </div>
-              </div>
-            </Link>
-          ))}
+          {currentItems.map((item) => {
+            if ('type' in item && item.type === 'area') {
+              // Render AREA card
+              const area = item as AREATemplate & { type: 'area' }
+              return (
+                <ServiceCard
+                  key={area.id}
+                  type="area"
+                  id={area.id}
+                  name={area.name}
+                  description={area.description}
+                  icons={[area.action_service.toLowerCase(), area.reaction_service.toLowerCase()]}
+                  connectionStatus={area.services_connected}
+                  isActive={area.can_activate}
+                  href={`/area/${area.id}`}
+                />
+              )
+            } else {
+              // Render regular service card
+              const service = item as Service
+              return (
+                <ServiceCard
+                  key={service.id}
+                  type="service"
+                  id={service.id}
+                  name={service.name}
+                  description={service.description}
+                  icon={service.logo}
+                  color={service.color}
+                  category={service.category}
+                  automationCount={service.automationCount}
+                  isPopular={service.isPopular}
+                  href={`/services/${service.id}`}
+                />
+              )
+            }
+          })}
         </div>
 
         {/* Pagination Controls */}
-        {totalPages > 1 && filteredServices.length > 0 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between mt-8 pt-6 border-t border-gray-200">
+        {totalPages > 1 && allItems.length > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between mt-8 pt-6 border-gray-200">
             {/* Previous/Next buttons */}
             <div className="flex items-center gap-2 mb-4 sm:mb-0">
               <button
@@ -575,7 +583,7 @@ export default function ServicesPage() {
         )}
 
         {/* No results */}
-        {filteredServices.length === 0 && !error && (
+        {allItems.length === 0 && !error && (
           <div className="text-center py-12">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
