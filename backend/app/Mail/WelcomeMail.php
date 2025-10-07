@@ -48,7 +48,7 @@ class WelcomeMail extends Mailable
                 'userEmail' => $this->user->email,
                 'customMessage' => $this->customMessage,
                 'appName' => config('app.name', 'AREA'),
-                'appUrl' => config('app.url', 'http://localhost:3000'),
+                'appUrl' => config('app.frontend_url', 'http://localhost:5173'),
             ],
         );
     }
