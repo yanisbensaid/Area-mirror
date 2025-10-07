@@ -199,7 +199,7 @@ export default function YouTubeTelegramAreaPage() {
       const response = await fetch('http://localhost:8000/api/services/YouTube/disconnect', {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${getToken()}`,
           'Accept': 'application/json'
         }
       })
@@ -218,7 +218,7 @@ export default function YouTubeTelegramAreaPage() {
       const response = await fetch('http://localhost:8000/api/services/Telegram/disconnect', {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${getToken()}`,
           'Accept': 'application/json'
         }
       })
@@ -245,7 +245,7 @@ export default function YouTubeTelegramAreaPage() {
       const response = await fetch('http://localhost:8000/api/services/connect', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${getToken()}`,
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
@@ -283,7 +283,7 @@ export default function YouTubeTelegramAreaPage() {
       const response = await fetch('http://localhost:8000/api/areas', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${getToken()}`,
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
@@ -309,7 +309,7 @@ export default function YouTubeTelegramAreaPage() {
       const response = await fetch(`http://localhost:8000/api/areas/${userArea.id}/toggle`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${getToken()}`,
           'Accept': 'application/json'
         }
       })
