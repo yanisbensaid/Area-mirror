@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { useAuth } from '../../contexts/AuthContext'
 
 interface AREATemplate {
   id: string
@@ -23,6 +24,11 @@ interface UserArea {
 }
 
 export default function YouTubeTelegramAreaPage() {
+  const { isLoggedIn } = useAuth()
+  
+  // Helper function to get token
+  const getToken = () => localStorage.getItem('token')
+  
   const [template, setTemplate] = useState<AREATemplate | null>(null)
   const [userArea, setUserArea] = useState<UserArea | null>(null)
   const [loading, setLoading] = useState(true)
@@ -34,9 +40,6 @@ export default function YouTubeTelegramAreaPage() {
   const [botToken, setBotToken] = useState('')
   const [chatId, setChatId] = useState('')
   const [telegramError, setTelegramError] = useState<string | null>(null)
-
-  const token = localStorage.getItem('token')
-  const isLoggedIn = !!token
 
   // Fetch template and user's AREA
   useEffect(() => {
@@ -50,6 +53,9 @@ export default function YouTubeTelegramAreaPage() {
         setLoading(true)
 
         // Fetch templates
+        const token = localStorage.getItem('token')
+        if (!token) return
+
         const templatesRes = await fetch('http://localhost:8000/api/areas/templates', {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -90,10 +96,13 @@ export default function YouTubeTelegramAreaPage() {
     }
 
     fetchData()
-  }, [isLoggedIn, token])
+  }, [isLoggedIn])
 
   const refreshData = async () => {
     try {
+      const token = localStorage.getItem('token')
+      if (!token) return
+
       const templatesRes = await fetch('http://localhost:8000/api/areas/templates', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -126,6 +135,13 @@ export default function YouTubeTelegramAreaPage() {
   const handleConnectYouTube = async () => {
     try {
       setConnecting('YouTube')
+
+      const token = localStorage.getItem('token')
+      if (!token) {
+        setError('Authentication token not found')
+        setConnecting(null)
+        return
+      }
 
       const response = await fetch('http://localhost:8000/api/oauth/youtube', {
         headers: {
