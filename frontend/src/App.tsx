@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { ServiceProvider } from './contexts/ServiceContext'
 import { ServicesPageProvider } from './contexts/ServicesPageContext'
+import { EditServiceProvider } from './contexts/EditServiceContext'
 import Navbar from './components/Navbar'
 import BottomBar from './components/BottomBar'
 import HomePage from './pages/home/HomePage'
@@ -30,6 +31,7 @@ function App() {
     <AuthProvider>
       <ServiceProvider>
         <ServicesPageProvider>
+          <EditServiceProvider>
           <Router>
             <div className="min-h-screen bg-gray-50 flex flex-col">
         <Routes>
@@ -175,6 +177,7 @@ function App() {
         </Routes>
         </div>
       </Router>
+          </EditServiceProvider>
         </ServicesPageProvider>
       </ServiceProvider>
     </AuthProvider>
