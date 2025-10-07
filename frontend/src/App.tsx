@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
+import { ServiceProvider } from './contexts/ServiceContext'
 import Navbar from './components/Navbar'
 import BottomBar from './components/BottomBar'
 import HomePage from './pages/home/HomePage'
@@ -26,8 +27,9 @@ import YouTubeTelegramAreaPage from './pages/services/YouTubeTelegramAreaPage'
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <div className="min-h-screen bg-gray-50 flex flex-col">
+      <ServiceProvider>
+        <Router>
+          <div className="min-h-screen bg-gray-50 flex flex-col">
         <Routes>
           <Route path="/" element={
             <>
@@ -171,6 +173,7 @@ function App() {
         </Routes>
         </div>
       </Router>
+      </ServiceProvider>
     </AuthProvider>
   )
 }
