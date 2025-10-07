@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { ServiceProvider } from './contexts/ServiceContext'
+import { ServicesPageProvider } from './contexts/ServicesPageContext'
 import Navbar from './components/Navbar'
 import BottomBar from './components/BottomBar'
 import HomePage from './pages/home/HomePage'
@@ -28,8 +29,9 @@ function App() {
   return (
     <AuthProvider>
       <ServiceProvider>
-        <Router>
-          <div className="min-h-screen bg-gray-50 flex flex-col">
+        <ServicesPageProvider>
+          <Router>
+            <div className="min-h-screen bg-gray-50 flex flex-col">
         <Routes>
           <Route path="/" element={
             <>
@@ -173,6 +175,7 @@ function App() {
         </Routes>
         </div>
       </Router>
+        </ServicesPageProvider>
       </ServiceProvider>
     </AuthProvider>
   )
