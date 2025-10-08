@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+
 interface AREATemplate {
   id: string
   name: string
@@ -50,7 +52,7 @@ export default function YouTubeTelegramAreaPage() {
         setLoading(true)
 
         // Fetch templates
-        const templatesRes = await fetch('http://localhost:8000/api/areas/templates', {
+        const templatesRes = await fetch(`${API_URL}/api/areas/templates`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Accept': 'application/json'
@@ -59,7 +61,7 @@ export default function YouTubeTelegramAreaPage() {
         const templatesData = await templatesRes.json()
 
         // Fetch user's AREAs
-        const areasRes = await fetch('http://localhost:8000/api/areas', {
+        const areasRes = await fetch(`${API_URL}/api/areas`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Accept': 'application/json'
@@ -94,7 +96,7 @@ export default function YouTubeTelegramAreaPage() {
 
   const refreshData = async () => {
     try {
-      const templatesRes = await fetch('http://localhost:8000/api/areas/templates', {
+      const templatesRes = await fetch('${API_URL}/api/areas/templates', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json'
@@ -105,7 +107,7 @@ export default function YouTubeTelegramAreaPage() {
         setTemplate(templatesData.data[0])
       }
 
-      const areasRes = await fetch('http://localhost:8000/api/areas', {
+      const areasRes = await fetch('${API_URL}/api/areas', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json'
@@ -126,8 +128,9 @@ export default function YouTubeTelegramAreaPage() {
   const handleConnectYouTube = async () => {
     try {
       setConnecting('YouTube')
+      setError(null)
 
-      const response = await fetch('http://localhost:8000/api/oauth/youtube', {
+      const response = await fetch(`${API_URL}/api/oauth/youtube`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json'
@@ -136,6 +139,14 @@ export default function YouTubeTelegramAreaPage() {
 
       const data = await response.json()
 
+      console.log('OAuth response:', data)
+
+      if (!data.success) {
+        setError(data.message || 'Failed to generate OAuth URL')
+        setConnecting(null)
+        return
+      }
+
       if (data.success && data.auth_url) {
         const popup = window.open(
           data.auth_url,
@@ -143,9 +154,22 @@ export default function YouTubeTelegramAreaPage() {
           'width=600,height=700,left=200,top=100'
         )
 
+        if (!popup) {
+          setError('Popup blocked. Please allow popups for this site.')
+          setConnecting(null)
+          return
+        }
+
         const checkInterval = setInterval(async () => {
           try {
-            const templatesRes = await fetch('http://localhost:8000/api/areas/templates', {
+            // Check if popup was closed manually
+            if (popup.closed) {
+              clearInterval(checkInterval)
+              setConnecting(null)
+              return
+            }
+
+            const templatesRes = await fetch(`${API_URL}/api/areas/templates`, {
               headers: {
                 'Authorization': `Bearer ${token}`,
                 'Accept': 'application/json'
@@ -170,17 +194,21 @@ export default function YouTubeTelegramAreaPage() {
         setTimeout(() => {
           clearInterval(checkInterval)
           setConnecting(null)
+          if (!popup.closed) {
+            setError('Connection timeout. Please try again.')
+          }
         }, 300000)
       }
     } catch (error) {
       console.error('YouTube connection failed:', error)
+      setError('Failed to connect YouTube. Please check console for details.')
       setConnecting(null)
     }
   }
 
   const handleDisconnectYouTube = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/services/YouTube/disconnect', {
+      const response = await fetch(`${API_URL}/api/services/YouTube/disconnect`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -199,7 +227,7 @@ export default function YouTubeTelegramAreaPage() {
 
   const handleDisconnectTelegram = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/services/Telegram/disconnect', {
+      const response = await fetch(`${API_URL}/api/services/Telegram/disconnect`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -226,7 +254,7 @@ export default function YouTubeTelegramAreaPage() {
       setConnecting('Telegram')
       setTelegramError(null)
 
-      const response = await fetch('http://localhost:8000/api/services/connect', {
+      const response = await fetch(`${API_URL}/api/services/connect`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -264,7 +292,7 @@ export default function YouTubeTelegramAreaPage() {
     if (!template) return
 
     try {
-      const response = await fetch('http://localhost:8000/api/areas', {
+      const response = await fetch(`${API_URL}/api/areas`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -290,7 +318,7 @@ export default function YouTubeTelegramAreaPage() {
     if (!userArea) return
 
     try {
-      const response = await fetch(`http://localhost:8000/api/areas/${userArea.id}/toggle`, {
+      const response = await fetch(`${API_URL}/api/areas/${userArea.id}/toggle`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
