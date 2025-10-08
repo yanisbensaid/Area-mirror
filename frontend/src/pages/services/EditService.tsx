@@ -9,7 +9,7 @@ import {
 } from '../../components/services/editService';
 import { LoadingState } from '../../components/services/LoadingState';
 
-const EditServiceRefactored: React.FC = () => {
+const EditService: React.FC = () => {
   const navigate = useNavigate();
   const { serviceId } = useParams<{ serviceId: string }>();
   const { isAdmin } = useCurrentUser();
@@ -171,4 +171,4 @@ const EditServiceRefactored: React.FC = () => {
   );
 };
 
-export default EditServiceRefactored;
+export default EditService;

@@ -3,6 +3,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import { ServiceProvider } from './contexts/ServiceContext'
 import { ServicesPageProvider } from './contexts/ServicesPageContext'
 import { EditServiceProvider } from './contexts/EditServiceContext'
+import { EditActionsProvider } from './contexts/EditActionsContext'
 import Navbar from './components/Navbar'
 import BottomBar from './components/BottomBar'
 import HomePage from './pages/home/HomePage'
@@ -17,14 +18,15 @@ import AboutUsPage from './pages/home/AboutUsPage'
 import DashboardPage from './pages/home/DashboardPage'
 import CreateServicePage from './pages/services/CreateServicePage'
 import EditService from './pages/services/EditService'
+import EditActions from './pages/services/EditActionPage'
 import CreateAutomation from './pages/automations/CreateAutomation'
 import AddAction from './pages/services/AddAction'
 import AddReaction from './pages/services/AddReaction'
-import EditActions from './pages/services/EditActions'
-import EditReactions from './pages/services/EditReactions'
+import EditReactions from './pages/services/EditReactionPage'
 import ManageAutomations from './pages/automations/ManageAutomations'
 import AREATemplatesPage from './pages/automations/AREATemplatesPage'
 import YouTubeTelegramAreaPage from './pages/services/YouTubeTelegramAreaPage'
+import { EditReactionsProvider } from './contexts/EditReactionsContext'
 
 function App() {
   return (
@@ -32,6 +34,8 @@ function App() {
       <ServiceProvider>
         <ServicesPageProvider>
           <EditServiceProvider>
+            <EditActionsProvider>
+              <EditReactionsProvider>
           <Router>
             <div className="min-h-screen bg-gray-50 flex flex-col">
         <Routes>
@@ -177,6 +181,8 @@ function App() {
         </Routes>
         </div>
       </Router>
+              </EditReactionsProvider>
+            </EditActionsProvider>
           </EditServiceProvider>
         </ServicesPageProvider>
       </ServiceProvider>

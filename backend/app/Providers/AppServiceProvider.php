@@ -5,6 +5,8 @@ namespace App\Providers;
 use App\Services\ServiceManager;
 use App\Services\Implementations\TelegramService;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Socialite\Facades\Socialite;
+use SocialiteProviders\Manager\SocialiteWasCalled;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -36,6 +38,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Configure Socialite Google provider
+        $this->app['events']->listen(
+            SocialiteWasCalled::class,
+            'SocialiteProviders\\Google\\GoogleExtendSocialite@handle'
+        );
     }
 }

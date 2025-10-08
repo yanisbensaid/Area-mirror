@@ -13,7 +13,20 @@ use Illuminate\Validation\ValidationException;
 /**
  * Service Connection Controller
  *
- * Handles user connections to external services, token management,
+ * Handles user connections to external    private function validateServiceCredentials(string $serviceName, array $credentials): void
+    {
+        $rules = match ($serviceName) {
+            'Telegram' => [
+                'bot_token' => 'required|string|regex:/^\d+:[A-Za-z0-9_-]{20,50}$/',
+            ],
+            // Add validation rules for other services here
+            default => []
+        };
+
+        if (!empty($rules)) {
+            validator($credentials, $rules)->validate();
+        }
+    }en management,
  * and service availability information.
  */
 class ServiceConnectionController extends Controller
@@ -371,7 +384,7 @@ class ServiceConnectionController extends Controller
     {
         $rules = match ($serviceName) {
             'Telegram' => [
-                'bot_token' => 'required|string|regex:/^\d+:[A-Za-z0-9_-]{35}$/',
+                'bot_token' => 'required|string|regex:/^\d+:[A-Za-z0-9_-]{20,50}$/',
             ],
             // Add validation rules for other services here
             default => []

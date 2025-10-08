@@ -106,6 +106,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/services/{service}/actions', [ServicesController::class, 'storeAction']);
         Route::post('/services/{service}/reactions', [ServicesController::class, 'storeReaction']);
 
+        // Individual action management (admin only)
+        Route::get('/actions/{action}', [ServicesController::class, 'showAction']);
+        Route::put('/actions/{action}', [ServicesController::class, 'updateAction']);
+        Route::delete('/actions/{action}', [ServicesController::class, 'deleteAction']);
+
+        // Individual reaction management (admin only)
+        Route::get('/reactions/{reaction}', [ServicesController::class, 'showReaction']);
+        Route::put('/reactions/{reaction}', [ServicesController::class, 'updateReaction']);
+        Route::delete('/reactions/{reaction}', [ServicesController::class, 'deleteReaction']);
+
         Route::delete('/services/{service}', [ServicesController::class, 'destroy']);
         Route::delete('/services/{service}/actions/{action}', [ServicesController::class, 'destroyAction']);
         Route::delete('/services/{service}/reactions/{reaction}', [ServicesController::class, 'destroyReaction']);

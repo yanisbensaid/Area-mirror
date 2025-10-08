@@ -60,7 +60,8 @@ class TelegramService extends BaseService
     {
         // Telegram bot tokens follow pattern: <bot_id>:<auth_token>
         // Example: 123456789:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw
-        return preg_match('/^\d+:[A-Za-z0-9_-]{35}$/', $token) === 1;
+        // Auth token length can vary, typically 20-50 characters
+        return preg_match('/^\d+:[A-Za-z0-9_-]{20,50}$/', $token) === 1;
     }
 
     /**

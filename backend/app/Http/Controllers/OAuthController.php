@@ -27,7 +27,11 @@ class OAuthController extends Controller
                     'https://www.googleapis.com/auth/youtube.readonly',
                     'https://www.googleapis.com/auth/youtube.force-ssl'
                 ])
-                ->with(['state' => $state])
+                ->with([
+                    'state' => $state,
+                    'access_type' => 'offline',
+                    'approval_prompt' => 'force'
+                ])
                 ->stateless()
                 ->redirect()
                 ->getTargetUrl();

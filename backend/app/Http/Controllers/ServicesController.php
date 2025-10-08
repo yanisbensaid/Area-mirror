@@ -320,6 +320,128 @@ class ServicesController extends Controller
     }
 
     /**
+     * Show a specific action by ID.
+     */
+    public function showAction($actionId): JsonResponse
+    {
+        $action = Action::find($actionId);
+
+        if (!$action) {
+            return response()->json(['message' => 'Action not found'], 404);
+        }
+
+        return response()->json([
+            'server' => [
+                'action' => $action
+            ]
+        ], 200);
+    }
+
+    /**
+     * Update a specific action by ID.
+     */
+    public function updateAction(Request $request, $actionId): JsonResponse
+    {
+        $action = Action::find($actionId);
+
+        if (!$action) {
+            return response()->json(['message' => 'Action not found'], 404);
+        }
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'trigger_type' => 'required|string|max:255',
+        ]);
+
+        $action->update($validated);
+
+        return response()->json([
+            'message' => 'Action updated successfully',
+            'server' => [
+                'action' => $action
+            ]
+        ], 200);
+    }
+
+    /**
+     * Delete a specific action by ID.
+     */
+    public function deleteAction($actionId): JsonResponse
+    {
+        $action = Action::find($actionId);
+
+        if (!$action) {
+            return response()->json(['message' => 'Action not found'], 404);
+        }
+
+        $action->delete();
+
+        return response()->json(['message' => 'Action deleted successfully'], 200);
+    }
+
+    /**
+     * Show a specific reaction by ID.
+     */
+    public function showReaction($reactionId): JsonResponse
+    {
+        $reaction = Reaction::find($reactionId);
+
+        if (!$reaction) {
+            return response()->json(['message' => 'Reaction not found'], 404);
+        }
+
+        return response()->json([
+            'server' => [
+                'reaction' => $reaction
+            ]
+        ], 200);
+    }
+
+    /**
+     * Update a specific reaction by ID.
+     */
+    public function updateReaction(Request $request, $reactionId): JsonResponse
+    {
+        $reaction = Reaction::find($reactionId);
+
+        if (!$reaction) {
+            return response()->json(['message' => 'Reaction not found'], 404);
+        }
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'reaction_type' => 'required|string|max:255',
+        ]);
+
+        $reaction->update($validated);
+
+        return response()->json([
+            'message' => 'Reaction updated successfully',
+            'server' => [
+                'reaction' => $reaction
+            ]
+        ], 200);
+    }
+
+    /**
+     * Delete a specific reaction by ID.
+     */
+    public function deleteReaction($reactionId): JsonResponse
+    {
+        $reaction = Reaction::find($reactionId);
+
+        if (!$reaction) {
+            return response()->json(['message' => 'Reaction not found'], 404);
+        }
+
+        $reaction->delete();
+
+        return response()->json(['message' => 'Reaction deleted successfully'], 200);
+    }
+
+    /**
      * Destroy a specified reaction of the specified service by ID.
      */
     public function destroyReaction(Service $service, $reactionId): JsonResponse
