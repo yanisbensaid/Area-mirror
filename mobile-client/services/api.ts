@@ -1,7 +1,7 @@
 // API Service for AREA Mobile App
 // This mirrors the functionality from your web frontend API service
 
-const API_BASE_URL = __DEV__ ? 'http://localhost:8000/api' : 'http://144.24.201.112/api';
+const API_BASE_URL = __DEV__ ? 'http://172.19.144.68:8000/api' : 'http://144.24.201.112/api';
 
 interface ApiResponse<T = any> {
   success: boolean;
@@ -105,21 +105,21 @@ class ApiService {
 
   // Authentication endpoints
   async login(credentials: LoginCredentials): Promise<ApiResponse<AuthResponse>> {
-    return this.makeRequest<AuthResponse>('/auth/login', {
+    return this.makeRequest<AuthResponse>('/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
     });
   }
 
   async register(credentials: RegisterCredentials): Promise<ApiResponse<AuthResponse>> {
-    return this.makeRequest<AuthResponse>('/auth/register', {
+    return this.makeRequest<AuthResponse>('/register', {
       method: 'POST',
       body: JSON.stringify(credentials),
     });
   }
 
   async logout(): Promise<ApiResponse> {
-    const result = await this.makeRequest('/auth/logout', {
+    const result = await this.makeRequest('/logout', {
       method: 'POST',
     });
     
@@ -132,14 +132,11 @@ class ApiService {
 
   // User endpoints
   async getProfile(): Promise<ApiResponse<User>> {
-    return this.makeRequest<User>('/user/profile');
+    return this.makeRequest<User>('/me');
   }
 
-  async updateProfile(userData: Partial<User>): Promise<ApiResponse<User>> {
-    return this.makeRequest<User>('/user/profile', {
-      method: 'PUT',
-      body: JSON.stringify(userData),
-    });
+  async getUser(): Promise<ApiResponse<User>> {
+    return this.makeRequest<User>('/user');
   }
 
   // Services endpoints
@@ -151,34 +148,22 @@ class ApiService {
     return this.makeRequest<any>(`/services/${serviceName}`);
   }
 
-  // Automations endpoints
-  async getAutomations(): Promise<ApiResponse<any[]>> {
-    return this.makeRequest<any[]>('/automations');
+  // Test endpoint
+  async test(): Promise<ApiResponse> {
+    return this.makeRequest('/test');
   }
 
-  async createAutomation(automation: any): Promise<ApiResponse<any>> {
-    return this.makeRequest<any>('/automations', {
+  // Echo endpoint for testing
+  async echo(message: string): Promise<ApiResponse> {
+    return this.makeRequest('/echo', {
       method: 'POST',
-      body: JSON.stringify(automation),
+      body: JSON.stringify({ message }),
     });
   }
 
-  async updateAutomation(id: number, automation: any): Promise<ApiResponse<any>> {
-    return this.makeRequest<any>(`/automations/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(automation),
-    });
-  }
-
-  async deleteAutomation(id: number): Promise<ApiResponse> {
-    return this.makeRequest(`/automations/${id}`, {
-      method: 'DELETE',
-    });
-  }
-
-  // Health check
-  async healthCheck(): Promise<ApiResponse> {
-    return this.makeRequest('/health');
+  // Protected route test
+  async getProtected(): Promise<ApiResponse> {
+    return this.makeRequest('/protected');
   }
 }
 

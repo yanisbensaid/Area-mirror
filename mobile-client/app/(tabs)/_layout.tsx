@@ -42,6 +42,13 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="database-test"
+        options={{
+          title: 'DB Test',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="cylinder.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="login"
         options={{
           title: 'Profile',
