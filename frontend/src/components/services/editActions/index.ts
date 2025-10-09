@@ -2,5 +2,5 @@
 export { EditActionsHeader } from '../../EditActions/EditActionsHeader';
 export { ActionForm } from '../../EditActions/ActionForm';
 export { ActionList } from '../../EditActions/ActionList';
-export { MessageDisplay } from '../../EditActions/MessageDisplay';
+export { MessageDisplay } from '../../MessageDisplay';
 export { LoadingState } from '../LoadingState';
