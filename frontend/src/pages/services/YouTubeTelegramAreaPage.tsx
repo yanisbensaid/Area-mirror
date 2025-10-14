@@ -36,6 +36,7 @@ export default function YouTubeTelegramAreaPage() {
   const [loading, setLoading] = useState(true)
   const [connecting, setConnecting] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [creating, setCreating] = useState(false)
 
   // Telegram connection modal state
   const [showTelegramModal, setShowTelegramModal] = useState(false)
@@ -116,7 +117,7 @@ export default function YouTubeTelegramAreaPage() {
         setTemplate(templatesData.data[0])
       }
 
-      const areasRes = await fetch('${API_URL}/api/areas', {
+      const areasRes = await fetch(`${API_URL}/api/areas`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json'
@@ -308,6 +309,11 @@ export default function YouTubeTelegramAreaPage() {
     if (!template) return
 
     try {
+      setCreating(true)
+      setError(null)
+
+      console.log('Creating AREA with template:', template.id)
+
       const response = await fetch(`${API_URL}/api/areas`, {
         method: 'POST',
         headers: {
@@ -322,11 +328,19 @@ export default function YouTubeTelegramAreaPage() {
       })
 
       const data = await response.json()
+      console.log('Create AREA response:', data)
+
       if (data.success) {
         await refreshData()
+        setError(null)
+      } else {
+        setError(data.error || 'Failed to create automation')
       }
     } catch (error) {
       console.error('Failed to create AREA:', error)
+      setError('Failed to create automation. Please try again.')
+    } finally {
+      setCreating(false)
     }
   }
 
@@ -513,9 +527,19 @@ export default function YouTubeTelegramAreaPage() {
                 {!userArea ? (
                   <button
                     onClick={handleCreateArea}
-                    className="w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
+                    disabled={creating}
+                    className="w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                   >
-                    ✨ Create Automation
+                    {creating ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        <span>Creating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>✨ Create Automation</span>
+                      </>
+                    )}
                   </button>
                 ) : (
                   <div className="space-y-4">
