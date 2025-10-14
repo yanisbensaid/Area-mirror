@@ -37,6 +37,7 @@ export default function YouTubeTelegramAreaPage() {
   const [connecting, setConnecting] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
+  const [toggling, setToggling] = useState(false)
 
   // Telegram connection modal state
   const [showTelegramModal, setShowTelegramModal] = useState(false)
@@ -345,9 +346,18 @@ export default function YouTubeTelegramAreaPage() {
   }
 
   const handleToggleArea = async () => {
-    if (!userArea) return
+    if (!userArea || toggling) return
+
+    // Store previous state for rollback on error
+    const previousState = userArea.active
 
     try {
+      setToggling(true)
+      setError(null)
+
+      // Optimistic update - change UI immediately
+      setUserArea(prev => prev ? { ...prev, active: !prev.active } : null)
+
       const response = await fetch(`${API_URL}/api/areas/${userArea.id}/toggle`, {
         method: 'POST',
         headers: {
@@ -357,11 +367,19 @@ export default function YouTubeTelegramAreaPage() {
       })
 
       const data = await response.json()
-      if (data.success) {
-        setUserArea(prev => prev ? { ...prev, active: !prev.active } : null)
+
+      if (!data.success) {
+        // Rollback on error
+        setUserArea(prev => prev ? { ...prev, active: previousState } : null)
+        setError(data.error || 'Failed to toggle automation')
       }
     } catch (error) {
       console.error('Failed to toggle AREA:', error)
+      // Rollback on error
+      setUserArea(prev => prev ? { ...prev, active: previousState } : null)
+      setError('Failed to toggle automation. Please try again.')
+    } finally {
+      setToggling(false)
     }
   }
 
@@ -454,7 +472,7 @@ export default function YouTubeTelegramAreaPage() {
                 {isYouTubeConnected && (
                   <button
                     onClick={handleDisconnectYouTube}
-                    className="text-sm text-red-600 hover:text-red-700 font-medium"
+                    className="text-sm text-red-600 hover:text-red-700 font-medium cursor-pointer"
                   >
                     Disconnect
                   </button>
@@ -476,7 +494,7 @@ export default function YouTubeTelegramAreaPage() {
                 {isTelegramConnected && (
                   <button
                     onClick={handleDisconnectTelegram}
-                    className="text-sm text-red-600 hover:text-red-700 font-medium"
+                    className="text-sm text-red-600 hover:text-red-700 font-medium cursor-pointer"
                   >
                     Disconnect
                   </button>
@@ -493,7 +511,7 @@ export default function YouTubeTelegramAreaPage() {
                     <button
                       onClick={handleConnectYouTube}
                       disabled={connecting === 'YouTube'}
-                      className="w-full bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                      className="w-full bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center space-x-2"
                     >
                       {connecting === 'YouTube' ? (
                         <>
@@ -512,7 +530,7 @@ export default function YouTubeTelegramAreaPage() {
                   {!isTelegramConnected && (
                     <button
                       onClick={() => setShowTelegramModal(true)}
-                      className="w-full bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors"
+                      className="w-full bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors cursor-pointer"
                     >
                       🔗 Connect Telegram
                     </button>
@@ -570,13 +588,21 @@ export default function YouTubeTelegramAreaPage() {
                     {/* Toggle */}
                     <button
                       onClick={handleToggleArea}
-                      className={`w-full px-6 py-3 rounded-lg font-medium transition-colors ${
+                      disabled={toggling}
+                      className={`w-full px-6 py-3 rounded-lg font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 ${
                         userArea.active
                           ? 'bg-gray-600 text-white hover:bg-gray-700'
                           : 'bg-green-600 text-white hover:bg-green-700'
                       }`}
                     >
-                      {userArea.active ? '⏸️ Deactivate' : '▶️ Activate'}
+                      {toggling ? (
+                        <>
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                          <span>{userArea.active ? 'Deactivating...' : 'Activating...'}</span>
+                        </>
+                      ) : (
+                        <span>{userArea.active ? '⏸️ Deactivate' : '▶️ Activate'}</span>
+                      )}
                     </button>
                   </div>
                 )}
@@ -597,7 +623,7 @@ export default function YouTubeTelegramAreaPage() {
                   setShowTelegramModal(false)
                   setTelegramError(null)
                 }}
-                className="text-gray-400 hover:text-gray-600 text-2xl"
+                className="text-gray-400 hover:text-gray-600 text-2xl cursor-pointer"
               >
                 ×
               </button>
@@ -653,7 +679,7 @@ export default function YouTubeTelegramAreaPage() {
               <button
                 onClick={handleConnectTelegram}
                 disabled={connecting === 'Telegram'}
-                className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center space-x-2"
               >
                 {connecting === 'Telegram' ? (
                   <>
