@@ -77,7 +77,7 @@ const TelegramMessageSender: React.FC<{ telegramStatus: any; isLoggedIn: boolean
             style={{ fontFamily: 'Inter, sans-serif' }}
           >
             Chat ID {isLoggedIn && telegramStatus?.chat_id_detected && (
-              <span className="text-xs text-green-600 ml-2">(Optional - using auto-detected)</span>
+              <span className="text-xs text-green-700 ml-2">(Optional - using auto-detected)</span>
             )}
           </label>
           <input
@@ -292,7 +292,7 @@ export default function ServicePage() {
                 <div className="flex flex-col h-full">
                   <div className="mb-3">
                     <h3 className="font-semibold text-blue-900 mb-1">Actions ({service.actions.length})</h3>
-                    <p className="text-sm text-blue-700">Things this service can trigger</p>
+                    <p className="text-sm text-blue-900">Things this service can trigger</p>
                   </div>
                   <div className="mt-auto flex gap-2">
                     <button
@@ -316,7 +316,7 @@ export default function ServicePage() {
                 <div className="flex flex-col h-full">
                   <div className="mb-3">
                     <h3 className="font-semibold text-purple-900 mb-1">Reactions ({service.reactions.length})</h3>
-                    <p className="text-sm text-purple-700">Things this service can do</p>
+                    <p className="text-sm text-purple-900">Things this service can do</p>
                   </div>
                   <div className="mt-auto flex gap-2">
                     <button
@@ -340,7 +340,7 @@ export default function ServicePage() {
                 <div className="flex flex-col h-full">
                   <div className="mb-3">
                     <h3 className="font-semibold text-green-900 mb-1">Automations ({automations.length})</h3>
-                    <p className="text-sm text-green-700">Manage service automations</p>
+                    <p className="text-sm text-green-900">Manage service automations</p>
                   </div>
                   <button
                     onClick={() => navigate(`/createAutomation/${service.id}`)}

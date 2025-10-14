@@ -23,7 +23,7 @@ export const ServiceHeader: React.FC<ServiceHeaderProps> = ({ service }) => {
           {service.name}
         </h1>
         <p
-          className="text-xl text-gray-600 max-w-3xl"
+          className="text-xl text-gray-900 max-w-3xl"
           style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.5' }}
         >
           {service.description || `${service.name} service integration`}
