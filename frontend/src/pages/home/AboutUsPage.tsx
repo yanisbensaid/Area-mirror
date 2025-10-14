@@ -10,6 +10,27 @@ export default function AboutUsPage() {
       skills: ["React", "TypeScript", "Tailwind CSS", "UI/UX Design"]
     },
     {
+      name: "Yanis",
+      role: "Backend Developer & API Architect",
+      description: "Expert in backend development, API integration, and service creation. Specializes in building robust and scalable server-side solutions.",
+      image: "/group_member/Yanis.png",
+      skills: ["Laravel", "PHP", "API Integration", "Service Architecture"]
+    },
+    {
+      name: "Louis",
+      role: "Backend Developer & Authentication Specialist",
+      description: "Backend assistant focused on project setup and authentication systems. Ensures secure and efficient user management.",
+      image: "https://via.placeholder.com/300x300/3b82f6/ffffff?text=L",
+      skills: ["Laravel", "Authentication", "Project Setup", "Security"]
+    },
+    {
+      name: "Ethan",
+      role: "Mobile Developer & DevOps Engineer",
+      description: "Specialized in mobile application development and automated testing. Manages CI/CD pipelines and quality assurance.",
+      image: "https://via.placeholder.com/300x300/8b5cf6/ffffff?text=E",
+      skills: ["Mobile Dev", "CI/CD", "Testing", "DevOps"]
+    },
+    {
       name: "Théa",
       role: "Backend Developer & Database Architect",
       description: "Expert in server-side development and database design. Focuses on building robust APIs and scalable backend systems.",
@@ -192,15 +213,16 @@ export default function AboutUsPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-4xl mx-auto">
-            {teamMembers.map((member, index) => (
+          {/* First row - 3 cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto mb-8">
+            {teamMembers.slice(0, 3).map((member, index) => (
               <div key={index} className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden">
                 <div className="p-8">
-                  <div className="flex items-center mb-6">
+                  <div className="flex flex-col items-center text-center mb-6">
                     <img 
                       src={member.image} 
                       alt={member.name}
-                      className="w-20 h-20 rounded-full mr-6"
+                      className="w-24 h-24 rounded-full mb-4 object-cover"
                     />
                     <div>
                       <h3 
@@ -218,12 +240,60 @@ export default function AboutUsPage() {
                     </div>
                   </div>
                   <p 
-                    className="text-gray-600 mb-6"
+                    className="text-gray-600 mb-6 text-center"
                     style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.6' }}
                   >
                     {member.description}
                   </p>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {member.skills.map((skill, skillIndex) => (
+                      <span 
+                        key={skillIndex}
+                        className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium"
+                        style={{ fontFamily: 'Inter, sans-serif' }}
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Second row - 2 cards centered */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {teamMembers.slice(3, 5).map((member, index) => (
+              <div key={index + 3} className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden">
+                <div className="p-8">
+                  <div className="flex flex-col items-center text-center mb-6">
+                    <img 
+                      src={member.image} 
+                      alt={member.name}
+                      className="w-24 h-24 rounded-full mb-4 object-cover"
+                    />
+                    <div>
+                      <h3 
+                        className="text-2xl font-bold text-gray-900"
+                        style={{ fontFamily: 'Inter, sans-serif' }}
+                      >
+                        {member.name}
+                      </h3>
+                      <p 
+                        className="text-blue-600 font-medium"
+                        style={{ fontFamily: 'Inter, sans-serif' }}
+                      >
+                        {member.role}
+                      </p>
+                    </div>
+                  </div>
+                  <p 
+                    className="text-gray-600 mb-6 text-center"
+                    style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.6' }}
+                  >
+                    {member.description}
+                  </p>
+                  <div className="flex flex-wrap gap-2 justify-center">
                     {member.skills.map((skill, skillIndex) => (
                       <span 
                         key={skillIndex}
