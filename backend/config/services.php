@@ -100,4 +100,17 @@ return [
         'redirect' => env('YOUTUBE_REDIRECT_URI', 'http://localhost:8000/api/oauth/youtube/callback'),
     ],
 
+    'twitch' => [
+        'client_id' => env('TWITCH_CLIENT_ID'),
+        'client_secret' => env('TWITCH_CLIENT_SECRET'),
+        'redirect' => env('TWITCH_REDIRECT_URI', 'http://localhost:8000/api/oauth/twitch/callback'),
+        'scopes' => [
+            'user:read:email',
+            'channel:read:stream_key',
+            'channel:manage:broadcast',
+            'user:read:follows',
+            'channel:manage:videos',
+        ],
+    ],
+
 ];

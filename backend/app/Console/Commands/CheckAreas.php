@@ -74,10 +74,17 @@ class CheckAreas extends Command
         if ($actionToken->expires_at && $actionToken->expires_at->isPast()) {
             $this->info("🔄 Token expired, attempting refresh...");
 
+            $oauthController = app(\App\Http\Controllers\OAuthController::class);
+
             if ($area->action_service === 'YouTube') {
-                $oauthController = app(\App\Http\Controllers\OAuthController::class);
                 if (!$oauthController->refreshYouTubeToken($actionToken)) {
-                    $this->error("❌ Failed to refresh token");
+                    $this->error("❌ Failed to refresh YouTube token");
+                    return false;
+                }
+                $actionToken->refresh(); // Reload from database
+            } elseif ($area->action_service === 'Twitch') {
+                if (!$oauthController->refreshTwitchToken($actionToken)) {
+                    $this->error("❌ Failed to refresh Twitch token");
                     return false;
                 }
                 $actionToken->refresh(); // Reload from database
@@ -92,9 +99,22 @@ class CheckAreas extends Command
         // Execute action (check for trigger)
         $this->info("🔍 Checking action: {$area->action_service}.{$area->action_type}");
 
-        $results = $actionService->executeAction($area->action_type, [
-            'last_video_ids' => $area->getLastCheckedVideoIds()
-        ]);
+        // Prepare action parameters based on service type
+        $actionParams = [];
+        if ($area->action_service === 'YouTube') {
+            $actionParams = [
+                'last_video_ids' => $area->getLastCheckedVideoIds()
+            ];
+        } elseif ($area->action_service === 'Twitch') {
+            // Twitch uses different state management based on action type
+            $actionConfig = $area->action_config ?? [];
+            $actionParams = $actionConfig;
+        } else {
+            // Default for other services
+            $actionParams = $area->action_config ?? [];
+        }
+
+        $results = $actionService->executeAction($area->action_type, $actionParams);
 
         Log::info('AREA check results', [
             'area_id' => $area->id,
@@ -116,52 +136,90 @@ class CheckAreas extends Command
         // Check for initialization marker (first run)
         $isInitialization = isset($results[0]['_is_initialization']) && $results[0]['_is_initialization'] === true;
 
-        // Check for state update marker (no new videos but state exists)
+        // Check for state update marker (no new triggers but state exists)
         $isStateUpdate = isset($results['_current_state']);
 
         if ($isStateUpdate) {
-            // Update state with current video IDs
+            // Update state based on service type
             $currentState = $results['_current_state'];
-            $area->updateLastCheckedVideoIds(array_slice($currentState, -50));
+
+            if ($area->action_service === 'YouTube') {
+                $area->updateLastCheckedVideoIds(array_slice($currentState, -50));
+            } else {
+                // For other services (Twitch, etc), update action_config
+                $area->action_config = array_merge($area->action_config ?? [], $currentState);
+            }
+
             $area->save();
             $this->info("ℹ️  No new triggers for AREA {$area->id} - state updated");
-            Log::info('State updated', ['video_ids' => $currentState]);
+            Log::info('State updated', ['state' => $currentState]);
             return false;
         }
 
         if ($isInitialization) {
-            // First run - store IDs but don't trigger notifications
-            $videoIds = array_column($results, 'video_id');
-            $area->updateLastCheckedVideoIds(array_slice($videoIds, -50));
+            // First run - store state but don't trigger notifications
+            if ($area->action_service === 'YouTube') {
+                $videoIds = array_column($results, 'video_id');
+                $area->updateLastCheckedVideoIds(array_slice($videoIds, -50));
+                $this->info("✨ AREA {$area->id} initialized with " . count($videoIds) . " existing video(s)");
+            } elseif ($area->action_service === 'Twitch') {
+                // Store initial state based on action type
+                if (isset($results[0]['stream_id'])) {
+                    $area->action_config = array_merge($area->action_config ?? [], ['last_stream_id' => $results[0]['stream_id']]);
+                } elseif (isset($results[0]['follower_id'])) {
+                    $followerIds = array_column($results, 'follower_id');
+                    $area->action_config = array_merge($area->action_config ?? [], ['last_follower_ids' => $followerIds]);
+                } elseif (isset($results[0]['current_title'])) {
+                    $area->action_config = array_merge($area->action_config ?? [], ['last_title' => $results[0]['current_title']]);
+                }
+                $this->info("✨ AREA {$area->id} initialized");
+            }
+
             $area->save();
-            $this->info("✨ AREA {$area->id} initialized with " . count($videoIds) . " existing video(s)");
-            Log::info('AREA initialized', ['area_id' => $area->id, 'video_count' => count($videoIds)]);
+            Log::info('AREA initialized', ['area_id' => $area->id]);
             return false;
         }
 
-        // Check for duplicates before processing
-        $lastCheckedIds = $area->getLastCheckedVideoIds();
-        $newResults = array_filter($results, function($result) use ($lastCheckedIds) {
-            return !in_array($result['video_id'], $lastCheckedIds);
-        });
+        // Check for duplicates before processing (YouTube-specific)
+        if ($area->action_service === 'YouTube') {
+            $lastCheckedIds = $area->getLastCheckedVideoIds();
+            $newResults = array_filter($results, function($result) use ($lastCheckedIds) {
+                return !in_array($result['video_id'], $lastCheckedIds);
+            });
 
-        if (empty($newResults)) {
-            $area->save();
-            $this->info("ℹ️  No new triggers for AREA {$area->id} (all already processed)");
-            return false;
+            if (empty($newResults)) {
+                $area->save();
+                $this->info("ℹ️  No new triggers for AREA {$area->id} (all already processed)");
+                return false;
+            }
+
+            // Update last checked video IDs
+            $allVideoIds = array_merge(
+                $lastCheckedIds,
+                array_column($newResults, 'video_id')
+            );
+            $area->updateLastCheckedVideoIds(array_slice($allVideoIds, -50));
+
+            $results = array_values($newResults);
+        } else {
+            // For Twitch and other services, update state after successful trigger
+            if ($area->action_service === 'Twitch' && !empty($results)) {
+                if (isset($results[0]['stream_id'])) {
+                    $area->action_config = array_merge($area->action_config ?? [], ['last_stream_id' => $results[0]['stream_id']]);
+                } elseif (isset($results[0]['follower_id'])) {
+                    $followerIds = array_column($results, 'follower_id');
+                    $existingIds = $area->action_config['last_follower_ids'] ?? [];
+                    $allFollowerIds = array_merge($existingIds, $followerIds);
+                    $area->action_config = array_merge($area->action_config ?? [], ['last_follower_ids' => array_slice($allFollowerIds, -100)]);
+                } elseif (isset($results[0]['new_title'])) {
+                    $area->action_config = array_merge($area->action_config ?? [], ['last_title' => $results[0]['new_title']]);
+                }
+            }
         }
 
-        // Update last checked video IDs
-        $allVideoIds = array_merge(
-            $lastCheckedIds,
-            array_column($newResults, 'video_id')
-        );
-        // Keep only last 50 video IDs to prevent unlimited growth
-        $area->updateLastCheckedVideoIds(array_slice($allVideoIds, -50));
-
-        // Execute reactions with deduplicated results
-        $this->info("🎯 Found " . count($newResults) . " new trigger(s), executing reactions...");
-        $this->executeReactions($area, array_values($newResults), $serviceManager);
+        // Execute reactions with results
+        $this->info("🎯 Found " . count($results) . " new trigger(s), executing reactions...");
+        $this->executeReactions($area, $results, $serviceManager);
 
         return true;
     }
