@@ -74,6 +74,26 @@ class AreaController extends Controller
                     ]
                 ]
             ],
+            [
+                'id' => 'twitch_to_telegram',
+                'name' => 'Twitch to Telegram',
+                'description' => 'Get notified on Telegram when you start streaming on Twitch',
+                'action_service' => 'Twitch',
+                'action_type' => 'stream_started',
+                'reaction_service' => 'Telegram',
+                'reaction_type' => 'send_message',
+                'requires_services' => ['Twitch', 'Telegram'],
+                'services_connected' => [
+                    'Twitch' => in_array('Twitch', $connectedServices),
+                    'Telegram' => in_array('Telegram', $connectedServices),
+                ],
+                'can_activate' => in_array('Twitch', $connectedServices) && in_array('Telegram', $connectedServices),
+                'default_config' => [
+                    'reaction_config' => [
+                        'message_template' => "🔴 You're now LIVE on Twitch!\n\n📺 {title}\n🎮 {game_name}\n👥 {viewer_count} viewers\n🔗 https://twitch.tv/{user_name}"
+                    ]
+                ]
+            ],
         ];
 
         return response()->json([
@@ -139,6 +159,63 @@ class AreaController extends Controller
                 'area_id' => $area->id,
                 'user_id' => $userId,
                 'template' => 'youtube_to_telegram'
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'AREA created successfully. Click "Activate" to start monitoring.',
+                'data' => [
+                    'id' => $area->id,
+                    'name' => $area->name,
+                    'active' => $area->active,
+                ]
+            ], 201);
+        }
+
+        // For Twitch to Telegram template
+        if ($validated['template_id'] === 'twitch_to_telegram') {
+            // Verify both services are connected
+            $hasTwitch = UserServiceToken::where('user_id', $userId)
+                ->where('service_name', 'Twitch')
+                ->exists();
+
+            $hasTelegram = UserServiceToken::where('user_id', $userId)
+                ->where('service_name', 'Telegram')
+                ->exists();
+
+            if (!$hasTwitch || !$hasTelegram) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Please connect both Twitch and Telegram services first',
+                    'missing_services' => [
+                        'Twitch' => !$hasTwitch,
+                        'Telegram' => !$hasTelegram,
+                    ]
+                ], 400);
+            }
+
+            // Create AREA
+            $area = Area::create([
+                'user_id' => $userId,
+                'name' => $validated['name'] ?? 'Twitch to Telegram',
+                'description' => 'Sends Telegram notification when you start streaming on Twitch',
+                'action_service' => 'Twitch',
+                'action_type' => 'stream_started',
+                'action_config' => [
+                    'last_stream_id' => null // Will store stream ID to detect new streams
+                ],
+                'reaction_service' => 'Telegram',
+                'reaction_type' => 'send_message',
+                'reaction_config' => $validated['reaction_config'] ?? [
+                    'message_template' => "🔴 You're now LIVE on Twitch!\n\n📺 {title}\n🎮 {game_name}\n👥 {viewer_count} viewers\n🔗 https://twitch.tv/{user_name}"
+                ],
+                'active' => false, // User must manually activate
+            ]);
+
+            Log::info('AREA created', [
+                'area_id' => $area->id,
+                'user_id' => $userId,
+                'template' => 'twitch_to_telegram'
             ]);
 
             return response()->json([

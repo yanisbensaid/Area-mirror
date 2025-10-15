@@ -148,8 +148,9 @@ class TwitchService extends BaseService
             return [];
         }
 
+        // Check if this is truly the first run (key doesn't exist at all)
+        $isFirstRun = !array_key_exists('last_stream_id', $params);
         $lastStreamId = $params['last_stream_id'] ?? null;
-        $isFirstRun = $lastStreamId === null;
 
         $userId = $this->getUserId();
         if (!$userId) {
@@ -177,24 +178,14 @@ class TwitchService extends BaseService
             $stream = $streams[0];
             $currentStreamId = $stream['id'];
 
-            // First run: Initialize state without triggering
-            if ($isFirstRun) {
-                Log::info('Twitch: First run - initializing stream state', [
-                    'stream_id' => $currentStreamId
-                ]);
-                return [[
-                    'stream_id' => $currentStreamId,
-                    '_is_initialization' => true,
-                ]];
-            }
-
-            // Stream hasn't changed
+            // Stream hasn't changed (same stream still running)
             if ($currentStreamId === $lastStreamId) {
                 return ['_current_state' => ['last_stream_id' => $currentStreamId]];
             }
 
-            // New stream detected!
+            // New stream detected (including first run)!
             Log::info('Twitch: New stream detected', [
+                'is_first_run' => $isFirstRun,
                 'old_stream_id' => $lastStreamId,
                 'new_stream_id' => $currentStreamId,
             ]);

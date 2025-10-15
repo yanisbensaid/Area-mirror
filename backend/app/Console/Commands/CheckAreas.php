@@ -157,27 +157,16 @@ class CheckAreas extends Command
         }
 
         if ($isInitialization) {
-            // First run - store state but don't trigger notifications
+            // First run - store state but don't trigger notifications (YouTube only)
             if ($area->action_service === 'YouTube') {
                 $videoIds = array_column($results, 'video_id');
                 $area->updateLastCheckedVideoIds(array_slice($videoIds, -50));
                 $this->info("✨ AREA {$area->id} initialized with " . count($videoIds) . " existing video(s)");
-            } elseif ($area->action_service === 'Twitch') {
-                // Store initial state based on action type
-                if (isset($results[0]['stream_id'])) {
-                    $area->action_config = array_merge($area->action_config ?? [], ['last_stream_id' => $results[0]['stream_id']]);
-                } elseif (isset($results[0]['follower_id'])) {
-                    $followerIds = array_column($results, 'follower_id');
-                    $area->action_config = array_merge($area->action_config ?? [], ['last_follower_ids' => $followerIds]);
-                } elseif (isset($results[0]['current_title'])) {
-                    $area->action_config = array_merge($area->action_config ?? [], ['last_title' => $results[0]['current_title']]);
-                }
-                $this->info("✨ AREA {$area->id} initialized");
+                $area->save();
+                Log::info('AREA initialized', ['area_id' => $area->id]);
+                return false;
             }
-
-            $area->save();
-            Log::info('AREA initialized', ['area_id' => $area->id]);
-            return false;
+            // Note: Twitch doesn't use initialization logic - it triggers immediately
         }
 
         // Check for duplicates before processing (YouTube-specific)
