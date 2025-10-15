@@ -7,7 +7,50 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
-## About Laravel
+
+## Production Deployment & Process Management
+
+### Running Laravel Backend as a Service
+For production, use **Supervisor** to keep the backend running:
+
+1. Install Supervisor:
+	```bash
+	sudo apt-get install supervisor
+	```
+2. Create `/etc/supervisor/conf.d/laravel-backend.conf`:
+	```ini
+	[program:laravel-backend]
+	directory=/home/deploy/area-app/backend
+	command=php artisan serve --host=127.0.0.1 --port=8000
+	autostart=true
+	autorestart=true
+	user=deploy
+	stdout_logfile=/var/log/supervisor/laravel-backend.log
+	stderr_logfile=/var/log/supervisor/laravel-backend-error.log
+	```
+3. Reload and start:
+	```bash
+	sudo supervisorctl reread
+	sudo supervisorctl update
+	sudo supervisorctl start laravel-backend
+	```
+4. Check status:
+	```bash
+	sudo supervisorctl status
+	```
+
+### Troubleshooting
+- After running migrations or reseeding, restart the backend:
+  ```bash
+  sudo supervisorctl restart laravel-backend
+  ```
+- Check logs:
+  ```bash
+  tail -f /var/log/supervisor/laravel-backend.log
+  tail -f /var/log/supervisor/laravel-backend-error.log
+  ```
+
+---
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
 

@@ -32,6 +32,75 @@ This project uses a **staging → production workflow** with CircleCI:
 - npm
 - **PostgreSQL 15+** (new)
 
+## 🏭 Production Deployment & Process Management
+
+### Backend (Laravel) - Running as a Service
+For production, run the Laravel backend as a persistent service using **Supervisor** (recommended) or `systemd`.
+
+#### Using Supervisor
+1. Install Supervisor:
+   ```bash
+   sudo apt-get install supervisor
+   ```
+2. Create `/etc/supervisor/conf.d/laravel-backend.conf`:
+   ```ini
+   [program:laravel-backend]
+   directory=/home/deploy/area-app/backend
+   command=php artisan serve --host=127.0.0.1 --port=8000
+   autostart=true
+   autorestart=true
+   user=deploy
+   stdout_logfile=/var/log/supervisor/laravel-backend.log
+   stderr_logfile=/var/log/supervisor/laravel-backend-error.log
+   ```
+3. Reload and start:
+   ```bash
+   sudo supervisorctl reread
+   sudo supervisorctl update
+   sudo supervisorctl start laravel-backend
+   ```
+4. Check status:
+   ```bash
+   sudo supervisorctl status
+   ```
+
+### Frontend (React/Vite)
+- Build with:
+  ```bash
+  npm run build
+  ```
+- Serve static files via Nginx or another web server.
+
+### Environment Variables
+- **Frontend:** Set `VITE_API_URL` in `/frontend/.env` to your backend API root (e.g. `http://your-server-ip/api`).
+- **Backend:** Configure your `.env` for database, mail, etc.
+
+### Avoiding Double `/api/api` URLs
+When using `VITE_API_URL`, do **not** add `/api` in your frontend code if your env already ends with `/api`.
+Example:
+```js
+// Correct:
+axios.post(`${import.meta.env.VITE_API_URL}/login`)
+// Not: axios.post(`${import.meta.env.VITE_API_URL}/api/login`)
+```
+
+## 🛠️ Troubleshooting
+
+### 502 Bad Gateway / Connection Refused
+- Ensure the backend is running (see Supervisor section above).
+- After reseeding or migrating the database, restart the backend process:
+  ```bash
+  sudo supervisorctl restart laravel-backend
+  ```
+- Check Nginx and Laravel logs for errors.
+
+### Database Reseed
+If you reseed the database, always restart the backend process to avoid stale connections or migrations.
+
+### API Not Found or 404
+- Check for double `/api/api` in your URLs.
+- Make sure your `.env` and frontend build are up to date.
+
 ### Two Servers ran
 
 - Laravel API server at http://localhost:8000

@@ -1,4 +1,29 @@
+
 # React + TypeScript + Vite
+
+## Production Deployment & API Configuration
+
+### Environment Variables
+- Set your API URL in `.env`:
+  ```env
+  VITE_API_URL=http://your-server-ip/api
+  ```
+- **Do not** add `/api` in your code if your env already ends with `/api`.
+
+### Building for Production
+```bash
+npm run build
+```
+Serve the `dist/` directory with Nginx or another static server.
+
+### Troubleshooting
+- If you see requests to `/api/api/...`, check your `.env` and code for double `/api`.
+- After changing `.env`, always rebuild:
+  ```bash
+  rm -rf dist
+  npm run build
+  ```
+- Clear browser cache after deploy.
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 

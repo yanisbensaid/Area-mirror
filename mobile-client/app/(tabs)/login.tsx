@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
-import { ScrollView, StyleSheet, View, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { ScrollView, StyleSheet, View, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
+import apiService from '@/services/api';
 
 export default function LoginScreen() {
   const colorScheme = useColorScheme();
@@ -15,6 +17,7 @@ export default function LoginScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
 
   // Check authentication status on component mount
   useEffect(() => {
@@ -39,45 +42,45 @@ export default function LoginScreen() {
     }
   };
 
-  const handleLogin = () => {
+
+  const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
-
-    // Simulate login
-    const mockUser = {
-      id: 1,
-      email: email,
-      name: email.split('@')[0],
-    };
-
-    setUser(mockUser);
-    setIsAuthenticated(true);
-    Alert.alert('Success', 'Logged in successfully!');
+    setLoading(true);
+    const response = await apiService.login({ email, password });
+    setLoading(false);
+    if (response.success && response.data) {
+      setUser(response.data.user);
+      setIsAuthenticated(true);
+      apiService.setToken(response.data.token);
+      Alert.alert('Success', 'Logged in successfully!');
+    } else {
+      Alert.alert('Login Failed', response.error || 'Unknown error');
+    }
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!email || !password || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
-
     if (password !== confirmPassword) {
       Alert.alert('Error', 'Passwords do not match');
       return;
     }
-
-    // Simulate registration
-    const mockUser = {
-      id: 1,
-      email: email,
-      name: email.split('@')[0],
-    };
-
-    setUser(mockUser);
-    setIsAuthenticated(true);
-    Alert.alert('Success', 'Account created successfully!');
+    setLoading(true);
+    const response = await apiService.register({ email, password, confirmPassword, name: email.split('@')[0] });
+    setLoading(false);
+    if (response.success && response.data) {
+      setUser(response.data.user);
+      setIsAuthenticated(true);
+      apiService.setToken(response.data.token);
+      Alert.alert('Success', 'Account created successfully!');
+    } else {
+      Alert.alert('Registration Failed', response.error || 'Unknown error');
+    }
   };
 
   const handleLogout = () => {
@@ -88,6 +91,17 @@ export default function LoginScreen() {
     setConfirmPassword('');
     Alert.alert('Success', 'Logged out successfully');
   };
+
+  if (loading) {
+    return (
+      <ThemedView style={styles.container}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={colors.tint} />
+          <ThemedText style={{ marginTop: 16 }}>Loading...</ThemedText>
+        </View>
+      </ThemedView>
+    );
+  }
 
   if (isAuthenticated && user) {
     return (
@@ -110,7 +124,7 @@ export default function LoginScreen() {
               </ThemedText>
             </View>
             <ThemedText type="subtitle" style={styles.userName}>{user.name}</ThemedText>
-            <ThemedText style={[styles.userEmail, { color: colors.text, opacity: 0.7 }]}>
+            <ThemedText style={[styles.userEmail, { color: colors.text, opacity: 0.7 }]}> 
               {user.email}
             </ThemedText>
           </View>

@@ -1,7 +1,7 @@
 // API Service for AREA Mobile App
 // This mirrors the functionality from your web frontend API service
 
-const API_BASE_URL = __DEV__ ? 'http://172.19.144.68:8000/api' : 'http://144.24.201.112/api';
+const API_BASE_URL = 'http://46.101.186.62/api';
 
 interface ApiResponse<T = any> {
   success: boolean;
