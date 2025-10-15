@@ -85,3 +85,6 @@ storage/framework/views/
 # Backup files
 *.bak
 *.backup
+
+.expo
+package-lock.json
