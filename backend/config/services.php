@@ -51,12 +51,18 @@ return [
         'api_url' => 'https://api.telegram.org/bot',
     ],
 
-    // Future service configurations
     'gmail' => [
         'client_id' => env('GMAIL_CLIENT_ID'),
         'client_secret' => env('GMAIL_CLIENT_SECRET'),
-        'redirect_uri' => env('GMAIL_REDIRECT_URI'),
+        'redirect' => env('GMAIL_REDIRECT_URI', 'http://localhost:8000/api/oauth/gmail/callback'),
+        'scopes' => [
+            'https://www.googleapis.com/auth/gmail.readonly',
+            'https://www.googleapis.com/auth/gmail.send',
+            'https://www.googleapis.com/auth/gmail.modify',
+        ],
     ],
+
+    // Future service configurations
 
     'github' => [
         'client_id' => env('GITHUB_CLIENT_ID'),

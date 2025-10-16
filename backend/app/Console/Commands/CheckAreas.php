@@ -88,6 +88,12 @@ class CheckAreas extends Command
                     return false;
                 }
                 $actionToken->refresh(); // Reload from database
+            } elseif ($area->action_service === 'Gmail') {
+                if (!$oauthController->refreshGmailToken($actionToken)) {
+                    $this->error("❌ Failed to refresh Gmail token");
+                    return false;
+                }
+                $actionToken->refresh(); // Reload from database
             }
         }
 

@@ -50,6 +50,7 @@ Route::post('/webhooks/telegram', [TelegramWebhookController::class, 'handle']);
 // OAuth callbacks (public - user_id passed via state)
 Route::get('/oauth/youtube/callback', [OAuthController::class, 'handleYouTubeCallback']);
 Route::get('/oauth/twitch/callback', [OAuthController::class, 'handleTwitchCallback']);
+Route::get('/oauth/gmail/callback', [OAuthController::class, 'handleGmailCallback']);
 
 // Protected routes (requires authentication)
 Route::middleware('auth:sanctum')->group(function () {
@@ -74,6 +75,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // OAuth routes (redirect requires auth, callback is public)
     Route::get('/oauth/youtube', [OAuthController::class, 'redirectToYouTube']);
     Route::get('/oauth/twitch', [OAuthController::class, 'redirectToTwitch']);
+    Route::get('/oauth/gmail', [OAuthController::class, 'redirectToGmail']);
 
     // AREA management
     Route::get('/areas', [AreaController::class, 'index']);

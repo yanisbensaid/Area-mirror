@@ -281,4 +281,122 @@ class OAuthController extends Controller
 
         return false;
     }
+
+    /**
+     * Redirect user to Gmail OAuth page
+     */
+    public function redirectToGmail(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+
+        $state = base64_encode(json_encode([
+            'user_id' => $user->id,
+            'timestamp' => time()
+        ]));
+
+        $scopes = implode(' ', config('services.gmail.scopes'));
+
+        $authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query([
+            'client_id' => config('services.gmail.client_id'),
+            'redirect_uri' => config('services.gmail.redirect'),
+            'response_type' => 'code',
+            'scope' => $scopes,
+            'access_type' => 'offline',
+            'prompt' => 'consent',
+            'state' => $state,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'auth_url' => $authUrl
+        ]);
+    }
+
+    /**
+     * Handle OAuth callback from Gmail
+     */
+    public function handleGmailCallback(Request $request)
+    {
+        $code = $request->input('code');
+        $state = json_decode(base64_decode($request->input('state')), true);
+        $userId = $state['user_id'];
+
+        // Exchange code for tokens
+        $response = Http::post('https://oauth2.googleapis.com/token', [
+            'code' => $code,
+            'client_id' => config('services.gmail.client_id'),
+            'client_secret' => config('services.gmail.client_secret'),
+            'redirect_uri' => config('services.gmail.redirect'),
+            'grant_type' => 'authorization_code',
+        ]);
+
+        if (!$response->successful()) {
+            Log::error('Gmail OAuth token exchange failed', [
+                'response' => $response->body()
+            ]);
+            return response()->json(['error' => 'Failed to authenticate'], 500);
+        }
+
+        $tokens = $response->json();
+
+        // Store tokens
+        UserServiceToken::updateOrCreate(
+            [
+                'user_id' => $userId,
+                'service_name' => 'Gmail',
+            ],
+            [
+                'access_token' => $tokens['access_token'],
+                'refresh_token' => isset($tokens['refresh_token']) ? $tokens['refresh_token'] : null,
+                'expires_at' => now()->addSeconds($tokens['expires_in']),
+                'scopes' => implode(',', config('services.gmail.scopes')),
+            ]
+        );
+
+        Log::info('Gmail OAuth successful', [
+            'user_id' => $userId
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Successfully connected to Gmail! You can close this window.'
+        ]);
+    }
+
+    /**
+     * Refresh Gmail access token
+     */
+    public function refreshGmailToken(UserServiceToken $token): bool
+    {
+        if (!$token->refresh_token) {
+            return false;
+        }
+
+        try {
+            $response = Http::post('https://oauth2.googleapis.com/token', [
+                'client_id' => config('services.gmail.client_id'),
+                'client_secret' => config('services.gmail.client_secret'),
+                'refresh_token' => $token->getDecryptedRefreshToken(),
+                'grant_type' => 'refresh_token',
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+
+                $token->update([
+                    'access_token' => $data['access_token'],
+                    'expires_at' => now()->addSeconds($data['expires_in']),
+                ]);
+
+                return true;
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to refresh Gmail token', [
+                'user_id' => $token->user_id,
+                'error' => $e->getMessage()
+            ]);
+        }
+
+        return false;
+    }
 }

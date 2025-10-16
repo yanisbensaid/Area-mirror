@@ -27,6 +27,8 @@ import ManageAutomations from './pages/automations/ManageAutomations'
 import AREATemplatesPage from './pages/automations/AREATemplatesPage'
 import YouTubeTelegramAreaPage from './pages/services/YouTubeTelegramAreaPage'
 import TwitchTelegramAreaPage from './pages/services/TwitchTelegramAreaPage'
+import GmailTelegramAreaPage from './pages/services/GmailTelegramAreaPage'
+import YouTubeGmailAreaPage from './pages/services/YouTubeGmailAreaPage'
 import { EditReactionsProvider } from './contexts/EditReactionsContext'
 
 function App() {
@@ -72,6 +74,20 @@ function App() {
             <>
               <Navbar />
               <TwitchTelegramAreaPage />
+              <BottomBar />
+            </>
+          } />
+          <Route path="/area/gmail_to_telegram" element={
+            <>
+              <Navbar />
+              <GmailTelegramAreaPage />
+              <BottomBar />
+            </>
+          } />
+          <Route path="/area/youtube_to_gmail" element={
+            <>
+              <Navbar />
+              <YouTubeGmailAreaPage />
               <BottomBar />
             </>
           } />

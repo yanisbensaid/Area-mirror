@@ -94,6 +94,48 @@ class AreaController extends Controller
                     ]
                 ]
             ],
+            [
+                'id' => 'youtube_to_gmail',
+                'name' => 'YouTube to Gmail',
+                'description' => 'Receive an email when you like a video on YouTube',
+                'action_service' => 'YouTube',
+                'action_type' => 'video_liked',
+                'reaction_service' => 'Gmail',
+                'reaction_type' => 'send_email',
+                'requires_services' => ['YouTube', 'Gmail'],
+                'services_connected' => [
+                    'YouTube' => in_array('YouTube', $connectedServices),
+                    'Gmail' => in_array('Gmail', $connectedServices),
+                ],
+                'can_activate' => in_array('YouTube', $connectedServices) && in_array('Gmail', $connectedServices),
+                'default_config' => [
+                    'reaction_config' => [
+                        'to' => '{user_email}',
+                        'subject' => 'You liked a new YouTube video',
+                        'body' => "<h2>🎥 You liked a new video!</h2><p><strong>📺 Title:</strong> {title}</p><p><strong>👤 Channel:</strong> {channel}</p><p><strong>🔗 Link:</strong> <a href='{url}'>{url}</a></p>"
+                    ]
+                ]
+            ],
+            [
+                'id' => 'gmail_to_telegram',
+                'name' => 'Gmail to Telegram',
+                'description' => 'Get notified on Telegram when you receive a new email',
+                'action_service' => 'Gmail',
+                'action_type' => 'new_email_received',
+                'reaction_service' => 'Telegram',
+                'reaction_type' => 'send_message',
+                'requires_services' => ['Gmail', 'Telegram'],
+                'services_connected' => [
+                    'Gmail' => in_array('Gmail', $connectedServices),
+                    'Telegram' => in_array('Telegram', $connectedServices),
+                ],
+                'can_activate' => in_array('Gmail', $connectedServices) && in_array('Telegram', $connectedServices),
+                'default_config' => [
+                    'reaction_config' => [
+                        'message_template' => "📧 New email received!\n\n📨 From: {from}\n📝 Subject: {subject}\n📅 Date: {date}"
+                    ]
+                ]
+            ],
         ];
 
         return response()->json([
@@ -216,6 +258,125 @@ class AreaController extends Controller
                 'area_id' => $area->id,
                 'user_id' => $userId,
                 'template' => 'twitch_to_telegram'
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'AREA created successfully. Click "Activate" to start monitoring.',
+                'data' => [
+                    'id' => $area->id,
+                    'name' => $area->name,
+                    'active' => $area->active,
+                ]
+            ], 201);
+        }
+
+        // For YouTube to Gmail template
+        if ($validated['template_id'] === 'youtube_to_gmail') {
+            // Verify both services are connected
+            $hasYouTube = UserServiceToken::where('user_id', $userId)
+                ->where('service_name', 'YouTube')
+                ->exists();
+
+            $hasGmail = UserServiceToken::where('user_id', $userId)
+                ->where('service_name', 'Gmail')
+                ->exists();
+
+            if (!$hasYouTube || !$hasGmail) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Please connect both YouTube and Gmail services first',
+                    'missing_services' => [
+                        'YouTube' => !$hasYouTube,
+                        'Gmail' => !$hasGmail,
+                    ]
+                ], 400);
+            }
+
+            // Get user email for the 'to' field
+            $userEmail = $request->user()->email;
+
+            // Create AREA
+            $area = Area::create([
+                'user_id' => $userId,
+                'name' => $validated['name'] ?? 'YouTube to Gmail',
+                'description' => 'Sends email notification when you like a YouTube video',
+                'action_service' => 'YouTube',
+                'action_type' => 'video_liked',
+                'action_config' => [
+                    'last_video_ids' => [] // Will store video IDs to detect new likes
+                ],
+                'reaction_service' => 'Gmail',
+                'reaction_type' => 'send_email',
+                'reaction_config' => $validated['reaction_config'] ?? [
+                    'to' => $userEmail,
+                    'subject' => 'You liked a new YouTube video',
+                    'body' => "<h2>🎥 You liked a new video!</h2><p><strong>📺 Title:</strong> {title}</p><p><strong>👤 Channel:</strong> {channel}</p><p><strong>🔗 Link:</strong> <a href='{url}'>{url}</a></p>"
+                ],
+                'active' => false, // User must manually activate
+            ]);
+
+            Log::info('AREA created', [
+                'area_id' => $area->id,
+                'user_id' => $userId,
+                'template' => 'youtube_to_gmail'
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'AREA created successfully. Click "Activate" to start monitoring.',
+                'data' => [
+                    'id' => $area->id,
+                    'name' => $area->name,
+                    'active' => $area->active,
+                ]
+            ], 201);
+        }
+
+        // For Gmail to Telegram template
+        if ($validated['template_id'] === 'gmail_to_telegram') {
+            // Verify both services are connected
+            $hasGmail = UserServiceToken::where('user_id', $userId)
+                ->where('service_name', 'Gmail')
+                ->exists();
+
+            $hasTelegram = UserServiceToken::where('user_id', $userId)
+                ->where('service_name', 'Telegram')
+                ->exists();
+
+            if (!$hasGmail || !$hasTelegram) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Please connect both Gmail and Telegram services first',
+                    'missing_services' => [
+                        'Gmail' => !$hasGmail,
+                        'Telegram' => !$hasTelegram,
+                    ]
+                ], 400);
+            }
+
+            // Create AREA
+            $area = Area::create([
+                'user_id' => $userId,
+                'name' => $validated['name'] ?? 'Gmail to Telegram',
+                'description' => 'Sends Telegram notification when you receive a new email',
+                'action_service' => 'Gmail',
+                'action_type' => 'new_email_received',
+                'action_config' => [
+                    'last_message_ids' => [] // Will store message IDs to detect new emails
+                ],
+                'reaction_service' => 'Telegram',
+                'reaction_type' => 'send_message',
+                'reaction_config' => $validated['reaction_config'] ?? [
+                    'message_template' => "📧 New email received!\n\n📨 From: {from}\n📝 Subject: {subject}\n📅 Date: {date}"
+                ],
+                'active' => false, // User must manually activate
+            ]);
+
+            Log::info('AREA created', [
+                'area_id' => $area->id,
+                'user_id' => $userId,
+                'template' => 'gmail_to_telegram'
             ]);
 
             return response()->json([
