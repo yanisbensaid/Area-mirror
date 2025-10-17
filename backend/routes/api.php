@@ -84,6 +84,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/areas/{area}/toggle', [AreaController::class, 'toggle']);
     Route::delete('/areas/{area}', [AreaController::class, 'destroy']);
 
+    // Actions and Reactions endpoints
+    Route::get('/actions', [AreaController::class, 'getActions']);
+    Route::get('/reactions', [AreaController::class, 'getReactions']);
+    Route::get('/actions-and-reactions', [AreaController::class, 'getActionsAndReactions']);
+
     // Testing endpoints for development
     Route::prefix('test')->group(function () {
         Route::post('/telegram/send', [TestController::class, 'testTelegramSend']);

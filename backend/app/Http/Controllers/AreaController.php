@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Area;
 use App\Models\UserServiceToken;
+use App\Models\Action;
+use App\Models\Reaction;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
@@ -464,6 +466,61 @@ class AreaController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'AREA deleted successfully'
+        ]);
+    }
+
+    /**
+     * Get all available actions (optionally filtered by service)
+     */
+    public function getActions(Request $request): JsonResponse
+    {
+        $serviceName = $request->query('service');
+
+        if ($serviceName) {
+            $actions = Action::forService($serviceName);
+        } else {
+            $actions = Action::where('active', true)->get();
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $actions
+        ]);
+    }
+
+    /**
+     * Get all available reactions (optionally filtered by service)
+     */
+    public function getReactions(Request $request): JsonResponse
+    {
+        $serviceName = $request->query('service');
+
+        if ($serviceName) {
+            $reactions = Reaction::forService($serviceName);
+        } else {
+            $reactions = Reaction::where('active', true)->get();
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $reactions
+        ]);
+    }
+
+    /**
+     * Get actions and reactions grouped by service
+     */
+    public function getActionsAndReactions(Request $request): JsonResponse
+    {
+        $actions = Action::allGroupedByService();
+        $reactions = Reaction::allGroupedByService();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'actions' => $actions,
+                'reactions' => $reactions
+            ]
         ]);
     }
 }
