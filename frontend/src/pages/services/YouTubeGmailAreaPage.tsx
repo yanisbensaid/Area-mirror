@@ -115,9 +115,9 @@ export default function YouTubeGmailAreaPage() {
         }
       })
       const areasData = await areasRes.json()
-      if (areasData.success && template) {
+      if (areasData.success) {
         const matchingArea = areasData.data.find((area: UserArea) =>
-          area.name.includes(template.name)
+          area.name.includes('YouTube to Gmail')
         )
         setUserArea(matchingArea || null)
       }
@@ -394,6 +394,9 @@ export default function YouTubeGmailAreaPage() {
       if (!data.success) {
         setUserArea(prev => prev ? { ...prev, active: previousState } : null)
         setError(data.error || 'Failed to toggle automation')
+      } else {
+        // Refresh to get latest state
+        await refreshData()
       }
     } catch (error) {
       console.error('Failed to toggle AREA:', error)

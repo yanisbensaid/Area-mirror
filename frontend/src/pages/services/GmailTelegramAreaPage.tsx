@@ -120,7 +120,7 @@ export default function GmailTelegramAreaPage() {
         }
       })
       const areasData = await areasRes.json()
-      if (areasData.success && template) {
+      if (areasData.success) {
         const matchingArea = areasData.data.find((area: UserArea) =>
           area.name.includes('Gmail to Telegram')
         )
@@ -358,6 +358,9 @@ export default function GmailTelegramAreaPage() {
       if (!data.success) {
         setUserArea(prev => prev ? { ...prev, active: previousState } : null)
         setError(data.error || 'Failed to toggle automation')
+      } else {
+        // Refresh to get latest state
+        await refreshData()
       }
     } catch (error) {
       console.error('Failed to toggle AREA:', error)

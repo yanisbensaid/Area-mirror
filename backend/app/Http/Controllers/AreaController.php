@@ -293,8 +293,14 @@ class AreaController extends Controller
                 ], 400);
             }
 
-            // Get user email for the 'to' field
-            $userEmail = $request->user()->email;
+            // Get Gmail email from OAuth token (stored in additional_data)
+            $gmailToken = UserServiceToken::where('user_id', $userId)
+                ->where('service_name', 'Gmail')
+                ->first();
+
+            $gmailEmail = $gmailToken && isset($gmailToken->additional_data['email'])
+                ? $gmailToken->additional_data['email']
+                : $request->user()->email;
 
             // Create AREA
             $area = Area::create([
@@ -309,7 +315,7 @@ class AreaController extends Controller
                 'reaction_service' => 'Gmail',
                 'reaction_type' => 'send_email',
                 'reaction_config' => $validated['reaction_config'] ?? [
-                    'to' => $userEmail,
+                    'to' => $gmailEmail,
                     'subject' => 'You liked a new YouTube video',
                     'body' => "<h2>🎥 You liked a new video!</h2><p><strong>📺 Title:</strong> {title}</p><p><strong>👤 Channel:</strong> {channel}</p><p><strong>🔗 Link:</strong> <a href='{url}'>{url}</a></p>"
                 ],

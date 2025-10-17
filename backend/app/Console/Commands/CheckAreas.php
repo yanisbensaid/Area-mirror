@@ -209,6 +209,12 @@ class CheckAreas extends Command
                 } elseif (isset($results[0]['new_title'])) {
                     $area->action_config = array_merge($area->action_config ?? [], ['last_title' => $results[0]['new_title']]);
                 }
+            } elseif ($area->action_service === 'Gmail' && !empty($results)) {
+                // Gmail includes _current_state in each result
+                if (isset($results[0]['_current_state'])) {
+                    $area->action_config = array_merge($area->action_config ?? [], $results[0]['_current_state']);
+                    Log::info('Gmail state updated', ['state' => $results[0]['_current_state']]);
+                }
             }
         }
 
@@ -238,29 +244,54 @@ class CheckAreas extends Command
             return;
         }
 
-        // Authenticate reaction service
-        $reactionService->authenticate([
-            'bot_token' => $reactionToken->getDecryptedAccessToken()
-        ]);
-
-        // Get chat_id for Telegram
-        $chatId = $reactionToken->getChatId();
-        if (!$chatId) {
-            $this->warn("⚠️  No chat_id found. User needs to send /start to bot");
-            return;
+        // Authenticate reaction service based on service type
+        if ($area->reaction_service === 'Telegram') {
+            $reactionService->authenticate([
+                'bot_token' => $reactionToken->getDecryptedAccessToken()
+            ]);
+        } else {
+            // For Gmail and other OAuth services
+            $reactionService->authenticate([
+                'access_token' => $reactionToken->getDecryptedAccessToken()
+            ]);
         }
 
         // Execute reaction for each trigger result
         foreach ($triggerResults as $result) {
             try {
-                $message = $this->buildMessage($area->reaction_config, $result);
+                // Build reaction parameters based on service type
+                if ($area->reaction_service === 'Telegram') {
+                    $chatId = $reactionToken->getChatId();
+                    if (!$chatId) {
+                        $this->warn("⚠️  No chat_id found. User needs to send /start to bot");
+                        continue;
+                    }
 
-                $this->info("📤 Sending message to Telegram...");
+                    $message = $this->buildMessage($area->reaction_config, $result);
+                    $this->info("📤 Sending message to Telegram...");
 
-                $success = $reactionService->executeReaction($area->reaction_type, [
-                    'chat_id' => $chatId,
-                    'text' => $message
-                ]);
+                    $reactionParams = [
+                        'chat_id' => $chatId,
+                        'text' => $message
+                    ];
+                } elseif ($area->reaction_service === 'Gmail') {
+                    // Build email parameters
+                    $reactionParams = $area->reaction_config;
+
+                    // Replace placeholders in email content
+                    foreach ($reactionParams as $key => $value) {
+                        if (is_string($value)) {
+                            $reactionParams[$key] = $this->replacePlaceholders($value, $result);
+                        }
+                    }
+
+                    $this->info("📤 Sending email via Gmail...");
+                } else {
+                    $this->warn("⚠️  Unsupported reaction service: {$area->reaction_service}");
+                    continue;
+                }
+
+                $success = $reactionService->executeReaction($area->reaction_type, $reactionParams);
 
                 if ($success) {
                     // Update trigger count
@@ -293,6 +324,18 @@ class CheckAreas extends Command
     {
         $template = $config['message_template'] ?? "🎥 New video liked!\n{title}\n{url}";
 
+        // Replace placeholders with actual data
+        foreach ($data as $key => $value) {
+            if (is_string($value)) {
+                $template = str_replace("{{$key}}", $value, $template);
+            }
+        }
+
+        return $template;
+    }
+
+    private function replacePlaceholders(string $template, array $data): string
+    {
         // Replace placeholders with actual data
         foreach ($data as $key => $value) {
             if (is_string($value)) {

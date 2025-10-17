@@ -339,6 +339,16 @@ class OAuthController extends Controller
 
         $tokens = $response->json();
 
+        // Get user profile info to retrieve email
+        $profileResponse = Http::withHeaders([
+            'Authorization' => 'Bearer ' . $tokens['access_token']
+        ])->get('https://gmail.googleapis.com/gmail/v1/users/me/profile');
+
+        $gmailEmail = null;
+        if ($profileResponse->successful()) {
+            $gmailEmail = $profileResponse->json()['emailAddress'] ?? null;
+        }
+
         // Store tokens
         UserServiceToken::updateOrCreate(
             [
@@ -350,11 +360,13 @@ class OAuthController extends Controller
                 'refresh_token' => isset($tokens['refresh_token']) ? $tokens['refresh_token'] : null,
                 'expires_at' => now()->addSeconds($tokens['expires_in']),
                 'scopes' => implode(',', config('services.gmail.scopes')),
+                'additional_data' => $gmailEmail ? ['email' => $gmailEmail] : null,
             ]
         );
 
         Log::info('Gmail OAuth successful', [
-            'user_id' => $userId
+            'user_id' => $userId,
+            'email' => $gmailEmail
         ]);
 
         return response()->json([
