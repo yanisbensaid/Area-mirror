@@ -29,6 +29,7 @@ import YouTubeTelegramAreaPage from './pages/services/YouTubeTelegramAreaPage'
 import TwitchTelegramAreaPage from './pages/services/TwitchTelegramAreaPage'
 import GmailTelegramAreaPage from './pages/services/GmailTelegramAreaPage'
 import YouTubeGmailAreaPage from './pages/services/YouTubeGmailAreaPage'
+import SteamTelegramAreaPage from './pages/services/SteamTelegramAreaPage'
 import { EditReactionsProvider } from './contexts/EditReactionsContext'
 
 function App() {
@@ -88,6 +89,13 @@ function App() {
             <>
               <Navbar />
               <YouTubeGmailAreaPage />
+              <BottomBar />
+            </>
+          } />
+          <Route path="/area/steam_to_telegram" element={
+            <>
+              <Navbar />
+              <SteamTelegramAreaPage />
               <BottomBar />
             </>
           } />

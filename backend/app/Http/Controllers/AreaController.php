@@ -138,6 +138,26 @@ class AreaController extends Controller
                     ]
                 ]
             ],
+            [
+                'id' => 'steam_to_telegram',
+                'name' => 'Steam to Telegram',
+                'description' => 'Get notified on Telegram when you purchase a new game on Steam',
+                'action_service' => 'Steam',
+                'action_type' => 'new_game_purchased',
+                'reaction_service' => 'Telegram',
+                'reaction_type' => 'send_message',
+                'requires_services' => ['Steam', 'Telegram'],
+                'services_connected' => [
+                    'Steam' => in_array('Steam', $connectedServices),
+                    'Telegram' => in_array('Telegram', $connectedServices),
+                ],
+                'can_activate' => in_array('Steam', $connectedServices) && in_array('Telegram', $connectedServices),
+                'default_config' => [
+                    'reaction_config' => [
+                        'message_template' => "🎮 New game purchased on Steam!\n\n🎯 Game: {game_name}\n🕒 Playtime: {playtime_forever} minutes\n📅 Detected: {detected_at}"
+                    ]
+                ]
+            ],
         ];
 
         return response()->json([
@@ -385,6 +405,63 @@ class AreaController extends Controller
                 'area_id' => $area->id,
                 'user_id' => $userId,
                 'template' => 'gmail_to_telegram'
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'AREA created successfully. Click "Activate" to start monitoring.',
+                'data' => [
+                    'id' => $area->id,
+                    'name' => $area->name,
+                    'active' => $area->active,
+                ]
+            ], 201);
+        }
+
+        // For Steam to Telegram template
+        if ($validated['template_id'] === 'steam_to_telegram') {
+            // Verify both services are connected
+            $hasSteam = UserServiceToken::where('user_id', $userId)
+                ->where('service_name', 'Steam')
+                ->exists();
+
+            $hasTelegram = UserServiceToken::where('user_id', $userId)
+                ->where('service_name', 'Telegram')
+                ->exists();
+
+            if (!$hasSteam || !$hasTelegram) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Please connect both Steam and Telegram services first',
+                    'missing_services' => [
+                        'Steam' => !$hasSteam,
+                        'Telegram' => !$hasTelegram,
+                    ]
+                ], 400);
+            }
+
+            // Create AREA
+            $area = Area::create([
+                'user_id' => $userId,
+                'name' => $validated['name'] ?? 'Steam to Telegram',
+                'description' => 'Sends Telegram notification when you purchase a new game on Steam',
+                'action_service' => 'Steam',
+                'action_type' => 'new_game_purchased',
+                'action_config' => [
+                    'last_game_ids' => [] // Will store game IDs to detect new purchases
+                ],
+                'reaction_service' => 'Telegram',
+                'reaction_type' => 'send_message',
+                'reaction_config' => $validated['reaction_config'] ?? [
+                    'message_template' => "🎮 New game purchased on Steam!\n\n🎯 Game: {game_name}\n🕒 Playtime: {playtime_forever} minutes\n📅 Detected: {detected_at}"
+                ],
+                'active' => false, // User must manually activate
+            ]);
+
+            Log::info('AREA created', [
+                'area_id' => $area->id,
+                'user_id' => $userId,
+                'template' => 'steam_to_telegram'
             ]);
 
             return response()->json([

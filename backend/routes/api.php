@@ -71,6 +71,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/services/{service}/test', [ServiceConnectionController::class, 'testConnection']);
     Route::get('/services/connected', [ServiceConnectionController::class, 'connectedServices']);
     Route::get('/services/telegram/status', [ServiceConnectionController::class, 'telegramStatus']);
+    Route::post('/services/steam/connect', [ServiceConnectionController::class, 'connectSteam']);
 
     // OAuth routes (redirect requires auth, callback is public)
     Route::get('/oauth/youtube', [OAuthController::class, 'redirectToYouTube']);

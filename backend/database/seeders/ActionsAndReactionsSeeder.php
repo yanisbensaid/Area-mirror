@@ -21,7 +21,7 @@ class ActionsAndReactionsSeeder extends Seeder
         Reaction::truncate();
 
         // Get all registered services
-        $services = ['YouTube', 'Twitch', 'Gmail', 'Telegram'];
+        $services = ['YouTube', 'Twitch', 'Gmail', 'Telegram', 'Steam'];
 
         foreach ($services as $serviceName) {
             try {

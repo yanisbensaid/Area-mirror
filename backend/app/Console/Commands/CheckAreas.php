@@ -98,9 +98,18 @@ class CheckAreas extends Command
         }
 
         // Authenticate action service
-        $actionService->authenticate([
-            'access_token' => $actionToken->getDecryptedAccessToken()
-        ]);
+        if ($area->action_service === 'Steam') {
+            // Steam uses API key + user_id
+            $additionalData = $actionToken->additional_data ?? [];
+            $actionService->authenticate([
+                'api_key' => $actionToken->getDecryptedAccessToken(),
+                'user_id' => $additionalData['user_id'] ?? null
+            ]);
+        } else {
+            $actionService->authenticate([
+                'access_token' => $actionToken->getDecryptedAccessToken()
+            ]);
+        }
 
         // Execute action (check for trigger)
         $this->info("🔍 Checking action: {$area->action_service}.{$area->action_type}");
@@ -115,6 +124,16 @@ class CheckAreas extends Command
             // Twitch uses different state management based on action type
             $actionConfig = $area->action_config ?? [];
             $actionParams = $actionConfig;
+        } elseif ($area->action_service === 'Steam') {
+            // Steam uses action_config for state tracking
+            $actionConfig = $area->action_config ?? [];
+            if ($area->action_type === 'new_game_purchased') {
+                $actionParams = [
+                    'last_game_ids' => $actionConfig['last_game_ids'] ?? []
+                ];
+            } else {
+                $actionParams = $actionConfig;
+            }
         } else {
             // Default for other services
             $actionParams = $area->action_config ?? [];
@@ -214,6 +233,14 @@ class CheckAreas extends Command
                 if (isset($results[0]['_current_state'])) {
                     $area->action_config = array_merge($area->action_config ?? [], $results[0]['_current_state']);
                     Log::info('Gmail state updated', ['state' => $results[0]['_current_state']]);
+                }
+            } elseif ($area->action_service === 'Steam' && !empty($results)) {
+                // Steam: update last_game_ids
+                if ($area->action_type === 'new_game_purchased') {
+                    $gameIds = array_column($results, 'game_id');
+                    $existingIds = $area->action_config['last_game_ids'] ?? [];
+                    $allGameIds = array_merge($existingIds, $gameIds);
+                    $area->action_config = array_merge($area->action_config ?? [], ['last_game_ids' => array_slice($allGameIds, -100)]);
                 }
             }
         }
@@ -326,7 +353,7 @@ class CheckAreas extends Command
 
         // Replace placeholders with actual data
         foreach ($data as $key => $value) {
-            if (is_string($value)) {
+            if (is_string($value) || is_numeric($value)) {
                 $template = str_replace("{{$key}}", $value, $template);
             }
         }
@@ -338,7 +365,7 @@ class CheckAreas extends Command
     {
         // Replace placeholders with actual data
         foreach ($data as $key => $value) {
-            if (is_string($value)) {
+            if (is_string($value) || is_numeric($value)) {
                 $template = str_replace("{{$key}}", $value, $template);
             }
         }

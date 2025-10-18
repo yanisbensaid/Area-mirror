@@ -386,6 +386,10 @@ class ServiceConnectionController extends Controller
             'Telegram' => [
                 'bot_token' => 'required|string|regex:/^\d+:[A-Za-z0-9_-]{20,50}$/',
             ],
+            'Steam' => [
+                'api_key' => 'required|string|min:32',
+                'user_id' => 'required|string|regex:/^\d{17}$/',
+            ],
             // Add validation rules for other services here
             default => []
         };
@@ -455,6 +459,79 @@ class ServiceConnectionController extends Controller
     }
 
     /**
+     * Connect Steam service using .env credentials
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function connectSteam(Request $request): JsonResponse
+    {
+        try {
+            $user = Auth::user();
+
+            // Get credentials from .env
+            $apiKey = config('services.steam.api_key');
+            $steamId = env('STEAM_USER_ID');
+
+            if (!$apiKey || !$steamId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Steam credentials not configured on server. Please contact administrator.',
+                ], 500);
+            }
+
+            // Get the service instance
+            $service = $this->serviceManager->get('Steam');
+            if (!$service) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Steam service not found',
+                ], 404);
+            }
+
+            // Attempt to authenticate with the service
+            if (!$service->authenticate(['api_key' => $apiKey, 'user_id' => $steamId])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Steam authentication failed. Please check server configuration.',
+                ], 401);
+            }
+
+            // Store the credentials securely
+            $this->storeServiceCredentials($user, 'Steam', [
+                'api_key' => $apiKey,
+                'user_id' => $steamId
+            ]);
+
+            Log::info('Steam service connected successfully', [
+                'user_id' => $user->id,
+                'steam_id' => $steamId
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Successfully connected to Steam',
+                'data' => [
+                    'service' => 'Steam',
+                    'steam_id' => $steamId,
+                    'connected_at' => now()->toISOString(),
+                ],
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to connect Steam service', [
+                'error' => $e->getMessage(),
+                'user_id' => Auth::id(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to connect Steam: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Store service credentials securely
      */
     private function storeServiceCredentials($user, string $serviceName, array $credentials): void
@@ -462,6 +539,7 @@ class ServiceConnectionController extends Controller
         // Extract main token based on service type
         $accessToken = match ($serviceName) {
             'Telegram' => $credentials['bot_token'],
+            'Steam' => $credentials['api_key'],
             // Add token extraction for other services
             default => $credentials['access_token'] ?? null
         };
@@ -472,7 +550,7 @@ class ServiceConnectionController extends Controller
 
         // Store additional data (everything except the main token)
         $additionalData = $credentials;
-        unset($additionalData['bot_token'], $additionalData['access_token']);
+        unset($additionalData['bot_token'], $additionalData['access_token'], $additionalData['api_key']);
 
         UserServiceToken::updateOrCreateToken(
             userId: $user->id,
