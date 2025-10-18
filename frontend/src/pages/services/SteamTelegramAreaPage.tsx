@@ -38,6 +38,12 @@ export default function SteamTelegramAreaPage() {
   const [creating, setCreating] = useState(false)
   const [toggling, setToggling] = useState(false)
 
+  // Steam connection modal state
+  const [showSteamModal, setShowSteamModal] = useState(false)
+  const [apiKey, setApiKey] = useState('')
+  const [steamId, setSteamId] = useState('')
+  const [steamError, setSteamError] = useState<string | null>(null)
+
   // Telegram connection modal state
   const [showTelegramModal, setShowTelegramModal] = useState(false)
   const [botToken, setBotToken] = useState('')
@@ -135,30 +141,46 @@ export default function SteamTelegramAreaPage() {
   }
 
   const handleConnectSteam = async () => {
+    setSteamError(null)
     setConnecting('Steam')
-    setError(null)
+
+    if (!apiKey.trim() || !steamId.trim()) {
+      setSteamError('Please provide both API Key and Steam ID')
+      setConnecting(null)
+      return
+    }
 
     try {
       const token = getToken()
-      const response = await fetch(`${API_URL}/api/services/steam/connect`, {
+      const response = await fetch(`${API_URL}/api/services/connect`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
           'Accept': 'application/json'
-        }
+        },
+        body: JSON.stringify({
+          service: 'Steam',
+          credentials: {
+            api_key: apiKey,
+            user_id: steamId
+          }
+        })
       })
 
       const data = await response.json()
 
       if (data.success) {
+        setShowSteamModal(false)
+        setApiKey('')
+        setSteamId('')
         await refreshData()
       } else {
-        setError(data.message || 'Failed to connect Steam')
+        setSteamError(data.message || 'Failed to connect Steam')
       }
     } catch (err) {
       console.error('Error connecting Steam:', err)
-      setError('Failed to connect to Steam')
+      setSteamError('Failed to connect to Steam')
     } finally {
       setConnecting(null)
     }
@@ -416,7 +438,7 @@ export default function SteamTelegramAreaPage() {
               <div className="flex gap-2">
                 {!template.services_connected.Steam && (
                   <button
-                    onClick={handleConnectSteam}
+                    onClick={() => setShowSteamModal(true)}
                     disabled={connecting === 'Steam'}
                     className="bg-purple-600 hover:bg-purple-700 px-6 py-2 rounded-lg font-semibold transition disabled:opacity-50"
                   >
@@ -532,6 +554,75 @@ export default function SteamTelegramAreaPage() {
           </div>
         )}
       </div>
+
+      {/* Steam Connection Modal */}
+      {showSteamModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-800 rounded-lg p-6 max-w-md w-full border border-slate-700">
+            <h3 className="text-2xl font-bold mb-4">Connect Steam</h3>
+            <p className="text-slate-300 mb-4 text-sm">
+              Enter your Steam Web API Key and Steam ID (steamID64) to connect your Steam account.
+            </p>
+
+            {steamError && (
+              <div className="bg-red-500/10 border border-red-500 text-red-200 px-4 py-3 rounded mb-4 text-sm">
+                {steamError}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Steam API Key</label>
+                <input
+                  type="text"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder="A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6"
+                  className="w-full px-4 py-2 bg-slate-900 border border-slate-600 rounded-lg focus:border-purple-500 focus:outline-none"
+                />
+                <p className="text-xs text-slate-400 mt-1">
+                  Get your API key from <a href="https://steamcommunity.com/dev/apikey" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300">Steam Web API Key page</a>
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Steam ID (steamID64)</label>
+                <input
+                  type="text"
+                  value={steamId}
+                  onChange={(e) => setSteamId(e.target.value)}
+                  placeholder="76561198012345678"
+                  className="w-full px-4 py-2 bg-slate-900 border border-slate-600 rounded-lg focus:border-purple-500 focus:outline-none"
+                />
+                <p className="text-xs text-slate-400 mt-1">
+                  Find your Steam ID on <a href="https://steamid.io/" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300">SteamID.io</a>
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowSteamModal(false)
+                  setSteamError(null)
+                  setApiKey('')
+                  setSteamId('')
+                }}
+                className="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConnectSteam}
+                disabled={connecting === 'Steam'}
+                className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-semibold transition disabled:opacity-50"
+              >
+                {connecting === 'Steam' ? 'Connecting...' : 'Connect'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Telegram Connection Modal */}
       {showTelegramModal && (
