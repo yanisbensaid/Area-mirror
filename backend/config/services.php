@@ -124,4 +124,10 @@ return [
         'base_url' => 'https://api.steampowered.com',
     ],
 
+    'discord' => [
+        'bot_token' => env('DISCORD_BOT_TOKEN'),
+        'webhook_url' => env('DISCORD_WEBHOOK_URL'),
+        'base_url' => 'https://discord.com/api/v10',
+    ],
+
 ];

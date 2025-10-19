@@ -390,6 +390,10 @@ class ServiceConnectionController extends Controller
                 'api_key' => 'required|string|min:32',
                 'user_id' => 'required|string|regex:/^\d{17}$/',
             ],
+            'Discord' => [
+                'bot_token' => 'required|string|min:30',
+                'webhook_url' => 'required|string|url',
+            ],
             // Add validation rules for other services here
             default => []
         };
@@ -540,6 +544,7 @@ class ServiceConnectionController extends Controller
         $accessToken = match ($serviceName) {
             'Telegram' => $credentials['bot_token'],
             'Steam' => $credentials['api_key'],
+            'Discord' => $credentials['bot_token'],
             // Add token extraction for other services
             default => $credentials['access_token'] ?? null
         };

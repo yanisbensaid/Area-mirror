@@ -30,6 +30,7 @@ import TwitchTelegramAreaPage from './pages/services/TwitchTelegramAreaPage'
 import GmailTelegramAreaPage from './pages/services/GmailTelegramAreaPage'
 import YouTubeGmailAreaPage from './pages/services/YouTubeGmailAreaPage'
 import SteamTelegramAreaPage from './pages/services/SteamTelegramAreaPage'
+import YouTubeDiscordAreaPage from './pages/services/YouTubeDiscordAreaPage'
 import { EditReactionsProvider } from './contexts/EditReactionsContext'
 
 function App() {
@@ -96,6 +97,13 @@ function App() {
             <>
               <Navbar />
               <SteamTelegramAreaPage />
+              <BottomBar />
+            </>
+          } />
+          <Route path="/area/youtube_to_discord" element={
+            <>
+              <Navbar />
+              <YouTubeDiscordAreaPage />
               <BottomBar />
             </>
           } />

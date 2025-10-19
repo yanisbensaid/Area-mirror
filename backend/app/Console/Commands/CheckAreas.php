@@ -105,6 +105,13 @@ class CheckAreas extends Command
                 'api_key' => $actionToken->getDecryptedAccessToken(),
                 'user_id' => $additionalData['user_id'] ?? null
             ]);
+        } elseif ($area->action_service === 'Discord') {
+            // Discord uses bot_token + webhook_url
+            $additionalData = $actionToken->additional_data ?? [];
+            $actionService->authenticate([
+                'bot_token' => $actionToken->getDecryptedAccessToken(),
+                'webhook_url' => $additionalData['webhook_url'] ?? null
+            ]);
         } else {
             $actionService->authenticate([
                 'access_token' => $actionToken->getDecryptedAccessToken()
@@ -133,6 +140,16 @@ class CheckAreas extends Command
                 ];
             } else {
                 $actionParams = $actionConfig;
+            }
+        } elseif ($area->action_service === 'Discord') {
+            // Discord uses action_config for state tracking
+            $actionConfig = $area->action_config ?? [];
+            $actionParams = array_merge($actionConfig, [
+                'channel_id' => $actionConfig['channel_id'] ?? null,
+                'last_message_id' => $actionConfig['last_message_id'] ?? null,
+            ]);
+            if ($area->action_type === 'message_with_keyword') {
+                $actionParams['keyword'] = $actionConfig['keyword'] ?? null;
             }
         } else {
             // Default for other services
@@ -242,6 +259,12 @@ class CheckAreas extends Command
                     $allGameIds = array_merge($existingIds, $gameIds);
                     $area->action_config = array_merge($area->action_config ?? [], ['last_game_ids' => array_slice($allGameIds, -100)]);
                 }
+            } elseif ($area->action_service === 'Discord' && !empty($results)) {
+                // Discord: update last_message_id
+                $lastMessageId = $results[count($results) - 1]['message_id'] ?? null;
+                if ($lastMessageId) {
+                    $area->action_config = array_merge($area->action_config ?? [], ['last_message_id' => $lastMessageId]);
+                }
             }
         }
 
@@ -275,6 +298,12 @@ class CheckAreas extends Command
         if ($area->reaction_service === 'Telegram') {
             $reactionService->authenticate([
                 'bot_token' => $reactionToken->getDecryptedAccessToken()
+            ]);
+        } elseif ($area->reaction_service === 'Discord') {
+            $additionalData = $reactionToken->additional_data ?? [];
+            $reactionService->authenticate([
+                'bot_token' => $reactionToken->getDecryptedAccessToken(),
+                'webhook_url' => $additionalData['webhook_url'] ?? null
             ]);
         } else {
             // For Gmail and other OAuth services
@@ -313,6 +342,19 @@ class CheckAreas extends Command
                     }
 
                     $this->info("📤 Sending email via Gmail...");
+                } elseif ($area->reaction_service === 'Discord') {
+                    // Build Discord message parameters
+                    $content = $area->reaction_config['content'] ?? "🎥 New video!\n{title}\n{url}";
+
+                    // Replace placeholders with actual data
+                    $content = $this->replacePlaceholders($content, $result);
+
+                    $this->info("📤 Sending message to Discord...");
+
+                    $reactionParams = [
+                        'content' => $content,
+                        'username' => $area->reaction_config['username'] ?? 'AREA Bot'
+                    ];
                 } else {
                     $this->warn("⚠️  Unsupported reaction service: {$area->reaction_service}");
                     continue;

@@ -25,6 +25,7 @@ class AppServiceProvider extends ServiceProvider
             $manager->register(new \App\Services\Implementations\TwitchService());
             $manager->register(new \App\Services\Implementations\GmailService());
             $manager->register(new \App\Services\Implementations\SteamService());
+            $manager->register(new \App\Services\Implementations\DiscordService());
 
             // Future services can be registered here:
             // $manager->register(new GitHubService());

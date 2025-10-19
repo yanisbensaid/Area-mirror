@@ -158,6 +158,26 @@ class AreaController extends Controller
                     ]
                 ]
             ],
+            [
+                'id' => 'youtube_to_discord',
+                'name' => 'YouTube to Discord',
+                'description' => 'Send a Discord message when you like a video on YouTube',
+                'action_service' => 'YouTube',
+                'action_type' => 'video_liked',
+                'reaction_service' => 'Discord',
+                'reaction_type' => 'send_message',
+                'requires_services' => ['YouTube', 'Discord'],
+                'services_connected' => [
+                    'YouTube' => in_array('YouTube', $connectedServices),
+                    'Discord' => in_array('Discord', $connectedServices),
+                ],
+                'can_activate' => in_array('YouTube', $connectedServices) && in_array('Discord', $connectedServices),
+                'default_config' => [
+                    'reaction_config' => [
+                        'content' => "🎥 You liked a new video!\n\n📺 **{title}**\n👤 Channel: {channel}\n🔗 {url}"
+                    ]
+                ]
+            ],
         ];
 
         return response()->json([
@@ -462,6 +482,63 @@ class AreaController extends Controller
                 'area_id' => $area->id,
                 'user_id' => $userId,
                 'template' => 'steam_to_telegram'
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'AREA created successfully. Click "Activate" to start monitoring.',
+                'data' => [
+                    'id' => $area->id,
+                    'name' => $area->name,
+                    'active' => $area->active,
+                ]
+            ], 201);
+        }
+
+        // For YouTube to Discord template
+        if ($validated['template_id'] === 'youtube_to_discord') {
+            // Verify both services are connected
+            $hasYouTube = UserServiceToken::where('user_id', $userId)
+                ->where('service_name', 'YouTube')
+                ->exists();
+
+            $hasDiscord = UserServiceToken::where('user_id', $userId)
+                ->where('service_name', 'Discord')
+                ->exists();
+
+            if (!$hasYouTube || !$hasDiscord) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Please connect both YouTube and Discord services first',
+                    'missing_services' => [
+                        'YouTube' => !$hasYouTube,
+                        'Discord' => !$hasDiscord,
+                    ]
+                ], 400);
+            }
+
+            // Create AREA
+            $area = Area::create([
+                'user_id' => $userId,
+                'name' => $validated['name'] ?? 'YouTube to Discord',
+                'description' => 'Sends Discord message when you like a YouTube video',
+                'action_service' => 'YouTube',
+                'action_type' => 'video_liked',
+                'action_config' => [
+                    'last_video_ids' => [] // Will store video IDs to detect new likes
+                ],
+                'reaction_service' => 'Discord',
+                'reaction_type' => 'send_message',
+                'reaction_config' => $validated['reaction_config'] ?? [
+                    'content' => "🎥 You liked a new video!\n\n📺 **{title}**\n👤 Channel: {channel}\n🔗 {url}"
+                ],
+                'active' => false, // User must manually activate
+            ]);
+
+            Log::info('AREA created', [
+                'area_id' => $area->id,
+                'user_id' => $userId,
+                'template' => 'youtube_to_discord'
             ]);
 
             return response()->json([
