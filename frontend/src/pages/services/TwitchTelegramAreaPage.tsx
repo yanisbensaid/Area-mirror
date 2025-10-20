@@ -25,12 +25,12 @@ interface UserArea {
   can_execute: boolean
 }
 
-export default function YouTubeTelegramAreaPage() {
+export default function TwitchTelegramAreaPage() {
   const { isLoggedIn } = useAuth()
-  
+
   // Helper function to get token
   const getToken = () => localStorage.getItem('token')
-  
+
   const [template, setTemplate] = useState<AREATemplate | null>(null)
   const [userArea, setUserArea] = useState<UserArea | null>(null)
   const [loading, setLoading] = useState(true)
@@ -60,7 +60,7 @@ export default function YouTubeTelegramAreaPage() {
         const token = localStorage.getItem('token')
         if (!token) return
 
-        const templatesRes = await fetch('http://localhost:8000/api/areas/templates', {
+        const templatesRes = await fetch(`${API_URL}/api/areas/templates`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Accept': 'application/json'
@@ -78,11 +78,12 @@ export default function YouTubeTelegramAreaPage() {
         const areasData = await areasRes.json()
 
         if (templatesData.success && templatesData.data.length > 0) {
-          const foundTemplate = templatesData.data[0]
-          setTemplate(foundTemplate)
+          // Find Twitch to Telegram template
+          const foundTemplate = templatesData.data.find((t: AREATemplate) => t.id === 'twitch_to_telegram')
+          setTemplate(foundTemplate || null)
 
           // Find matching user area
-          if (areasData.success) {
+          if (areasData.success && foundTemplate) {
             const matchingArea = areasData.data.find((area: UserArea) =>
               area.name.includes(foundTemplate.name)
             )
@@ -107,15 +108,16 @@ export default function YouTubeTelegramAreaPage() {
       const token = localStorage.getItem('token')
       if (!token) return
 
-      const templatesRes = await fetch('http://localhost:8000/api/areas/templates', {
+      const templatesRes = await fetch(`${API_URL}/api/areas/templates`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json'
         }
       })
       const templatesData = await templatesRes.json()
-      if (templatesData.success && templatesData.data.length > 0) {
-        setTemplate(templatesData.data[0])
+      if (templatesData.success) {
+        const foundTemplate = templatesData.data.find((t: AREATemplate) => t.id === 'twitch_to_telegram')
+        setTemplate(foundTemplate || null)
       }
 
       const areasRes = await fetch(`${API_URL}/api/areas`, {
@@ -125,9 +127,9 @@ export default function YouTubeTelegramAreaPage() {
         }
       })
       const areasData = await areasRes.json()
-      if (areasData.success) {
+      if (areasData.success && template) {
         const matchingArea = areasData.data.find((area: UserArea) =>
-          area.name.includes(templatesData.data[0]?.name)
+          area.name.includes('Twitch to Telegram')
         )
         setUserArea(matchingArea || null)
       }
@@ -136,9 +138,9 @@ export default function YouTubeTelegramAreaPage() {
     }
   }
 
-  const handleConnectYouTube = async () => {
+  const handleConnectTwitch = async () => {
     try {
-      setConnecting('YouTube')
+      setConnecting('Twitch')
       setError(null)
 
       const token = localStorage.getItem('token')
@@ -148,7 +150,7 @@ export default function YouTubeTelegramAreaPage() {
         return
       }
 
-      const response = await fetch('http://localhost:8000/api/oauth/youtube', {
+      const response = await fetch(`${API_URL}/api/oauth/twitch`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json'
@@ -168,7 +170,7 @@ export default function YouTubeTelegramAreaPage() {
       if (data.success && data.auth_url) {
         const popup = window.open(
           data.auth_url,
-          'YouTube OAuth',
+          'Twitch OAuth',
           'width=600,height=700,left=200,top=100'
         )
 
@@ -195,9 +197,9 @@ export default function YouTubeTelegramAreaPage() {
             })
             const templatesData = await templatesRes.json()
 
-            if (templatesData.success && templatesData.data.length > 0) {
-              const updatedTemplate = templatesData.data[0]
-              if (updatedTemplate.services_connected?.YouTube) {
+            if (templatesData.success) {
+              const updatedTemplate = templatesData.data.find((t: AREATemplate) => t.id === 'twitch_to_telegram')
+              if (updatedTemplate?.services_connected?.Twitch) {
                 clearInterval(checkInterval)
                 popup?.close()
                 setConnecting(null)
@@ -218,15 +220,15 @@ export default function YouTubeTelegramAreaPage() {
         }, 300000)
       }
     } catch (error) {
-      console.error('YouTube connection failed:', error)
-      setError('Failed to connect YouTube. Please check console for details.')
+      console.error('Twitch connection failed:', error)
+      setError('Failed to connect Twitch. Please check console for details.')
       setConnecting(null)
     }
   }
 
-  const handleDisconnectYouTube = async () => {
+  const handleDisconnectTwitch = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/services/YouTube/disconnect`, {
+      const response = await fetch(`${API_URL}/api/services/Twitch/disconnect`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${getToken()}`,
@@ -239,7 +241,7 @@ export default function YouTubeTelegramAreaPage() {
         await refreshData()
       }
     } catch (error) {
-      console.error('Failed to disconnect YouTube:', error)
+      console.error('Failed to disconnect Twitch:', error)
     }
   }
 
@@ -324,7 +326,7 @@ export default function YouTubeTelegramAreaPage() {
         },
         body: JSON.stringify({
           template_id: template.id,
-          name: 'YouTube to Telegram'
+          name: 'Twitch to Telegram'
         })
       })
 
@@ -387,7 +389,7 @@ export default function YouTubeTelegramAreaPage() {
     return (
       <main className="pt-16 md:pt-20 px-4 bg-gray-50 min-h-screen">
         <div className="max-w-4xl mx-auto py-12 text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">YouTube to Telegram</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">Twitch to Telegram</h1>
           <p className="text-gray-600 mb-6">Please log in to configure this automation</p>
           <Link to="/login" className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
             Log In
@@ -397,7 +399,7 @@ export default function YouTubeTelegramAreaPage() {
     )
   }
 
-  const isYouTubeConnected = template?.services_connected.YouTube || false
+  const isTwitchConnected = template?.services_connected.Twitch || false
   const isTelegramConnected = template?.services_connected.Telegram || false
 
   return (
@@ -432,11 +434,11 @@ export default function YouTubeTelegramAreaPage() {
             <div className="flex items-center justify-center mb-6 space-x-4">
               <div className="flex items-center space-x-3">
                 <img
-                  src="/app_logo/youtube.png"
-                  alt="YouTube"
+                  src="/app_logo/twitch.png"
+                  alt="Twitch"
                   className="w-12 h-12 rounded-lg"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://www.youtube.com/s/desktop/7a7c6e5b/img/favicon_144x144.png'
+                    (e.target as HTMLImageElement).src = 'https://static.twitchcdn.net/assets/favicon-32-e29e246c157142c94346.png'
                   }}
                 />
                 <span className="text-2xl">→</span>
@@ -459,19 +461,19 @@ export default function YouTubeTelegramAreaPage() {
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <div className="flex items-center space-x-2">
-                  <span className={`text-2xl ${isYouTubeConnected ? '🟢' : '🔴'}`}>
-                    {isYouTubeConnected ? '✅' : '❌'}
+                  <span className={`text-2xl ${isTwitchConnected ? '🟢' : '🔴'}`}>
+                    {isTwitchConnected ? '✅' : '❌'}
                   </span>
                   <div>
-                    <p className="font-medium text-gray-900">YouTube</p>
+                    <p className="font-medium text-gray-900">Twitch</p>
                     <p className="text-sm text-gray-600">
-                      {isYouTubeConnected ? 'Connected' : 'Not Connected'}
+                      {isTwitchConnected ? 'Connected' : 'Not Connected'}
                     </p>
                   </div>
                 </div>
-                {isYouTubeConnected && (
+                {isTwitchConnected && (
                   <button
-                    onClick={handleDisconnectYouTube}
+                    onClick={handleDisconnectTwitch}
                     className="text-sm text-red-600 hover:text-red-700 font-medium cursor-pointer"
                   >
                     Disconnect
@@ -503,17 +505,17 @@ export default function YouTubeTelegramAreaPage() {
             </div>
 
             {/* Connection Buttons */}
-            {(!isYouTubeConnected || !isTelegramConnected) && (
+            {(!isTwitchConnected || !isTelegramConnected) && (
               <div className="border-t border-gray-200 pt-6 mb-6">
                 <h3 className="font-semibold text-gray-900 mb-4">Connect Services</h3>
                 <div className="space-y-3">
-                  {!isYouTubeConnected && (
+                  {!isTwitchConnected && (
                     <button
-                      onClick={handleConnectYouTube}
-                      disabled={connecting === 'YouTube'}
-                      className="w-full bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center space-x-2"
+                      onClick={handleConnectTwitch}
+                      disabled={connecting === 'Twitch'}
+                      className="w-full bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center space-x-2"
                     >
-                      {connecting === 'YouTube' ? (
+                      {connecting === 'Twitch' ? (
                         <>
                           <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                           <span>Connecting...</span>
@@ -521,7 +523,7 @@ export default function YouTubeTelegramAreaPage() {
                       ) : (
                         <>
                           <span>🔗</span>
-                          <span>Connect YouTube</span>
+                          <span>Connect Twitch</span>
                         </>
                       )}
                     </button>

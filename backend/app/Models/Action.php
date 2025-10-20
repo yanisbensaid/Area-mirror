@@ -2,32 +2,41 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Action extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
-        'service_id',
+        'service_name',
+        'action_key',
         'name',
         'description',
-        'trigger_type',
-        'trigger_config',
+        'parameters',
+        'active',
     ];
 
     protected $casts = [
-        'trigger_config' => 'array',
+        'parameters' => 'array',
+        'active' => 'boolean',
     ];
 
-    public function service()
+    /**
+     * Get actions for a specific service
+     */
+    public static function forService(string $serviceName)
     {
-        return $this->belongsTo(Service::class);
+        return self::where('service_name', $serviceName)
+            ->where('active', true)
+            ->get();
     }
 
-    public function automations()
+    /**
+     * Get all active actions grouped by service
+     */
+    public static function allGroupedByService()
     {
-        return $this->hasMany(Automation::class);
+        return self::where('active', true)
+            ->get()
+            ->groupBy('service_name');
     }
 }

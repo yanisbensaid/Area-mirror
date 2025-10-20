@@ -302,8 +302,24 @@ export default function AREATemplatesPage() {
 
         {!loading && templates.map(template => {
           const existingArea = userAreas.find(area => area.name.includes(template.name))
-          const isYouTubeConnected = template.services_connected.YouTube
-          const isTelegramConnected = template.services_connected.Telegram
+          const actionServiceConnected = template.services_connected[template.action_service]
+          const reactionServiceConnected = template.services_connected[template.reaction_service]
+
+          // Service logo mapping
+          const serviceLogo: { [key: string]: { src: string, fallback: string } } = {
+            'YouTube': {
+              src: '/app_logo/youtube.png',
+              fallback: 'https://www.youtube.com/s/desktop/7a7c6e5b/img/favicon_144x144.png'
+            },
+            'Twitch': {
+              src: '/app_logo/twitch.png',
+              fallback: 'https://static.twitchcdn.net/assets/favicon-32-e29e246c157142c94346.png'
+            },
+            'Telegram': {
+              src: '/app_logo/telegram.png',
+              fallback: 'https://telegram.org/img/t_logo.png'
+            }
+          }
 
           return (
             <div key={template.id} className="bg-white rounded-xl shadow-lg p-6 mb-6">
@@ -311,20 +327,20 @@ export default function AREATemplatesPage() {
               <div className="flex items-center justify-center mb-6 space-x-4">
                 <div className="flex items-center space-x-3">
                   <img
-                    src="/app_logo/youtube.png"
-                    alt="YouTube"
+                    src={serviceLogo[template.action_service]?.src || '/app_logo/default.png'}
+                    alt={template.action_service}
                     className="w-12 h-12 rounded-lg"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://www.youtube.com/s/desktop/7a7c6e5b/img/favicon_144x144.png'
+                      (e.target as HTMLImageElement).src = serviceLogo[template.action_service]?.fallback || ''
                     }}
                   />
                   <span className="text-2xl">→</span>
                   <img
-                    src="/app_logo/telegram.png"
-                    alt="Telegram"
+                    src={serviceLogo[template.reaction_service]?.src || '/app_logo/default.png'}
+                    alt={template.reaction_service}
                     className="w-12 h-12 rounded-lg"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://telegram.org/img/t_logo.png'
+                      (e.target as HTMLImageElement).src = serviceLogo[template.reaction_service]?.fallback || ''
                     }}
                   />
                 </div>
@@ -334,119 +350,71 @@ export default function AREATemplatesPage() {
               <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">{template.name}</h2>
               <p className="text-gray-600 text-center mb-6">{template.description}</p>
 
+              {/* View Details Link */}
+              <div className="text-center mb-6">
+                <Link
+                  to={`/area/${template.id}`}
+                  className="text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-2"
+                >
+                  <span>View Full Details</span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
+              </div>
+
               {/* Connection Status */}
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div className="flex items-center space-x-2">
-                  <span className={`text-2xl ${isYouTubeConnected ? '🟢' : '🔴'}`}>
-                    {isYouTubeConnected ? '✅' : '❌'}
+                  <span className={`text-2xl ${actionServiceConnected ? '🟢' : '🔴'}`}>
+                    {actionServiceConnected ? '✅' : '❌'}
                   </span>
                   <div>
-                    <p className="font-medium text-gray-900">YouTube</p>
+                    <p className="font-medium text-gray-900">{template.action_service}</p>
                     <p className="text-sm text-gray-600">
-                      {isYouTubeConnected ? 'Connected' : 'Not Connected'}
+                      {actionServiceConnected ? 'Connected' : 'Not Connected'}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center space-x-2">
-                  <span className={`text-2xl ${isTelegramConnected ? '🟢' : '🔴'}`}>
-                    {isTelegramConnected ? '✅' : '❌'}
+                  <span className={`text-2xl ${reactionServiceConnected ? '🟢' : '🔴'}`}>
+                    {reactionServiceConnected ? '✅' : '❌'}
                   </span>
                   <div>
-                    <p className="font-medium text-gray-900">Telegram</p>
+                    <p className="font-medium text-gray-900">{template.reaction_service}</p>
                     <p className="text-sm text-gray-600">
-                      {isTelegramConnected ? 'Connected' : 'Not Connected'}
+                      {reactionServiceConnected ? 'Connected' : 'Not Connected'}
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Connection Buttons */}
-              {(!isYouTubeConnected || !isTelegramConnected) && (
-                <div className="border-t border-gray-200 pt-6 mb-6">
-                  <h3 className="font-semibold text-gray-900 mb-4">Connect Services</h3>
-                  <div className="space-y-3">
-                    {!isYouTubeConnected && (
-                      <button
-                        onClick={handleConnectYouTube}
-                        disabled={connecting === 'YouTube'}
-                        className="w-full bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-                      >
-                        {connecting === 'YouTube' ? (
-                          <>
-                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                            <span>Connecting...</span>
-                          </>
-                        ) : (
-                          <>
-                            <span>🔗</span>
-                            <span>Connect YouTube</span>
-                          </>
-                        )}
-                      </button>
-                    )}
-
-                    {!isTelegramConnected && (
-                      <button
-                        onClick={() => setShowTelegramModal(true)}
-                        className="w-full bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors"
-                      >
-                        🔗 Connect Telegram
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* AREA Actions */}
-              {template.can_activate && (
-                <div className="border-t border-gray-200 pt-6">
-                  {!existingArea ? (
-                    <button
-                      onClick={() => handleCreateArea(template.id)}
-                      className="w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
-                    >
-                      ✨ Create Automation
-                    </button>
-                  ) : (
-                    <div className="space-y-4">
-                      {/* Stats */}
-                      <div className="bg-gray-50 rounded-lg p-4">
-                        <div className="grid grid-cols-3 gap-4 text-center">
-                          <div>
-                            <p className="text-sm text-gray-600">Status</p>
-                            <p className={`font-bold ${existingArea.active ? 'text-green-600' : 'text-gray-400'}`}>
-                              {existingArea.active ? 'Active' : 'Inactive'}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-gray-600">Triggers</p>
-                            <p className="font-bold text-gray-900">{existingArea.trigger_count}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-gray-600">Last Triggered</p>
-                            <p className="font-bold text-gray-900">
-                              {existingArea.last_triggered_at
-                                ? new Date(existingArea.last_triggered_at).toLocaleDateString()
-                                : 'Never'}
-                            </p>
-                          </div>
-                        </div>
+              {/* Quick Stats if AREA exists */}
+              {existingArea && (
+                <div className="border-t border-gray-200 pt-4">
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                      <div>
+                        <p className="text-sm text-gray-600">Status</p>
+                        <p className={`font-bold ${existingArea.active ? 'text-green-600' : 'text-gray-400'}`}>
+                          {existingArea.active ? 'Active' : 'Inactive'}
+                        </p>
                       </div>
-
-                      {/* Toggle */}
-                      <button
-                        onClick={() => handleToggleArea(existingArea.id)}
-                        className={`w-full px-6 py-3 rounded-lg font-medium transition-colors ${
-                          existingArea.active
-                            ? 'bg-gray-600 text-white hover:bg-gray-700'
-                            : 'bg-green-600 text-white hover:bg-green-700'
-                        }`}
-                      >
-                        {existingArea.active ? '⏸️ Deactivate' : '▶️ Activate'}
-                      </button>
+                      <div>
+                        <p className="text-sm text-gray-600">Triggers</p>
+                        <p className="font-bold text-gray-900">{existingArea.trigger_count}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Last Triggered</p>
+                        <p className="font-bold text-gray-900 text-xs">
+                          {existingArea.last_triggered_at
+                            ? new Date(existingArea.last_triggered_at).toLocaleDateString()
+                            : 'Never'}
+                        </p>
+                      </div>
                     </div>
-                  )}
+                  </div>
                 </div>
               )}
             </div>

@@ -1,60 +1,147 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# AREA Backend - Laravel API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+This is the backend API for the AREA project, built with Laravel.
 
-## About Laravel
+## 🗄️ Database Setup
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+We use a shared PostgreSQL database hosted on **Neon.tech** for team development.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### Prerequisites
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- PHP 8.2+
+- Composer
+- PostgreSQL extension for PHP (`php-pgsql`)
 
-## Learning Laravel
+### First-Time Setup
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+#### 1. Get Database Credentials
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+Contact the team lead for Neon database credentials. You'll receive:
+- `DB_HOST`
+- `DB_DATABASE`
+- `DB_USERNAME`
+- `DB_PASSWORD`
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+#### 2. Configure Environment
 
-## Laravel Sponsors
+```bash
+cp .env.example .env
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+Open `.env` and fill in the database credentials provided:
 
-### Premium Partners
+```env
+DB_CONNECTION=pgsql
+DB_HOST=ep-xxxxx.eu-central-1.aws.neon.tech
+DB_PORT=5432
+DB_DATABASE=neondb
+DB_USERNAME=neondb_owner
+DB_PASSWORD=your_password_here
+```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+#### 3. Generate Application Key
 
-## Contributing
+```bash
+php artisan key:generate
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+#### 4. Configure YouTube OAuth
 
-## Code of Conduct
+Follow the guide in `docs/YOUTUBE_SETUP.md` to:
+- Create your personal Google Cloud project
+- Get OAuth credentials
+- Add them to your `.env`
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+#### 5. Database Migration (First Person Only)
 
-## Security Vulnerabilities
+**⚠️ Important**: Only ONE team member should run this initially!
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+If you're the first person setting up:
+
+```bash
+php artisan migrate
+php artisan db:seed --class=DevelopmentSeeder
+```
+
+If someone already migrated, skip this step.
+
+#### 6. Verify Setup
+
+```bash
+php artisan db:verify
+```
+
+You should see:
+```
+🔍 Verifying database setup...
+
+✅ Database connection: OK
+✅ Table 'users': exists
+✅ Table 'user_service_tokens': exists
+✅ Table 'areas': exists
+✅ Database contains 2 user(s)
+
+🎉 Database setup verified successfully!
+```
+
+#### 7. Start Development
+
+```bash
+php artisan serve
+```
+
+Backend runs on `http://localhost:8000`
+
+### Test Accounts
+
+After seeding, you can log in with:
+- **User**: `test@area.com` / `password`
+- **Admin**: `admin@area.com` / `password`
+
+### Important Notes
+
+#### Security
+- ⚠️ **NEVER** commit `.env` to Git (already in `.gitignore`)
+- ⚠️ **NEVER** put real credentials in `.env.example`
+- ✅ Share credentials only via private team channels (Discord/Slack)
+
+#### Migrations
+- 🔄 Coordinate with team before running new migrations
+- 📢 Announce in team chat: "Running migration X"
+- ⚠️ Only ONE person runs each migration
+
+#### Team Workflow
+- 👥 Everyone sees the same data
+- 📊 Perfect for testing and demos
+- 🔄 Changes by one person are visible to all
+
+### Troubleshooting
+
+#### "SQLSTATE[08006] Connection refused"
+- ✅ Check credentials are correct (no spaces)
+- ✅ Verify Neon project is active
+- ✅ Check internet connection
+
+#### "SQLSTATE[08001] SSL connection required"
+- ✅ Verify `config/database.php` has `'sslmode' => 'require'`
+
+#### "SQLSTATE[25P02]: In failed sql transaction"
+- ✅ You're using the pooler endpoint (`-pooler` in hostname)
+- ✅ Use the **direct endpoint** (without `-pooler`) for migrations
+- ✅ Example: `ep-xxxxx.c-2.eu-central-1.aws.neon.tech` instead of `ep-xxxxx-pooler.c-2...`
+- ℹ️ The pooler uses transaction mode which conflicts with Laravel's migration transactions
+
+#### "Base table or view not found"
+- ✅ Database not migrated yet
+- ✅ Run: `php artisan migrate`
+
+#### "Access denied for user"
+- ✅ Wrong username or password
+- ✅ Request credentials again from team lead
+
+## 📚 About Laravel
+
+Laravel is a web application framework with expressive, elegant syntax. Learn more at [laravel.com](https://laravel.com).
 
 ## License
 

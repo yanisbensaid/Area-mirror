@@ -51,12 +51,18 @@ return [
         'api_url' => 'https://api.telegram.org/bot',
     ],
 
-    // Future service configurations
     'gmail' => [
         'client_id' => env('GMAIL_CLIENT_ID'),
         'client_secret' => env('GMAIL_CLIENT_SECRET'),
-        'redirect_uri' => env('GMAIL_REDIRECT_URI'),
+        'redirect' => env('GMAIL_REDIRECT_URI', 'http://localhost:8000/api/oauth/gmail/callback'),
+        'scopes' => [
+            'https://www.googleapis.com/auth/gmail.readonly',
+            'https://www.googleapis.com/auth/gmail.send',
+            'https://www.googleapis.com/auth/gmail.modify',
+        ],
     ],
+
+    // Future service configurations
 
     'github' => [
         'client_id' => env('GITHUB_CLIENT_ID'),
@@ -98,6 +104,30 @@ return [
         'client_id' => env('YOUTUBE_CLIENT_ID'),
         'client_secret' => env('YOUTUBE_CLIENT_SECRET'),
         'redirect' => env('YOUTUBE_REDIRECT_URI', 'http://localhost:8000/api/oauth/youtube/callback'),
+    ],
+
+    'twitch' => [
+        'client_id' => env('TWITCH_CLIENT_ID'),
+        'client_secret' => env('TWITCH_CLIENT_SECRET'),
+        'redirect' => env('TWITCH_REDIRECT_URI', 'http://localhost:8000/api/oauth/twitch/callback'),
+        'scopes' => [
+            'user:read:email',
+            'channel:read:stream_key',
+            'channel:manage:broadcast',
+            'user:read:follows',
+            'channel:manage:videos',
+        ],
+    ],
+
+    'steam' => [
+        'api_key' => env('STEAM_API_KEY'),
+        'base_url' => 'https://api.steampowered.com',
+    ],
+
+    'discord' => [
+        'bot_token' => env('DISCORD_BOT_TOKEN'),
+        'webhook_url' => env('DISCORD_WEBHOOK_URL'),
+        'base_url' => 'https://discord.com/api/v10',
     ],
 
 ];

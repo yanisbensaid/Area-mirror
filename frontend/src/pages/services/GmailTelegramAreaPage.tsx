@@ -25,12 +25,11 @@ interface UserArea {
   can_execute: boolean
 }
 
-export default function YouTubeTelegramAreaPage() {
+export default function GmailTelegramAreaPage() {
   const { isLoggedIn } = useAuth()
-  
-  // Helper function to get token
+
   const getToken = () => localStorage.getItem('token')
-  
+
   const [template, setTemplate] = useState<AREATemplate | null>(null)
   const [userArea, setUserArea] = useState<UserArea | null>(null)
   const [loading, setLoading] = useState(true)
@@ -39,13 +38,11 @@ export default function YouTubeTelegramAreaPage() {
   const [creating, setCreating] = useState(false)
   const [toggling, setToggling] = useState(false)
 
-  // Telegram connection modal state
   const [showTelegramModal, setShowTelegramModal] = useState(false)
   const [botToken, setBotToken] = useState('')
   const [chatId, setChatId] = useState('')
   const [telegramError, setTelegramError] = useState<string | null>(null)
 
-  // Fetch template and user's AREA
   useEffect(() => {
     const fetchData = async () => {
       if (!isLoggedIn) {
@@ -56,11 +53,10 @@ export default function YouTubeTelegramAreaPage() {
       try {
         setLoading(true)
 
-        // Fetch templates
         const token = localStorage.getItem('token')
         if (!token) return
 
-        const templatesRes = await fetch('http://localhost:8000/api/areas/templates', {
+        const templatesRes = await fetch(`${API_URL}/api/areas/templates`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Accept': 'application/json'
@@ -68,7 +64,6 @@ export default function YouTubeTelegramAreaPage() {
         })
         const templatesData = await templatesRes.json()
 
-        // Fetch user's AREAs
         const areasRes = await fetch(`${API_URL}/api/areas`, {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -78,11 +73,10 @@ export default function YouTubeTelegramAreaPage() {
         const areasData = await areasRes.json()
 
         if (templatesData.success && templatesData.data.length > 0) {
-          const foundTemplate = templatesData.data[0]
-          setTemplate(foundTemplate)
+          const foundTemplate = templatesData.data.find((t: AREATemplate) => t.id === 'gmail_to_telegram')
+          setTemplate(foundTemplate || null)
 
-          // Find matching user area
-          if (areasData.success) {
+          if (areasData.success && foundTemplate) {
             const matchingArea = areasData.data.find((area: UserArea) =>
               area.name.includes(foundTemplate.name)
             )
@@ -107,15 +101,16 @@ export default function YouTubeTelegramAreaPage() {
       const token = localStorage.getItem('token')
       if (!token) return
 
-      const templatesRes = await fetch('http://localhost:8000/api/areas/templates', {
+      const templatesRes = await fetch(`${API_URL}/api/areas/templates`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json'
         }
       })
       const templatesData = await templatesRes.json()
-      if (templatesData.success && templatesData.data.length > 0) {
-        setTemplate(templatesData.data[0])
+      if (templatesData.success) {
+        const foundTemplate = templatesData.data.find((t: AREATemplate) => t.id === 'gmail_to_telegram')
+        setTemplate(foundTemplate || null)
       }
 
       const areasRes = await fetch(`${API_URL}/api/areas`, {
@@ -127,7 +122,7 @@ export default function YouTubeTelegramAreaPage() {
       const areasData = await areasRes.json()
       if (areasData.success) {
         const matchingArea = areasData.data.find((area: UserArea) =>
-          area.name.includes(templatesData.data[0]?.name)
+          area.name.includes('Gmail to Telegram')
         )
         setUserArea(matchingArea || null)
       }
@@ -136,9 +131,9 @@ export default function YouTubeTelegramAreaPage() {
     }
   }
 
-  const handleConnectYouTube = async () => {
+  const handleConnectGmail = async () => {
     try {
-      setConnecting('YouTube')
+      setConnecting('Gmail')
       setError(null)
 
       const token = localStorage.getItem('token')
@@ -148,7 +143,7 @@ export default function YouTubeTelegramAreaPage() {
         return
       }
 
-      const response = await fetch('http://localhost:8000/api/oauth/youtube', {
+      const response = await fetch(`${API_URL}/api/oauth/gmail`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json'
@@ -156,8 +151,6 @@ export default function YouTubeTelegramAreaPage() {
       })
 
       const data = await response.json()
-
-      console.log('OAuth response:', data)
 
       if (!data.success) {
         setError(data.message || 'Failed to generate OAuth URL')
@@ -168,7 +161,7 @@ export default function YouTubeTelegramAreaPage() {
       if (data.success && data.auth_url) {
         const popup = window.open(
           data.auth_url,
-          'YouTube OAuth',
+          'Gmail OAuth',
           'width=600,height=700,left=200,top=100'
         )
 
@@ -180,7 +173,6 @@ export default function YouTubeTelegramAreaPage() {
 
         const checkInterval = setInterval(async () => {
           try {
-            // Check if popup was closed manually
             if (popup.closed) {
               clearInterval(checkInterval)
               setConnecting(null)
@@ -195,9 +187,9 @@ export default function YouTubeTelegramAreaPage() {
             })
             const templatesData = await templatesRes.json()
 
-            if (templatesData.success && templatesData.data.length > 0) {
-              const updatedTemplate = templatesData.data[0]
-              if (updatedTemplate.services_connected?.YouTube) {
+            if (templatesData.success) {
+              const updatedTemplate = templatesData.data.find((t: AREATemplate) => t.id === 'gmail_to_telegram')
+              if (updatedTemplate?.services_connected?.Gmail) {
                 clearInterval(checkInterval)
                 popup?.close()
                 setConnecting(null)
@@ -218,15 +210,15 @@ export default function YouTubeTelegramAreaPage() {
         }, 300000)
       }
     } catch (error) {
-      console.error('YouTube connection failed:', error)
-      setError('Failed to connect YouTube. Please check console for details.')
+      console.error('Gmail connection failed:', error)
+      setError('Failed to connect Gmail. Please check console for details.')
       setConnecting(null)
     }
   }
 
-  const handleDisconnectYouTube = async () => {
+  const handleDisconnectGmail = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/services/YouTube/disconnect`, {
+      const response = await fetch(`${API_URL}/api/services/Gmail/disconnect`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${getToken()}`,
@@ -239,7 +231,7 @@ export default function YouTubeTelegramAreaPage() {
         await refreshData()
       }
     } catch (error) {
-      console.error('Failed to disconnect YouTube:', error)
+      console.error('Failed to disconnect Gmail:', error)
     }
   }
 
@@ -313,8 +305,6 @@ export default function YouTubeTelegramAreaPage() {
       setCreating(true)
       setError(null)
 
-      console.log('Creating AREA with template:', template.id)
-
       const response = await fetch(`${API_URL}/api/areas`, {
         method: 'POST',
         headers: {
@@ -324,12 +314,11 @@ export default function YouTubeTelegramAreaPage() {
         },
         body: JSON.stringify({
           template_id: template.id,
-          name: 'YouTube to Telegram'
+          name: 'Gmail to Telegram'
         })
       })
 
       const data = await response.json()
-      console.log('Create AREA response:', data)
 
       if (data.success) {
         await refreshData()
@@ -348,14 +337,12 @@ export default function YouTubeTelegramAreaPage() {
   const handleToggleArea = async () => {
     if (!userArea || toggling) return
 
-    // Store previous state for rollback on error
     const previousState = userArea.active
 
     try {
       setToggling(true)
       setError(null)
 
-      // Optimistic update - change UI immediately
       setUserArea(prev => prev ? { ...prev, active: !prev.active } : null)
 
       const response = await fetch(`${API_URL}/api/areas/${userArea.id}/toggle`, {
@@ -369,13 +356,14 @@ export default function YouTubeTelegramAreaPage() {
       const data = await response.json()
 
       if (!data.success) {
-        // Rollback on error
         setUserArea(prev => prev ? { ...prev, active: previousState } : null)
         setError(data.error || 'Failed to toggle automation')
+      } else {
+        // Refresh to get latest state
+        await refreshData()
       }
     } catch (error) {
       console.error('Failed to toggle AREA:', error)
-      // Rollback on error
       setUserArea(prev => prev ? { ...prev, active: previousState } : null)
       setError('Failed to toggle automation. Please try again.')
     } finally {
@@ -387,7 +375,7 @@ export default function YouTubeTelegramAreaPage() {
     return (
       <main className="pt-16 md:pt-20 px-4 bg-gray-50 min-h-screen">
         <div className="max-w-4xl mx-auto py-12 text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">YouTube to Telegram</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">Gmail to Telegram</h1>
           <p className="text-gray-600 mb-6">Please log in to configure this automation</p>
           <Link to="/login" className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
             Log In
@@ -397,13 +385,12 @@ export default function YouTubeTelegramAreaPage() {
     )
   }
 
-  const isYouTubeConnected = template?.services_connected.YouTube || false
+  const isGmailConnected = template?.services_connected.Gmail || false
   const isTelegramConnected = template?.services_connected.Telegram || false
 
   return (
     <main className="pt-16 md:pt-20 px-4 bg-gray-50 min-h-screen">
       <div className="max-w-4xl mx-auto py-6 md:py-12">
-        {/* Breadcrumb */}
         <nav className="mb-6">
           <Link to="/services" className="text-blue-600 hover:text-blue-700 flex items-center gap-2">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -428,15 +415,14 @@ export default function YouTubeTelegramAreaPage() {
 
         {!loading && template && (
           <div className="bg-white rounded-xl shadow-lg p-6">
-            {/* Service Icons */}
             <div className="flex items-center justify-center mb-6 space-x-4">
               <div className="flex items-center space-x-3">
                 <img
-                  src="/app_logo/youtube.png"
-                  alt="YouTube"
+                  src="/app_logo/gmail.png"
+                  alt="Gmail"
                   className="w-12 h-12 rounded-lg"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://www.youtube.com/s/desktop/7a7c6e5b/img/favicon_144x144.png'
+                    (e.target as HTMLImageElement).src = 'https://ssl.gstatic.com/ui/v1/icons/mail/rfr/logo_gmail_lockup_default_1x_r5.png'
                   }}
                 />
                 <span className="text-2xl">→</span>
@@ -451,27 +437,25 @@ export default function YouTubeTelegramAreaPage() {
               </div>
             </div>
 
-            {/* Title & Description */}
             <h1 className="text-3xl font-bold text-gray-900 text-center mb-2">{template.name}</h1>
             <p className="text-gray-600 text-center mb-8">{template.description}</p>
 
-            {/* Connection Status */}
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <div className="flex items-center space-x-2">
-                  <span className={`text-2xl ${isYouTubeConnected ? '🟢' : '🔴'}`}>
-                    {isYouTubeConnected ? '✅' : '❌'}
+                  <span className={`text-2xl ${isGmailConnected ? '🟢' : '🔴'}`}>
+                    {isGmailConnected ? '✅' : '❌'}
                   </span>
                   <div>
-                    <p className="font-medium text-gray-900">YouTube</p>
+                    <p className="font-medium text-gray-900">Gmail</p>
                     <p className="text-sm text-gray-600">
-                      {isYouTubeConnected ? 'Connected' : 'Not Connected'}
+                      {isGmailConnected ? 'Connected' : 'Not Connected'}
                     </p>
                   </div>
                 </div>
-                {isYouTubeConnected && (
+                {isGmailConnected && (
                   <button
-                    onClick={handleDisconnectYouTube}
+                    onClick={handleDisconnectGmail}
                     className="text-sm text-red-600 hover:text-red-700 font-medium cursor-pointer"
                   >
                     Disconnect
@@ -502,18 +486,17 @@ export default function YouTubeTelegramAreaPage() {
               </div>
             </div>
 
-            {/* Connection Buttons */}
-            {(!isYouTubeConnected || !isTelegramConnected) && (
+            {(!isGmailConnected || !isTelegramConnected) && (
               <div className="border-t border-gray-200 pt-6 mb-6">
                 <h3 className="font-semibold text-gray-900 mb-4">Connect Services</h3>
                 <div className="space-y-3">
-                  {!isYouTubeConnected && (
+                  {!isGmailConnected && (
                     <button
-                      onClick={handleConnectYouTube}
-                      disabled={connecting === 'YouTube'}
+                      onClick={handleConnectGmail}
+                      disabled={connecting === 'Gmail'}
                       className="w-full bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center space-x-2"
                     >
-                      {connecting === 'YouTube' ? (
+                      {connecting === 'Gmail' ? (
                         <>
                           <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                           <span>Connecting...</span>
@@ -521,7 +504,7 @@ export default function YouTubeTelegramAreaPage() {
                       ) : (
                         <>
                           <span>🔗</span>
-                          <span>Connect YouTube</span>
+                          <span>Connect Gmail</span>
                         </>
                       )}
                     </button>
@@ -539,7 +522,6 @@ export default function YouTubeTelegramAreaPage() {
               </div>
             )}
 
-            {/* AREA Actions */}
             {template.can_activate && (
               <div className="border-t border-gray-200 pt-6">
                 {!userArea ? (
@@ -561,7 +543,6 @@ export default function YouTubeTelegramAreaPage() {
                   </button>
                 ) : (
                   <div className="space-y-4">
-                    {/* Stats */}
                     <div className="bg-gray-50 rounded-lg p-4">
                       <div className="grid grid-cols-3 gap-4 text-center">
                         <div>
@@ -585,7 +566,6 @@ export default function YouTubeTelegramAreaPage() {
                       </div>
                     </div>
 
-                    {/* Toggle */}
                     <button
                       onClick={handleToggleArea}
                       disabled={toggling}
@@ -612,7 +592,6 @@ export default function YouTubeTelegramAreaPage() {
         )}
       </div>
 
-      {/* Telegram Connection Modal */}
       {showTelegramModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
@@ -629,7 +608,6 @@ export default function YouTubeTelegramAreaPage() {
               </button>
             </div>
 
-            {/* Instructions */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
               <h3 className="font-medium text-blue-900 mb-2">📋 Setup Instructions:</h3>
               <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
@@ -641,14 +619,12 @@ export default function YouTubeTelegramAreaPage() {
               </ol>
             </div>
 
-            {/* Error Message */}
             {telegramError && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
                 <p className="text-sm text-red-800">{telegramError}</p>
               </div>
             )}
 
-            {/* Form */}
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">

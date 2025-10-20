@@ -2,32 +2,41 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Reaction extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
-        'service_id',
+        'service_name',
+        'reaction_key',
         'name',
         'description',
-        'action_type',
-        'action_config',
+        'parameters',
+        'active',
     ];
 
     protected $casts = [
-        'action_config' => 'array',
+        'parameters' => 'array',
+        'active' => 'boolean',
     ];
 
-    public function service()
+    /**
+     * Get reactions for a specific service
+     */
+    public static function forService(string $serviceName)
     {
-        return $this->belongsTo(Service::class);
+        return self::where('service_name', $serviceName)
+            ->where('active', true)
+            ->get();
     }
 
-    public function automations()
+    /**
+     * Get all active reactions grouped by service
+     */
+    public static function allGroupedByService()
     {
-        return $this->hasMany(Automation::class);
+        return self::where('active', true)
+            ->get()
+            ->groupBy('service_name');
     }
 }
