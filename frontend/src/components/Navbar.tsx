@@ -8,6 +8,7 @@ export default function Navbar() {
   const navigate = useNavigate()
   const isExplorePage = location.pathname === '/explore'
   const isServicesPage = location.pathname === '/services'
+  const isCreatePage = location.pathname === '/create-automation'
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [showProfileDropdown, setShowProfileDropdown] = useState(false)
 
@@ -96,6 +97,29 @@ export default function Navbar() {
                 <span className="absolute bottom-0 left-0 w-full h-0.5 bg-white transform scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-center"></span>
               )}
             </Link>
+
+            {/* Bouton Create */}
+            <button
+              onClick={() => {
+                if (isLoggedIn) {
+                  navigate('/create-automation')
+                } else {
+                  navigate('/login')
+                }
+              }}
+              className="group relative text-gray-300 font-medium transition-colors duration-200 hover:text-white py-2 bg-transparent border-none cursor-pointer"
+              style={{ fontFamily: 'Inter, sans-serif' }}
+            >
+              Create
+              {/* Barre active (quand on est sur la page) */}
+              {isCreatePage && (
+                <span className="absolute bottom-0 left-0 w-full h-0.5 bg-white"></span>
+              )}
+              {/* Barre hover (seulement si pas sur la page active) */}
+              {!isCreatePage && (
+                <span className="absolute bottom-0 left-0 w-full h-0.5 bg-white transform scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-center"></span>
+              )}
+            </button>
 
             {/* Login Button or Profile Bubble */}
             {isLoggedIn ? (
@@ -205,6 +229,24 @@ export default function Navbar() {
               >
                 Services
               </Link>
+              <button
+                onClick={() => {
+                  if (isLoggedIn) {
+                    navigate('/create-automation')
+                  } else {
+                    navigate('/login')
+                  }
+                  closeMobileMenu()
+                }}
+                className={`block w-full text-left px-3 py-2 rounded-md text-base font-medium transition-colors duration-200 ${
+                  isCreatePage
+                    ? 'bg-gray-800 text-white'
+                    : 'text-gray-300 hover:text-white hover:bg-gray-700'
+                }`}
+                style={{ fontFamily: 'Inter, sans-serif' }}
+              >
+                Create
+              </button>
               {/* Mobile Login/Profile */}
               {isLoggedIn ? (
                 <div className="mt-3 border-t border-gray-700 pt-3">
