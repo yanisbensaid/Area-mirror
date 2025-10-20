@@ -156,6 +156,13 @@ function App() {
               <BottomBar />
             </>
           } />
+          <Route path="/create-automation" element={
+            <>
+              <Navbar />
+              <CreateAutomation />
+              <BottomBar />
+            </>
+          } />
           <Route path="/manageAutomations/:serviceId" element={
             <>
               <Navbar />

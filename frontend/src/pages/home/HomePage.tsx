@@ -127,16 +127,16 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 mt-12 md:mt-16">
             <div className="bg-white rounded-xl p-4 md:p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
               <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-900 rounded-lg flex items-center justify-center mb-3 md:mb-4">
-                <svg className="w-5 h-5 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
               </div>
-              <h3
+              <h2
                 className="text-lg md:text-xl font-medium text-gray-900 mb-2"
                 style={{ fontFamily: 'Inter, sans-serif' }}
               >
                 Automate
-              </h3>
+              </h2>
               <p
                 className="text-gray-600 text-sm md:text-base"
                 style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.5' }}
@@ -147,16 +147,16 @@ export default function HomePage() {
 
             <div className="bg-white rounded-xl p-4 md:p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
               <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-900 rounded-lg flex items-center justify-center mb-3 md:mb-4">
-                <svg className="w-5 h-5 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <h3
+              <h2
                 className="text-lg md:text-xl font-medium text-gray-900 mb-2"
                 style={{ fontFamily: 'Inter, sans-serif' }}
               >
                 Connect
-              </h3>
+              </h2>
               <p
                 className="text-gray-600 text-sm md:text-base"
                 style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.5' }}
@@ -167,16 +167,16 @@ export default function HomePage() {
 
             <div className="bg-white rounded-xl p-4 md:p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
               <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-900 rounded-lg flex items-center justify-center mb-3 md:mb-4">
-                <svg className="w-5 h-5 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
               </div>
-              <h3
+              <h2
                 className="text-lg md:text-xl font-medium text-gray-900 mb-2"
                 style={{ fontFamily: 'Inter, sans-serif' }}
               >
                 Optimize
-              </h3>
+              </h2>
               <p
                 className="text-gray-600 text-sm md:text-base"
                 style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.5' }}
@@ -199,10 +199,11 @@ export default function HomePage() {
               {canScrollLeft && (
                 <button
                   onClick={scrollLeft}
+                  aria-label="Scroll left to see previous services"
                   className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 bg-white rounded-full shadow-lg border border-gray-200 p-2 hover:bg-gray-50 transition-colors duration-200"
                   style={{ marginLeft: '-16px' }}
                 >
-                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
@@ -212,10 +213,11 @@ export default function HomePage() {
               {canScrollRight && (
                 <button
                   onClick={scrollRight}
+                  aria-label="Scroll right to see more services"
                   className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 bg-white rounded-full shadow-lg border border-gray-200 p-2 hover:bg-gray-50 transition-colors duration-200"
                   style={{ marginRight: '-16px' }}
                 >
-                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </button>
@@ -269,7 +271,7 @@ export default function HomePage() {
               {!loading && services.length > 3 && !canScrollLeft && !canScrollRight && (
                 <div className="flex justify-center mt-4 md:hidden">
                   <div className="flex items-center text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                     <span style={{ fontFamily: 'Inter, sans-serif' }}>Swipe to see more</span>
@@ -287,6 +289,7 @@ export default function HomePage() {
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
+              aria-hidden="true"
             >
               <path
                 strokeLinecap="round"
@@ -510,9 +513,10 @@ export default function HomePage() {
               to="/explore"
               className="inline-flex items-center px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors duration-200 font-medium"
               style={{ fontFamily: 'Inter, sans-serif' }}
+              aria-label="Explore all automation templates"
             >
               Explore All Automations
-              <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </Link>
