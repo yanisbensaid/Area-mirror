@@ -1,260 +1,469 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useCurrentUser } from '../../hooks/useCurrentUser';
+import { useState, useEffect } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
+import { useAuth } from '../../contexts/AuthContext'
 
-interface Service {
-  id: number;
-  name: string;
-  description: string;
-  status: string;
-  auth_type: string;
-  icon_url?: string;
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+
+const SERVICES = ['YouTube', 'Telegram', 'Twitch', 'Gmail', 'Steam', 'Discord']
+
+const getServiceLogo = (serviceName: string) => {
+  return `/logo/${serviceName}.png`
 }
 
 interface Action {
-  id: number;
-  name: string;
-  description: string;
-  service_id: number;
+  id: number
+  service_name: string
+  action_key: string
+  name: string
+  description: string
+  parameters?: any
+  active: boolean
 }
 
 interface Reaction {
-  id: number;
-  name: string;
-  description: string;
-  service_id: number;
-}
-
-interface Automation {
-  id: number;
-  name: string;
-  description: string;
-  action_id: number;
-  reaction_id: number;
-  is_active: boolean;
-  action: Action;
-  reaction: Reaction;
-  trigger_service: Service;
-  action_service: Service;
+  id: number
+  service_name: string
+  reaction_key: string
+  name: string
+  description: string
+  parameters?: any
+  active: boolean
 }
 
 export default function CreateAutomation() {
-  const navigate = useNavigate();
-  const { serviceId } = useParams();
-  const { isAdmin } = useCurrentUser();
-  
-  const [services, setServices] = useState<Service[]>([]);
-  const [actions, setActions] = useState<Action[]>([]);
-  const [reactions, setReactions] = useState<Reaction[]>([]);
-  const [automations, setAutomations] = useState<Automation[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [deletingAutomations, setDeletingAutomations] = useState<{[key: number]: boolean}>({});
-  
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    trigger_service_id: serviceId || '',
-    action_service_id: '',
-    action_id: '',
-    reaction_id: '',
-    category: '',
-    tags: [] as string[]
-  });
+  const { isLoggedIn } = useAuth()
+  const navigate = useNavigate()
+  const getToken = () => localStorage.getItem('token')
 
-  const [newTag, setNewTag] = useState('');
+  // Step management
+  const [currentStep, setCurrentStep] = useState<'action' | 'reaction' | 'summary'>('action')
 
+  // Action step state
+  const [selectedActionService, setSelectedActionService] = useState<string>('')
+  const [availableActions, setAvailableActions] = useState<Action[]>([])
+  const [selectedAction, setSelectedAction] = useState<Action | null>(null)
+  const [actionParams, setActionParams] = useState<Record<string, any>>({})
+
+  // Reaction step state
+  const [selectedReactionService, setSelectedReactionService] = useState<string>('')
+  const [availableReactions, setAvailableReactions] = useState<Reaction[]>([])
+  const [selectedReaction, setSelectedReaction] = useState<Reaction | null>(null)
+  const [reactionParams, setReactionParams] = useState<Record<string, any>>({})
+
+  // UI state
+  const [loading, setLoading] = useState(false)
+  const [creating, setCreating] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [showSummary, setShowSummary] = useState(false)
+
+  // Fetch actions when action service changes
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        
-        // Fetch all services
-        const servicesResponse = await fetch('http://localhost:8000/api/services');
-        if (servicesResponse.ok) {
-          const servicesData = await servicesResponse.json();
-          setServices(servicesData.server.services || []);
-        }
-
-        // Fetch existing automations for the service if serviceId is provided
-        if (serviceId) {
-          const automationsResponse = await fetch(`http://localhost:8000/api/services/${serviceId}/automations`);
-          if (automationsResponse.ok) {
-            const automationsData = await automationsResponse.json();
-            setAutomations(automationsData.server.automations || []);
-          }
-        }
-        
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [serviceId]);
-
-  // Fetch actions when trigger service changes
-  useEffect(() => {
-    const fetchActions = async () => {
-      if (formData.trigger_service_id) {
-        try {
-          const response = await fetch(`http://localhost:8000/api/services/${formData.trigger_service_id}/actions`);
-          if (response.ok) {
-            const data = await response.json();
-            console.log('Actions response:', data);
-            setActions(data.server?.actions || []);
-          } else {
-            console.log('No actions found or service not found');
-            setActions([]);
-          }
-        } catch (error) {
-          console.error('Error fetching actions:', error);
-          setActions([]);
-        }
-      } else {
-        setActions([]);
-      }
-    };
-
-    fetchActions();
-  }, [formData.trigger_service_id]);
-
-  // Fetch reactions when action service changes
-  useEffect(() => {
-    const fetchReactions = async () => {
-      if (formData.action_service_id) {
-        try {
-          const response = await fetch(`http://localhost:8000/api/services/${formData.action_service_id}/reactions`);
-          if (response.ok) {
-            const data = await response.json();
-            console.log('Reactions response:', data);
-            setReactions(data.server?.reactions || []);
-          } else {
-            console.log('No reactions found or service not found');
-            setReactions([]);
-          }
-        } catch (error) {
-          console.error('Error fetching reactions:', error);
-          setReactions([]);
-        }
-      } else {
-        setReactions([]);
-      }
-    };
-
-    fetchReactions();
-  }, [formData.action_service_id]);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleAddTag = () => {
-    if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        tags: [...prev.tags, newTag.trim()]
-      }));
-      setNewTag('');
-    }
-  };
-
-  const handleRemoveTag = (tagToRemove: string) => {
-    setFormData(prev => ({
-      ...prev,
-      tags: prev.tags.filter(tag => tag !== tagToRemove)
-    }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8000/api/automations', {
-        method: 'POST',
+    if (selectedActionService) {
+      setLoading(true)
+      const token = getToken()
+      fetch(`${API_URL}/api/actions?service=${selectedActionService}`, {
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(formData)
-      });
-
-      if (response.ok) {
-        navigate(`/services/${formData.trigger_service_id}`);
-      } else {
-        const errorData = await response.json();
-        console.error('Error creating automation:', errorData);
-        alert('Error creating automation. Please try again.');
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      alert('Error creating automation. Please try again.');
-    } finally {
-      setSubmitting(false);
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        }
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setAvailableActions(data.data)
+          }
+        })
+        .catch(err => console.error('Error fetching actions:', err))
+        .finally(() => setLoading(false))
+    } else {
+      setAvailableActions([])
+      setSelectedAction(null)
     }
-  };
+  }, [selectedActionService])
 
-  const handleDeleteAutomation = async (automationId: number) => {
-    const automation = automations.find(a => a.id === automationId);
-    if (!automation) return;
+  // Fetch reactions when reaction service changes
+  useEffect(() => {
+    if (selectedReactionService) {
+      setLoading(true)
+      const token = getToken()
+      fetch(`${API_URL}/api/reactions?service=${selectedReactionService}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        }
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setAvailableReactions(data.data)
+          }
+        })
+        .catch(err => console.error('Error fetching reactions:', err))
+        .finally(() => setLoading(false))
+    } else {
+      setAvailableReactions([])
+      setSelectedReaction(null)
+    }
+  }, [selectedReactionService])
 
-    const confirmDelete = window.confirm(
-      `Are you sure you want to delete the automation "${automation.name}"? This action cannot be undone.`
-    );
+  const handleActionSelect = (actionId: string) => {
+    const action = availableActions.find(a => a.id.toString() === actionId)
+    setSelectedAction(action || null)
+    setActionParams({})
+  }
 
-    if (!confirmDelete) return;
+  const handleReactionSelect = (reactionId: string) => {
+    const reaction = availableReactions.find(r => r.id.toString() === reactionId)
+    setSelectedReaction(reaction || null)
+    setReactionParams({})
+  }
+
+  const handleNextStep = () => {
+    if (currentStep === 'action' && selectedAction) {
+      setCurrentStep('reaction')
+      setError(null)
+    }
+  }
+
+  const handleBackStep = () => {
+    if (currentStep === 'reaction') {
+      setCurrentStep('action')
+      setError(null)
+    }
+  }
+
+  const handleCreateArea = async () => {
+    if (!selectedAction || !selectedReaction) return
+
+    setCreating(true)
+    setError(null)
 
     try {
-      setDeletingAutomations(prev => ({ ...prev, [automationId]: true }));
-      
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:8000/api/automations/${automationId}`, {
-        method: 'DELETE',
+      const token = getToken()
+
+      // Prepare AREA data
+      const areaData = {
+        name: `${selectedActionService} to ${selectedReactionService}`,
+        description: `${selectedAction.name} → ${selectedReaction.name}`,
+        action_service: selectedActionService,
+        action_type: selectedAction.action_key,
+        action_config: actionParams,
+        reaction_service: selectedReactionService,
+        reaction_type: selectedReaction.reaction_key,
+        reaction_config: reactionParams,
+        active: false
+      }
+
+      const response = await fetch(`${API_URL}/api/areas/custom`, {
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
-      });
+        body: JSON.stringify(areaData)
+      })
 
-      if (response.ok) {
-        setAutomations(prev => prev.filter(a => a.id !== automationId));
+      const data = await response.json()
+
+      if (data.success) {
+        // Show success message
+        setShowSummary(false)
+        // Redirect after short delay
+        setTimeout(() => {
+          navigate('/services')
+        }, 1500)
       } else {
-        alert('Failed to delete automation');
+        setError(data.error || 'Failed to create AREA')
       }
-    } catch (error) {
-      console.error('Error deleting automation:', error);
-      alert('Failed to delete automation');
+    } catch (err) {
+      console.error('Error creating AREA:', err)
+      setError('Failed to create AREA')
     } finally {
-      setDeletingAutomations(prev => ({ ...prev, [automationId]: false }));
+      setCreating(false)
     }
-  };
+  }
 
-  const getTriggerService = () => services.find(s => s.id.toString() === formData.trigger_service_id);
-  const getActionService = () => services.find(s => s.id.toString() === formData.action_service_id);
+  const canProceedToReaction = selectedAction !== null
+  const canCreateArea = selectedReaction !== null
 
-  if (loading) {
+  if (!isLoggedIn) {
     return (
-      <main className="pt-16 md:pt-20 px-4 bg-gray-50 min-h-screen">
-        <div className="max-w-4xl mx-auto py-8">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading...</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white flex items-center justify-center px-4">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold mb-4">Please Login</h1>
+          <p className="text-slate-300 mb-8">You need to be logged in to create custom AREAs</p>
+          <Link to="/login" className="bg-purple-600 hover:bg-purple-700 px-8 py-3 rounded-lg font-semibold transition">
+            Go to Login
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white py-12 px-4">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <Link to="/services" className="text-purple-400 hover:text-purple-300 mb-4 inline-block">
+            ← Back to Services
+          </Link>
+          <h1 className="text-4xl font-bold mb-2">Create Custom AREA</h1>
+          <p className="text-slate-300 text-lg">Build your own automation by connecting any action to any reaction</p>
+        </div>
+
+        {/* Progress Indicator */}
+        <div className="mb-8 flex items-center justify-center space-x-4">
+          <div className={`flex items-center space-x-2 ${currentStep === 'action' ? 'text-purple-400' : 'text-slate-500'}`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${currentStep === 'action' ? 'border-purple-400 bg-purple-400/20' : 'border-slate-500'}`}>
+              1
+            </div>
+            <span className="font-semibold">Choose Action</span>
+          </div>
+          <div className="w-16 h-0.5 bg-slate-600"></div>
+          <div className={`flex items-center space-x-2 ${currentStep === 'reaction' ? 'text-purple-400' : 'text-slate-500'}`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${currentStep === 'reaction' ? 'border-purple-400 bg-purple-400/20' : 'border-slate-500'}`}>
+              2
+            </div>
+            <span className="font-semibold">Choose Reaction</span>
           </div>
         </div>
-      </main>
-    );
-    }
 
-    return (
-      <main className="pt-16 md:pt-20 px-4 bg-gray-50 min-h-screen">
-      </main>
-    );
+        {error && (
+          <div className="bg-red-500/10 border border-red-500 text-red-200 px-6 py-4 rounded-lg mb-6">
+            {error}
+          </div>
+        )}
+
+        {/* Step 1: Action Selection */}
+        {currentStep === 'action' && (
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg p-6 border border-slate-700">
+            <h2 className="text-2xl font-semibold mb-6">Step 1: Choose Action (Trigger)</h2>
+
+            <div className="space-y-6">
+              {/* Service Selection */}
+              <div>
+                <label className="block text-sm font-medium mb-2">Select Trigger Service</label>
+                <select
+                  value={selectedActionService}
+                  onChange={(e) => setSelectedActionService(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg focus:border-purple-500 focus:outline-none text-white"
+                >
+                  <option value="">-- Select a service --</option>
+                  {SERVICES.map(service => (
+                    <option key={service} value={service}>
+                      {service}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Action Selection */}
+              {selectedActionService && (
+                <div>
+                  <label className="block text-sm font-medium mb-2">Select Action</label>
+                  {loading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div>
+                    </div>
+                  ) : availableActions.length > 0 ? (
+                    <select
+                      value={selectedAction?.id || ''}
+                      onChange={(e) => handleActionSelect(e.target.value)}
+                      className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg focus:border-purple-500 focus:outline-none text-white"
+                    >
+                      <option value="">-- Select an action --</option>
+                      {availableActions.map(action => (
+                        <option key={action.id} value={action.id}>
+                          {action.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <p className="text-slate-400 py-4">No actions available for this service</p>
+                  )}
+                </div>
+              )}
+
+              {/* Action Description */}
+              {selectedAction && (
+                <div className="bg-slate-900/50 p-4 rounded-lg">
+                  <h3 className="font-semibold mb-2">{selectedAction.name}</h3>
+                  <p className="text-slate-400 text-sm">{selectedAction.description}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Next Button */}
+            <div className="mt-8">
+              <button
+                onClick={handleNextStep}
+                disabled={!canProceedToReaction}
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-8 py-4 rounded-lg font-semibold text-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next: Choose Reaction →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Reaction Selection */}
+        {currentStep === 'reaction' && (
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg p-6 border border-slate-700">
+            <h2 className="text-2xl font-semibold mb-6">Step 2: Choose Reaction (Action)</h2>
+
+            <div className="space-y-6">
+              {/* Service Selection */}
+              <div>
+                <label className="block text-sm font-medium mb-2">Select Reaction Service</label>
+                <select
+                  value={selectedReactionService}
+                  onChange={(e) => setSelectedReactionService(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg focus:border-purple-500 focus:outline-none text-white"
+                >
+                  <option value="">-- Select a service --</option>
+                  {SERVICES.map(service => (
+                    <option key={service} value={service}>
+                      {service}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Reaction Selection */}
+              {selectedReactionService && (
+                <div>
+                  <label className="block text-sm font-medium mb-2">Select Reaction</label>
+                  {loading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div>
+                    </div>
+                  ) : availableReactions.length > 0 ? (
+                    <select
+                      value={selectedReaction?.id || ''}
+                      onChange={(e) => handleReactionSelect(e.target.value)}
+                      className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg focus:border-purple-500 focus:outline-none text-white"
+                    >
+                      <option value="">-- Select a reaction --</option>
+                      {availableReactions.map(reaction => (
+                        <option key={reaction.id} value={reaction.id}>
+                          {reaction.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <p className="text-slate-400 py-4">No reactions available for this service</p>
+                  )}
+                </div>
+              )}
+
+              {/* Reaction Description */}
+              {selectedReaction && (
+                <div className="bg-slate-900/50 p-4 rounded-lg">
+                  <h3 className="font-semibold mb-2">{selectedReaction.name}</h3>
+                  <p className="text-slate-400 text-sm">{selectedReaction.description}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="mt-8 flex gap-4">
+              <button
+                onClick={handleBackStep}
+                className="flex-1 px-8 py-4 bg-slate-700 hover:bg-slate-600 rounded-lg font-semibold text-lg transition"
+              >
+                ← Back
+              </button>
+              <button
+                onClick={() => setShowSummary(true)}
+                disabled={!canCreateArea}
+                className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-8 py-4 rounded-lg font-semibold text-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Review & Create
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Summary Modal */}
+      {showSummary && selectedAction && selectedReaction && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-800 rounded-lg p-6 max-w-2xl w-full border border-slate-700">
+            <h3 className="text-2xl font-bold mb-6">Review Your AREA</h3>
+
+            {/* Action Summary */}
+            <div className="mb-4 p-4 bg-slate-900/50 rounded-lg">
+              <div className="flex items-center mb-2">
+                <div className="w-10 h-10 rounded-lg bg-white border border-gray-200 flex items-center justify-center mr-3 shadow-sm p-1.5">
+                  <img
+                    src={getServiceLogo(selectedActionService)}
+                    alt={selectedActionService}
+                    className="w-full h-full object-contain"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none'
+                    }}
+                  />
+                </div>
+                <div>
+                  <p className="text-sm text-slate-400">When this happens...</p>
+                  <h4 className="font-semibold text-lg">{selectedActionService}: {selectedAction.name}</h4>
+                </div>
+              </div>
+              <p className="text-slate-400 text-sm ml-13">{selectedAction.description}</p>
+            </div>
+
+            {/* Arrow */}
+            <div className="text-center text-3xl my-4">↓</div>
+
+            {/* Reaction Summary */}
+            <div className="mb-6 p-4 bg-slate-900/50 rounded-lg">
+              <div className="flex items-center mb-2">
+                <div className="w-10 h-10 rounded-lg bg-white border border-gray-200 flex items-center justify-center mr-3 shadow-sm p-1.5">
+                  <img
+                    src={getServiceLogo(selectedReactionService)}
+                    alt={selectedReactionService}
+                    className="w-full h-full object-contain"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none'
+                    }}
+                  />
+                </div>
+                <div>
+                  <p className="text-sm text-slate-400">Do this...</p>
+                  <h4 className="font-semibold text-lg">{selectedReactionService}: {selectedReaction.name}</h4>
+                </div>
+              </div>
+              <p className="text-slate-400 text-sm ml-13">{selectedReaction.description}</p>
+            </div>
+
+            {error && (
+              <div className="bg-red-500/10 border border-red-500 text-red-200 px-4 py-3 rounded mb-4">
+                {error}
+              </div>
+            )}
+
+            {/* Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowSummary(false)}
+                disabled={creating}
+                className="flex-1 px-4 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateArea}
+                disabled={creating}
+                className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-semibold transition disabled:opacity-50"
+              >
+                {creating ? 'Creating...' : '✓ Create AREA'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }

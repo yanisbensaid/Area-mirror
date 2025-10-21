@@ -206,9 +206,21 @@ class ServiceConnectionController extends Controller
      * @param string $serviceName
      * @return JsonResponse
      */
-    public function disconnectService(string $serviceName): JsonResponse
+    public function disconnectService(Request $request, string $serviceName = null): JsonResponse
     {
         try {
+            // Accept service name from URL parameter or POST body
+            if (!$serviceName) {
+                $serviceName = $request->input('service');
+            }
+
+            if (!$serviceName) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Service name is required',
+                ], 400);
+            }
+
             $user = Auth::user();
             $token = $user->getServiceToken($serviceName);
 
@@ -234,7 +246,7 @@ class ServiceConnectionController extends Controller
 
         } catch (\Exception $e) {
             Log::error('Failed to disconnect service', [
-                'service' => $serviceName,
+                'service' => $serviceName ?? 'unknown',
                 'error' => $e->getMessage(),
                 'user_id' => Auth::id(),
             ]);
@@ -352,6 +364,27 @@ class ServiceConnectionController extends Controller
                 'message' => 'Failed to retrieve connected services',
                 'error' => $e->getMessage(),
             ], 500);
+        }
+    }
+
+    /**
+     * Check if a specific service is connected
+     */
+    public function checkServiceConnection(string $serviceName): JsonResponse
+    {
+        try {
+            $user = Auth::user();
+            $token = $user->getServiceToken($serviceName);
+
+            return response()->json([
+                'success' => true,
+                'connected' => $token !== null && $token->is_active,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'connected' => false,
+            ]);
         }
     }
 

@@ -13,7 +13,57 @@ use Laravel\Socialite\Facades\Socialite;
 class OAuthController extends Controller
 {
     /**
-     * Redirect user to YouTube OAuth page
+     * Redirect user to YouTube OAuth page (for popup, accepts token in query)
+     */
+    public function redirectToYouTubePopup(Request $request)
+    {
+        try {
+            // Get user from token in query parameter
+            $token = $request->query('token');
+            if (!$token) {
+                return response()->json(['error' => 'Token required'], 400);
+            }
+
+            // Find user by token
+            $personalAccessToken = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
+            if (!$personalAccessToken) {
+                return response()->json(['error' => 'Invalid token'], 401);
+            }
+
+            $user = $personalAccessToken->tokenable;
+
+            // Pass user_id in state parameter
+            $state = base64_encode(json_encode([
+                'user_id' => $user->id
+            ]));
+
+            return Socialite::driver('google')
+                ->scopes([
+                    'https://www.googleapis.com/auth/youtube.readonly',
+                    'https://www.googleapis.com/auth/youtube.force-ssl'
+                ])
+                ->with([
+                    'state' => $state,
+                    'access_type' => 'offline',
+                    'approval_prompt' => 'force'
+                ])
+                ->stateless()
+                ->redirect();
+
+        } catch (\Exception $e) {
+            Log::error('Failed to redirect to YouTube OAuth', [
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to redirect to YouTube'
+            ], 500);
+        }
+    }
+
+    /**
+     * Redirect user to YouTube OAuth page (JSON response for API)
      */
     public function redirectToYouTube(Request $request): JsonResponse
     {
@@ -283,7 +333,82 @@ class OAuthController extends Controller
     }
 
     /**
-     * Redirect user to Gmail OAuth page
+     * Redirect user to Gmail OAuth page (for popup, accepts token in query)
+     */
+    public function redirectToGmailPopup(Request $request)
+    {
+        try {
+            $token = $request->query('token');
+            if (!$token) {
+                return response()->json(['error' => 'Token required'], 400);
+            }
+
+            $personalAccessToken = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
+            if (!$personalAccessToken) {
+                return response()->json(['error' => 'Invalid token'], 401);
+            }
+
+            $user = $personalAccessToken->tokenable;
+
+            $state = base64_encode(json_encode([
+                'user_id' => $user->id,
+                'timestamp' => time()
+            ]));
+
+            $scopes = implode(' ', config('services.gmail.scopes'));
+
+            $authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query([
+                'client_id' => config('services.gmail.client_id'),
+                'redirect_uri' => config('services.gmail.redirect'),
+                'response_type' => 'code',
+                'scope' => $scopes,
+                'access_type' => 'offline',
+                'prompt' => 'consent',
+                'state' => $state,
+            ]);
+
+            return redirect($authUrl);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to redirect to Gmail OAuth', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'error' => 'Failed to redirect'], 500);
+        }
+    }
+
+    /**
+     * Redirect user to Twitch OAuth page (for popup, accepts token in query)
+     */
+    public function redirectToTwitchPopup(Request $request)
+    {
+        try {
+            $token = $request->query('token');
+            if (!$token) {
+                return response()->json(['error' => 'Token required'], 400);
+            }
+
+            $personalAccessToken = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
+            if (!$personalAccessToken) {
+                return response()->json(['error' => 'Invalid token'], 401);
+            }
+
+            $user = $personalAccessToken->tokenable;
+
+            $state = base64_encode(json_encode(['user_id' => $user->id]));
+
+            return Socialite::driver('twitch')
+                ->scopes(['user:read:email'])
+                ->with(['state' => $state])
+                ->stateless()
+                ->redirect();
+
+        } catch (\Exception $e) {
+            Log::error('Failed to redirect to Twitch OAuth', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'error' => 'Failed to redirect'], 500);
+        }
+    }
+
+    /**
+     * Redirect user to Gmail OAuth page (JSON response for API)
      */
     public function redirectToGmail(Request $request): JsonResponse
     {

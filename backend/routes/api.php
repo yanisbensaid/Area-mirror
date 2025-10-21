@@ -52,6 +52,11 @@ Route::get('/oauth/youtube/callback', [OAuthController::class, 'handleYouTubeCal
 Route::get('/oauth/twitch/callback', [OAuthController::class, 'handleTwitchCallback']);
 Route::get('/oauth/gmail/callback', [OAuthController::class, 'handleGmailCallback']);
 
+// OAuth redirect routes for popups (public - token in query)
+Route::get('/oauth/youtube/redirect', [OAuthController::class, 'redirectToYouTubePopup']);
+Route::get('/oauth/gmail/redirect', [OAuthController::class, 'redirectToGmailPopup']);
+Route::get('/oauth/twitch/redirect', [OAuthController::class, 'redirectToTwitchPopup']);
+
 // Protected routes (requires authentication)
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -67,9 +72,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Service connection management
     Route::post('/services/connect', [ServiceConnectionController::class, 'connectService']);
+    Route::post('/services/disconnect', [ServiceConnectionController::class, 'disconnectService']);
     Route::delete('/services/{service}/disconnect', [ServiceConnectionController::class, 'disconnectService']);
     Route::post('/services/{service}/test', [ServiceConnectionController::class, 'testConnection']);
     Route::get('/services/connected', [ServiceConnectionController::class, 'connectedServices']);
+    Route::get('/services/{service}/check', [ServiceConnectionController::class, 'checkServiceConnection']);
     Route::get('/services/telegram/status', [ServiceConnectionController::class, 'telegramStatus']);
     Route::post('/services/steam/connect', [ServiceConnectionController::class, 'connectSteam']);
 
@@ -81,7 +88,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // AREA management
     Route::get('/areas', [AreaController::class, 'index']);
     Route::get('/areas/templates', [AreaController::class, 'templates']);
+    Route::get('/areas/{id}', [AreaController::class, 'show']);
     Route::post('/areas', [AreaController::class, 'store']);
+    Route::post('/areas/custom', [AreaController::class, 'storeCustom']);
     Route::post('/areas/{area}/toggle', [AreaController::class, 'toggle']);
     Route::delete('/areas/{area}', [AreaController::class, 'destroy']);
 

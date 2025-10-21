@@ -407,11 +407,10 @@ class DiscordService extends BaseService
     public function getAvailableActions(): array
     {
         return [
-            [
-                'type' => 'new_message_in_channel',
+            'new_message_in_channel' => [
                 'name' => 'New Message in Channel',
                 'description' => 'Triggers when a new message is posted in a specific Discord channel',
-                'config' => [
+                'params' => [
                     'channel_id' => [
                         'type' => 'string',
                         'required' => true,
@@ -420,11 +419,10 @@ class DiscordService extends BaseService
                     ]
                 ]
             ],
-            [
-                'type' => 'message_with_keyword',
+            'message_with_keyword' => [
                 'name' => 'Message with Keyword',
                 'description' => 'Triggers when a message contains a specific keyword',
-                'config' => [
+                'params' => [
                     'channel_id' => [
                         'type' => 'string',
                         'required' => true,
@@ -439,11 +437,10 @@ class DiscordService extends BaseService
                     ]
                 ]
             ],
-            [
-                'type' => 'bot_mentioned',
+            'bot_mentioned' => [
                 'name' => 'Bot Mentioned',
                 'description' => 'Triggers when the bot is mentioned in a message',
-                'config' => [
+                'params' => [
                     'channel_id' => [
                         'type' => 'string',
                         'required' => true,
@@ -461,11 +458,10 @@ class DiscordService extends BaseService
     public function getAvailableReactions(): array
     {
         return [
-            [
-                'type' => 'send_message',
+            'send_message' => [
                 'name' => 'Send Message',
                 'description' => 'Sends a simple text message to a Discord channel via webhook',
-                'config' => [
+                'params' => [
                     'content' => [
                         'type' => 'text',
                         'required' => true,
@@ -480,11 +476,10 @@ class DiscordService extends BaseService
                     ]
                 ]
             ],
-            [
-                'type' => 'send_embed',
+            'send_embed' => [
                 'name' => 'Send Embed',
                 'description' => 'Sends a rich embed message to a Discord channel via webhook',
-                'config' => [
+                'params' => [
                     'title' => [
                         'type' => 'string',
                         'required' => true,

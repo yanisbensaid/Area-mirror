@@ -31,6 +31,7 @@ import GmailTelegramAreaPage from './pages/services/GmailTelegramAreaPage'
 import YouTubeGmailAreaPage from './pages/services/YouTubeGmailAreaPage'
 import SteamTelegramAreaPage from './pages/services/SteamTelegramAreaPage'
 import YouTubeDiscordAreaPage from './pages/services/YouTubeDiscordAreaPage'
+import CustomAreaDetailPage from './pages/services/CustomAreaDetailPage'
 import { EditReactionsProvider } from './contexts/EditReactionsContext'
 
 function App() {
@@ -104,6 +105,13 @@ function App() {
             <>
               <Navbar />
               <YouTubeDiscordAreaPage />
+              <BottomBar />
+            </>
+          } />
+          <Route path="/area/custom/:id" element={
+            <>
+              <Navbar />
+              <CustomAreaDetailPage />
               <BottomBar />
             </>
           } />

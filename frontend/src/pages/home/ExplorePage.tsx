@@ -1,134 +1,103 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 
-interface DatabaseService {
-  id: number;
-  name: string;
-  description: string;
-  icon_url?: string;
-  status: string;
-  auth_type: string;
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+
+interface AREATemplate {
+  id: string
+  name: string
+  description: string
+  action_service: string
+  action_type: string
+  reaction_service: string
+  reaction_type: string
+  requires_services: string[]
+  services_connected: {
+    [key: string]: boolean
+  }
+  can_activate: boolean
 }
 
-interface Automation {
-  id: number;
-  name: string;
-  description: string;
-  trigger_service: DatabaseService;
-  action_service: DatabaseService;
-  action: {
-    id: number;
-    name: string;
-    description: string;
-  };
-  reaction: {
-    id: number;
-    name: string;
-    description: string;
-  };
-  is_active: boolean;
-  category: string;
-  tags: string[] | string; // Can be JSON string or array
-  popularity: number;
+const getServiceLogo = (serviceName: string) => {
+  return `/logo/${serviceName}.png`
 }
 
 export default function ExplorePage() {
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('All')
-  const [automations, setAutomations] = useState<Automation[]>([])
+  const [selectedService, setSelectedService] = useState('All')
+  const [templates, setTemplates] = useState<AREATemplate[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 9
-
-  // Fetch automations from backend
+  // Fetch AREA templates
   useEffect(() => {
-    const fetchAutomations = async () => {
+    const fetchTemplates = async () => {
       try {
         setLoading(true)
-        const response = await fetch('http://localhost:8000/api/automations')
+        const token = localStorage.getItem('token')
+        const response = await fetch(`${API_URL}/api/areas/templates`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        })
 
         if (response.ok) {
           const data = await response.json()
-          setAutomations(data)
+          if (data.success) {
+            setTemplates(data.data)
+          }
           setError(null)
         } else {
-          throw new Error('Failed to fetch automations')
+          throw new Error('Failed to fetch templates')
         }
       } catch (err) {
-        console.error('Error fetching automations:', err)
-        setError('Failed to load automations')
+        console.error('Error fetching templates:', err)
+        setError('Failed to load AREA templates')
       } finally {
         setLoading(false)
       }
     }
 
-    fetchAutomations()
+    fetchTemplates()
   }, [])
 
-  // Get unique categories from automations
-  const categories = ['All', ...Array.from(new Set(automations.map(automation => automation.category)))]
+  // Get unique services from templates
+  const services = ['All', ...Array.from(new Set(
+    templates.flatMap(t => [t.action_service, t.reaction_service])
+  ))]
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value)
-    setCurrentPage(1) // Reset to first page when searching
   }
 
-  const handleCategoryChange = (category: string) => {
-    setSelectedCategory(category)
-    setCurrentPage(1) // Reset to first page when changing category
+  const handleServiceChange = (service: string) => {
+    setSelectedService(service)
   }
 
   const clearFilters = () => {
     setSearchQuery('')
-    setSelectedCategory('All')
-    setCurrentPage(1) // Reset to first page when clearing filters
+    setSelectedService('All')
   }
 
-  // Helper function to parse tags
-  const parseTags = (tags: string[] | string): string[] => {
-    try {
-      return typeof tags === 'string' ? JSON.parse(tags) : tags
-    } catch {
-      return []
-    }
-  }
+  // Filter templates
+  const filteredTemplates = templates.filter(template => {
+    const matchesService = selectedService === 'All' ||
+      template.action_service === selectedService ||
+      template.reaction_service === selectedService
 
-  // Filter automations
-  const filteredAutomations = automations.filter(automation => {
-    const matchesCategory = selectedCategory === 'All' || automation.category === selectedCategory
-    const parsedTags = parseTags(automation.tags)
     const matchesSearch = !searchQuery ||
-      automation.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      automation.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      parsedTags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-    return matchesCategory && matchesSearch
+      template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      template.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      template.action_service.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      template.reaction_service.toLowerCase().includes(searchQuery.toLowerCase())
+
+    return matchesService && matchesSearch
   })
 
-  // Pagination calculations
-  const totalPages = Math.ceil(filteredAutomations.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
-  const endIndex = startIndex + itemsPerPage
-  const currentAutomations = filteredAutomations.slice(startIndex, endIndex)
-
-  // Pagination functions
-  const goToPage = (page: number) => {
-    setCurrentPage(page)
-    // Scroll to top when changing pages
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
-  const goToPreviousPage = () => {
-    if (currentPage > 1) {
-      goToPage(currentPage - 1)
-    }
-  }
-
-  const goToNextPage = () => {
-    if (currentPage < totalPages) {
-      goToPage(currentPage + 1)
-    }
+  // Get route for template
+  const getTemplateRoute = (templateId: string) => {
+    return `/area/${templateId}`
   }
 
   if (loading) {
@@ -137,7 +106,7 @@ export default function ExplorePage() {
         <div className="max-w-6xl mx-auto py-6 md:py-12">
           <div className="text-center">
             <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading automations...</p>
+            <p className="mt-4 text-gray-600">Loading AREA templates...</p>
           </div>
         </div>
       </main>
@@ -171,13 +140,13 @@ export default function ExplorePage() {
             className="text-3xl sm:text-4xl md:text-5xl font-semibold text-gray-900 mb-3 md:mb-4"
             style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.2' }}
           >
-            Explore Automations
+            Explore Predefined AREAs
           </h1>
           <p
             className="text-lg sm:text-xl md:text-xl text-gray-600 max-w-2xl mx-auto px-2"
             style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.5' }}
           >
-            Discover, filter, and find the perfect automation for your workflow
+            Discover ready-to-use automations. Connect services and activate in one click.
           </p>
         </div>
 
@@ -190,7 +159,7 @@ export default function ExplorePage() {
               className="block text-sm font-medium text-gray-700 mb-2"
               style={{ fontFamily: 'Inter, sans-serif' }}
             >
-              Search automations
+              Search AREAs
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -204,40 +173,40 @@ export default function ExplorePage() {
                 value={searchQuery}
                 onChange={handleSearchChange}
                 className="block w-full pl-10 pr-3 py-2 md:py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all duration-200 text-sm md:text-base"
-                placeholder="Search by title, description, or tags..."
+                placeholder="Search by name, description, or service..."
                 style={{ fontFamily: 'Inter, sans-serif' }}
               />
             </div>
           </div>
 
-          {/* Category Filters */}
+          {/* Service Filters */}
           <div className="mb-4">
             <label
               className="block text-sm font-medium text-gray-700 mb-3"
               style={{ fontFamily: 'Inter, sans-serif' }}
             >
-              Filter by category
+              Filter by service
             </label>
             <div className="flex flex-wrap gap-2">
-              {categories.map((category) => (
+              {services.map((service) => (
                 <button
-                  key={category}
-                  onClick={() => handleCategoryChange(category)}
+                  key={service}
+                  onClick={() => handleServiceChange(service)}
                   className={`px-3 py-1 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all duration-200 ${
-                    selectedCategory === category
+                    selectedService === service
                       ? 'bg-gray-900 text-white shadow-sm'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
                   }`}
                   style={{ fontFamily: 'Inter, sans-serif' }}
                 >
-                  {category}
+                  {service}
                 </button>
               ))}
             </div>
           </div>
 
           {/* Active Filters and Clear */}
-          {(searchQuery || selectedCategory !== 'All') && (
+          {(searchQuery || selectedService !== 'All') && (
             <div className="flex items-center justify-between pt-4 border-t border-gray-200">
               <div className="flex items-center space-x-4">
                 <span
@@ -251,9 +220,9 @@ export default function ExplorePage() {
                     Search: "{searchQuery}"
                   </span>
                 )}
-                {selectedCategory !== 'All' && (
+                {selectedService !== 'All' && (
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                    Category: {selectedCategory}
+                    Service: {selectedService}
                   </span>
                 )}
               </div>
@@ -268,62 +237,47 @@ export default function ExplorePage() {
           )}
         </div>
 
-        {/* Results Count & Pagination Info */}
-        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        {/* Results Count */}
+        <div className="mb-6">
           <p
             className="text-sm text-gray-600"
             style={{ fontFamily: 'Inter, sans-serif' }}
           >
-            Showing {startIndex + 1}-{Math.min(endIndex, filteredAutomations.length)} of {filteredAutomations.length} automations
-            {filteredAutomations.length !== automations.length && (
-              <span className="text-gray-500"> (filtered from {automations.length} total)</span>
-            )}
+            Showing {filteredTemplates.length} of {templates.length} AREA templates
           </p>
-          {totalPages > 1 && (
-            <p
-              className="text-sm text-gray-500"
-              style={{ fontFamily: 'Inter, sans-serif' }}
-            >
-              Page {currentPage} of {totalPages}
-            </p>
-          )}
         </div>
 
-        {/* Automations Grid */}
-        <h2 className="sr-only">Available Automations</h2>
+        {/* Templates Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {currentAutomations.map((automation) => (
-            <div
-              key={automation.id}
+          {filteredTemplates.map((template) => (
+            <Link
+              key={template.id}
+              to={getTemplateRoute(template.id)}
               className="group bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 hover:transform hover:scale-105 cursor-pointer"
             >
-              {/* Category and popularity badge */}
+              {/* Status badge */}
               <div className="flex justify-between items-start mb-4">
-                <span className="inline-block bg-gray-100 text-gray-700 text-xs font-medium px-3 py-1 rounded-full">
-                  {automation.category || 'Automation'}
+                <span className="inline-block bg-purple-100 text-purple-700 text-xs font-medium px-3 py-1 rounded-full">
+                  Predefined
                 </span>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                  <span
-                    className="text-sm text-gray-600 font-medium"
-                    style={{ fontFamily: 'Inter, sans-serif' }}
-                  >
-                    {automation.popularity}% use this
+                {template.can_activate && (
+                  <span className="inline-block bg-green-100 text-green-700 text-xs font-medium px-3 py-1 rounded-full">
+                    ✓ Ready
                   </span>
-                </div>
+                )}
               </div>
 
               {/* Services flow */}
               <div className="flex items-center justify-between mb-6">
-                {/* Trigger service */}
+                {/* Action service */}
                 <div className="flex flex-col items-center">
-                  <div className="w-12 h-12 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center mb-2 shadow-sm">
+                  <div className="w-12 h-12 rounded-lg bg-white border border-gray-200 flex items-center justify-center mb-2 shadow-sm p-2">
                     <img
-                      src={automation.trigger_service.icon_url || '/app_logo/default.png'}
-                      alt={automation.trigger_service.name}
-                      className="w-8 h-8 object-contain"
+                      src={getServiceLogo(template.action_service)}
+                      alt={template.action_service}
+                      className="w-full h-full object-contain"
                       onError={(e) => {
-                        e.currentTarget.src = '/app_logo/default.png'
+                        e.currentTarget.style.display = 'none'
                       }}
                     />
                   </div>
@@ -331,7 +285,7 @@ export default function ExplorePage() {
                     className="text-xs text-gray-600 font-medium text-center"
                     style={{ fontFamily: 'Inter, sans-serif' }}
                   >
-                    {automation.trigger_service.name}
+                    {template.action_service}
                   </span>
                 </div>
 
@@ -342,15 +296,15 @@ export default function ExplorePage() {
                   </div>
                 </div>
 
-                {/* Action service */}
+                {/* Reaction service */}
                 <div className="flex flex-col items-center">
-                  <div className="w-12 h-12 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center mb-2 shadow-sm">
+                  <div className="w-12 h-12 rounded-lg bg-white border border-gray-200 flex items-center justify-center mb-2 shadow-sm p-2">
                     <img
-                      src={automation.action_service.icon_url || '/app_logo/default.png'}
-                      alt={automation.action_service.name}
-                      className="w-8 h-8 object-contain"
+                      src={getServiceLogo(template.reaction_service)}
+                      alt={template.reaction_service}
+                      className="w-full h-full object-contain"
                       onError={(e) => {
-                        e.currentTarget.src = '/app_logo/default.png'
+                        e.currentTarget.style.display = 'none'
                       }}
                     />
                   </div>
@@ -358,248 +312,63 @@ export default function ExplorePage() {
                     className="text-xs text-gray-600 font-medium text-center"
                     style={{ fontFamily: 'Inter, sans-serif' }}
                   >
-                    {automation.action_service.name}
+                    {template.reaction_service}
                   </span>
                 </div>
               </div>
 
-              {/* Automation details */}
+              {/* Template details */}
               <div>
                 <h3
                   className="font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors duration-200"
                   style={{ fontFamily: 'Inter, sans-serif' }}
                 >
-                  {automation.name}
+                  {template.name}
                 </h3>
                 <p
                   className="text-gray-600 text-sm leading-relaxed mb-4"
                   style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.4' }}
                 >
-                  {automation.description || `${automation.action.name} → ${automation.reaction.name}`}
+                  {template.description}
                 </p>
 
-                {/* Tags */}
+                {/* Connection status */}
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {(() => {
-                    try {
-                      const parsedTags = typeof automation.tags === 'string'
-                        ? JSON.parse(automation.tags)
-                        : automation.tags;
-                      return Array.isArray(parsedTags) && parsedTags.length > 0
-                        ? parsedTags.slice(0, 3).map((tag, index) => (
-                            <span
-                              key={index}
-                              className="text-xs bg-gray-50 text-gray-600 px-2 py-1 rounded-md"
-                              style={{ fontFamily: 'Inter, sans-serif' }}
-                            >
-                              {tag}
-                            </span>
-                          ))
-                        : (
-                          <>
-                            <span
-                              className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-md"
-                              style={{ fontFamily: 'Inter, sans-serif' }}
-                            >
-                              automation
-                            </span>
-                            <span
-                              className="text-xs bg-gray-50 text-gray-600 px-2 py-1 rounded-md"
-                              style={{ fontFamily: 'Inter, sans-serif' }}
-                            >
-                              {automation.trigger_service.name.toLowerCase()}
-                            </span>
-                            <span
-                              className="text-xs bg-gray-50 text-gray-600 px-2 py-1 rounded-md"
-                              style={{ fontFamily: 'Inter, sans-serif' }}
-                            >
-                              {automation.action_service.name.toLowerCase()}
-                            </span>
-                          </>
-                        );
-                    } catch (error) {
-                      return (
-                        <>
-                          <span
-                            className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-md"
-                            style={{ fontFamily: 'Inter, sans-serif' }}
-                          >
-                            automation
-                          </span>
-                          <span
-                            className="text-xs bg-gray-50 text-gray-600 px-2 py-1 rounded-md"
-                            style={{ fontFamily: 'Inter, sans-serif' }}
-                          >
-                            {automation.trigger_service.name.toLowerCase()}
-                          </span>
-                          <span
-                            className="text-xs bg-gray-50 text-gray-600 px-2 py-1 rounded-md"
-                            style={{ fontFamily: 'Inter, sans-serif' }}
-                          >
-                            {automation.action_service.name.toLowerCase()}
-                          </span>
-                        </>
-                      );
-                    }
-                  })()}
+                  {template.requires_services.map((service) => (
+                    <span
+                      key={service}
+                      className={`text-xs px-2 py-1 rounded-md ${
+                        template.services_connected[service]
+                          ? 'bg-green-50 text-green-700 border border-green-200'
+                          : 'bg-gray-50 text-gray-600 border border-gray-200'
+                      }`}
+                      style={{ fontFamily: 'Inter, sans-serif' }}
+                    >
+                      {template.services_connected[service] ? '✓' : '○'} {service}
+                    </span>
+                  ))}
                 </div>
 
-                {/* Action and reaction flow */}
-                <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span
-                      className="text-gray-500 font-medium"
-                      style={{ fontFamily: 'Inter, sans-serif' }}
-                    >
-                      When:
-                    </span>
-                    <span
-                      className="text-gray-700 font-medium"
-                      style={{ fontFamily: 'Inter, sans-serif' }}
-                    >
-                      {automation.action.name}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span
-                      className="text-gray-500 font-medium"
-                      style={{ fontFamily: 'Inter, sans-serif' }}
-                    >
-                      Then:
-                    </span>
-                    <span
-                      className="text-gray-700 font-medium"
-                      style={{ fontFamily: 'Inter, sans-serif' }}
-                    >
-                      {automation.reaction.name}
-                    </span>
-                  </div>
+                {/* Action button */}
+                <div className="mt-4">
+                  <span className="text-sm font-medium text-blue-600 group-hover:text-blue-700 inline-flex items-center">
+                    View details →
+                  </span>
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
 
-        {/* Pagination Controls */}
-        {totalPages > 1 && filteredAutomations.length > 0 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between mt-8 pt-6 border-t border-gray-200">
-            {/* Previous/Next buttons */}
-            <div className="flex items-center gap-2 mb-4 sm:mb-0">
-              <button
-                onClick={goToPreviousPage}
-                disabled={currentPage === 1}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
-                  currentPage === 1
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                }`}
-                style={{ fontFamily: 'Inter, sans-serif' }}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                Previous
-              </button>
-
-              <button
-                onClick={goToNextPage}
-                disabled={currentPage === totalPages}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
-                  currentPage === totalPages
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                }`}
-                style={{ fontFamily: 'Inter, sans-serif' }}
-              >
-                Next
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Page numbers */}
-            <div className="flex items-center gap-1">
-              {/* Show first page if we're not near the beginning */}
-              {currentPage > 3 && (
-                <>
-                  <button
-                    onClick={() => goToPage(1)}
-                    className="w-10 h-10 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors duration-200"
-                    style={{ fontFamily: 'Inter, sans-serif' }}
-                  >
-                    1
-                  </button>
-                  {currentPage > 4 && (
-                    <span className="px-2 text-gray-400">...</span>
-                  )}
-                </>
-              )}
-
-              {/* Show pages around current page */}
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                let pageNum;
-                if (totalPages <= 5) {
-                  pageNum = i + 1;
-                } else if (currentPage <= 3) {
-                  pageNum = i + 1;
-                } else if (currentPage >= totalPages - 2) {
-                  pageNum = totalPages - 4 + i;
-                } else {
-                  pageNum = currentPage - 2 + i;
-                }
-
-                if (pageNum < 1 || pageNum > totalPages) return null;
-
-                return (
-                  <button
-                    key={pageNum}
-                    onClick={() => goToPage(pageNum)}
-                    className={`w-10 h-10 rounded-lg text-sm font-medium transition-colors duration-200 ${
-                      currentPage === pageNum
-                        ? 'bg-blue-600 text-white'
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                    style={{ fontFamily: 'Inter, sans-serif' }}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              })}
-
-              {/* Show last page if we're not near the end */}
-              {currentPage < totalPages - 2 && (
-                <>
-                  {currentPage < totalPages - 3 && (
-                    <span className="px-2 text-gray-400">...</span>
-                  )}
-                  <button
-                    onClick={() => goToPage(totalPages)}
-                    className="w-10 h-10 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors duration-200"
-                    style={{ fontFamily: 'Inter, sans-serif' }}
-                  >
-                    {totalPages}
-                  </button>
-                </>
-              )}
-            </div>
-
-            {/* Items per page info */}
-            <div className="text-sm text-gray-500 mt-4 sm:mt-0" style={{ fontFamily: 'Inter, sans-serif' }}>
-              {itemsPerPage} per page
-            </div>
-          </div>
-        )}
-
         {/* Empty state */}
-        {filteredAutomations.length === 0 && !loading && (
+        {filteredTemplates.length === 0 && !loading && (
           <div className="text-center py-12">
             <div className="text-gray-400 text-6xl mb-4">🔍</div>
             <h3
               className="text-xl font-semibold text-gray-900 mb-2"
               style={{ fontFamily: 'Inter, sans-serif' }}
             >
-              No automations found
+              No templates found
             </h3>
             <p
               className="text-gray-600 mb-4"

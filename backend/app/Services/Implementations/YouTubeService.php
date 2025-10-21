@@ -219,7 +219,18 @@ class YouTubeService extends BaseService
         }
 
         $channelData = $response->json();
+
+        Log::info('YouTube channel data', [
+            'has_items' => isset($channelData['items']),
+            'items_count' => count($channelData['items'] ?? []),
+            'channel_data' => $channelData
+        ]);
+
         $likedPlaylistId = $channelData['items'][0]['contentDetails']['relatedPlaylists']['likes'] ?? null;
+
+        Log::info('YouTube liked playlist ID', [
+            'playlist_id' => $likedPlaylistId
+        ]);
 
         if (!$likedPlaylistId) {
             return [];

@@ -44,6 +44,41 @@ class AreaController extends Controller
     }
 
     /**
+     * Get a single AREA by ID
+     */
+    public function show(Request $request, $id): JsonResponse
+    {
+        $area = Area::where('user_id', $request->user()->id)
+            ->where('id', $id)
+            ->first();
+
+        if (!$area) {
+            return response()->json([
+                'success' => false,
+                'message' => 'AREA not found'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $area->id,
+                'name' => $area->name,
+                'description' => $area->description,
+                'active' => $area->active,
+                'action_service' => $area->action_service,
+                'action_type' => $area->action_type,
+                'reaction_service' => $area->reaction_service,
+                'reaction_type' => $area->reaction_type,
+                'trigger_count' => $area->trigger_count,
+                'last_triggered_at' => $area->last_triggered_at?->toIso8601String(),
+                'can_execute' => $area->canExecute(),
+                'created_at' => $area->created_at->toIso8601String(),
+            ]
+        ]);
+    }
+
+    /**
      * Get available AREA templates
      */
     public function templates(Request $request): JsonResponse
@@ -621,6 +656,92 @@ class AreaController extends Controller
             'success' => true,
             'message' => 'AREA deleted successfully'
         ]);
+    }
+
+    /**
+     * Create custom AREA (user-defined action and reaction)
+     */
+    public function storeCustom(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'action_service' => 'required|string',
+            'action_type' => 'required|string',
+            'action_config' => 'nullable|array',
+            'reaction_service' => 'required|string',
+            'reaction_type' => 'required|string',
+            'reaction_config' => 'nullable|array',
+            'active' => 'nullable|boolean',
+        ]);
+
+        $userId = $request->user()->id;
+
+        // Verify both services are connected
+        $hasActionService = UserServiceToken::where('user_id', $userId)
+            ->where('service_name', $validated['action_service'])
+            ->exists();
+
+        $hasReactionService = UserServiceToken::where('user_id', $userId)
+            ->where('service_name', $validated['reaction_service'])
+            ->exists();
+
+        if (!$hasActionService || !$hasReactionService) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Please connect both services first',
+                'missing_services' => [
+                    $validated['action_service'] => !$hasActionService,
+                    $validated['reaction_service'] => !$hasReactionService,
+                ]
+            ], 400);
+        }
+
+        // Set default action_config based on action service
+        $defaultActionConfig = [];
+        if ($validated['action_service'] === 'YouTube') {
+            $defaultActionConfig = ['last_video_ids' => []];
+        } elseif ($validated['action_service'] === 'Steam') {
+            $defaultActionConfig = ['last_game_ids' => []];
+        } elseif ($validated['action_service'] === 'Discord') {
+            $defaultActionConfig = ['last_message_id' => null];
+        } elseif ($validated['action_service'] === 'Gmail') {
+            $defaultActionConfig = ['last_message_ids' => []];
+        }
+
+        // Merge with user-provided config
+        $actionConfig = array_merge($defaultActionConfig, $validated['action_config'] ?? []);
+
+        // Create AREA
+        $area = Area::create([
+            'user_id' => $userId,
+            'name' => $validated['name'] ?? "{$validated['action_service']} to {$validated['reaction_service']}",
+            'description' => $validated['description'] ?? "Custom automation",
+            'action_service' => $validated['action_service'],
+            'action_type' => $validated['action_type'],
+            'action_config' => $actionConfig,
+            'reaction_service' => $validated['reaction_service'],
+            'reaction_type' => $validated['reaction_type'],
+            'reaction_config' => $validated['reaction_config'] ?? [],
+            'active' => $validated['active'] ?? false,
+        ]);
+
+        Log::info('Custom AREA created', [
+            'area_id' => $area->id,
+            'user_id' => $userId,
+            'action' => "{$validated['action_service']}.{$validated['action_type']}",
+            'reaction' => "{$validated['reaction_service']}.{$validated['reaction_type']}"
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Custom AREA created successfully',
+            'data' => [
+                'id' => $area->id,
+                'name' => $area->name,
+                'active' => $area->active,
+            ]
+        ], 201);
     }
 
     /**
