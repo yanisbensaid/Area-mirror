@@ -7,7 +7,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 const SERVICES = ['YouTube', 'Telegram', 'Twitch', 'Gmail', 'Steam', 'Discord']
 
 const getServiceLogo = (serviceName: string) => {
-  return `/logo/${serviceName}.png`
+  return `/logo/${serviceName}.png?v=3`
 }
 
 interface Action {

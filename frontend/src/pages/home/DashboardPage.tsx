@@ -48,7 +48,7 @@ const transformDatabaseService = (dbService: DatabaseService): Service => {
   return {
     id: dbService.id.toString(),
     name: dbService.name,
-    logo: dbService.icon_url || `/app_logo/${dbService.name.toLowerCase().replace(/\s+/g, '')}.png`,
+    logo: dbService.icon_url || `/logo/${dbService.name.toLowerCase().replace(/\s+/g, '')}.png`,
     description: dbService.description || `${dbService.name} service integration`,
     category: getCategoryFromAuthType(dbService.auth_type),
     color: getColorFromName(dbService.name),
@@ -346,7 +346,7 @@ export default function DashboardPage() {
                           alt={`${service.name} logo`}
                           className="w-full h-full object-contain"
                           onError={(e) => {
-                            e.currentTarget.src = '/app_logo/default.png'
+                            e.currentTarget.src = '/logo/default.png'
                           }}
                         />
                       </div>

@@ -11,6 +11,7 @@ import LoginPage from './pages/auth/LoginPage'
 import ExplorePage from './pages/home/ExplorePage'
 import ServicePage from './pages/services/ServicePage'
 import ServicesPage from './pages/services/ServicesPage'
+import ServiceDetailPage from './pages/services/ServiceDetailPage'
 import PrivacyPolicyPage from './pages/legal/PrivacyPolicyPage'
 import TermsOfServicePage from './pages/legal/TermsOfServicePage'
 import CookiePolicyPage from './pages/legal/CookiePolicyPage'
@@ -118,7 +119,7 @@ function App() {
           <Route path="/services/:serviceName" element={
             <>
               <Navbar />
-              <ServicePage />
+              <ServiceDetailPage />
               <BottomBar />
             </>
           } />

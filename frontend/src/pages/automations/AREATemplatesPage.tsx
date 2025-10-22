@@ -308,15 +308,15 @@ export default function AREATemplatesPage() {
           // Service logo mapping
           const serviceLogo: { [key: string]: { src: string, fallback: string } } = {
             'YouTube': {
-              src: '/app_logo/youtube.png',
+              src: '/logo/youtube.png',
               fallback: 'https://www.youtube.com/s/desktop/7a7c6e5b/img/favicon_144x144.png'
             },
             'Twitch': {
-              src: '/app_logo/twitch.png',
+              src: '/logo/twitch.png',
               fallback: 'https://static.twitchcdn.net/assets/favicon-32-e29e246c157142c94346.png'
             },
             'Telegram': {
-              src: '/app_logo/telegram.png',
+              src: '/logo/telegram.png',
               fallback: 'https://telegram.org/img/t_logo.png'
             }
           }
@@ -327,7 +327,7 @@ export default function AREATemplatesPage() {
               <div className="flex items-center justify-center mb-6 space-x-4">
                 <div className="flex items-center space-x-3">
                   <img
-                    src={serviceLogo[template.action_service]?.src || '/app_logo/default.png'}
+                    src={serviceLogo[template.action_service]?.src || '/logo/default.png'}
                     alt={template.action_service}
                     className="w-12 h-12 rounded-lg"
                     onError={(e) => {
@@ -336,7 +336,7 @@ export default function AREATemplatesPage() {
                   />
                   <span className="text-2xl">→</span>
                   <img
-                    src={serviceLogo[template.reaction_service]?.src || '/app_logo/default.png'}
+                    src={serviceLogo[template.reaction_service]?.src || '/logo/default.png'}
                     alt={template.reaction_service}
                     className="w-12 h-12 rounded-lg"
                     onError={(e) => {

@@ -19,7 +19,7 @@ interface AREATemplate {
 }
 
 const getServiceLogo = (serviceName: string) => {
-  return `/logo/${serviceName}.png`
+  return `/logo/${serviceName}.png?v=3`
 }
 
 export default function ExplorePage() {
@@ -102,11 +102,11 @@ export default function ExplorePage() {
 
   if (loading) {
     return (
-      <main className="pt-16 md:pt-20 px-4 bg-gray-50 min-h-screen">
+      <main className="pt-16 md:pt-20 px-4 min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
         <div className="max-w-6xl mx-auto py-6 md:py-12">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading AREA templates...</p>
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-500 mx-auto"></div>
+            <p className="mt-4 text-slate-300">Loading AREA templates...</p>
           </div>
         </div>
       </main>
@@ -115,13 +115,13 @@ export default function ExplorePage() {
 
   if (error) {
     return (
-      <main className="pt-16 md:pt-20 px-4 bg-gray-50 min-h-screen">
+      <main className="pt-16 md:pt-20 px-4 min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
         <div className="max-w-6xl mx-auto py-6 md:py-12">
           <div className="text-center">
-            <div className="text-red-600 text-xl mb-4">⚠️ {error}</div>
+            <div className="text-red-400 text-xl mb-4">⚠️ {error}</div>
             <button
               onClick={() => window.location.reload()}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+              className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-500 transition-colors duration-200"
             >
               Retry
             </button>
@@ -132,18 +132,18 @@ export default function ExplorePage() {
   }
 
   return (
-    <main className="pt-16 md:pt-20 px-4 bg-gray-50 min-h-screen">
+    <main className="pt-16 md:pt-20 px-4 min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <div className="max-w-6xl mx-auto py-6 md:py-12">
         {/* Header */}
         <div className="text-center mb-8 md:mb-12">
           <h1
-            className="text-3xl sm:text-4xl md:text-5xl font-semibold text-gray-900 mb-3 md:mb-4"
+            className="text-3xl sm:text-4xl md:text-5xl font-semibold text-white mb-3 md:mb-4"
             style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.2' }}
           >
             Explore Predefined AREAs
           </h1>
           <p
-            className="text-lg sm:text-xl md:text-xl text-gray-600 max-w-2xl mx-auto px-2"
+            className="text-lg sm:text-xl md:text-xl text-slate-300 max-w-2xl mx-auto px-2"
             style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.5' }}
           >
             Discover ready-to-use automations. Connect services and activate in one click.
@@ -151,19 +151,19 @@ export default function ExplorePage() {
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-white rounded-xl p-4 md:p-6 border border-gray-200 shadow-sm mb-6 md:mb-8">
+        <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 md:p-6 border border-slate-700 mb-6 md:mb-8">
           {/* Search Bar */}
           <div className="mb-4 md:mb-6">
             <label
               htmlFor="search"
-              className="block text-sm font-medium text-gray-700 mb-2"
+              className="block text-sm font-medium text-slate-300 mb-2"
               style={{ fontFamily: 'Inter, sans-serif' }}
             >
               Search AREAs
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg className="h-4 w-4 md:h-5 md:w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="h-4 w-4 md:h-5 md:w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
@@ -172,7 +172,7 @@ export default function ExplorePage() {
                 id="search"
                 value={searchQuery}
                 onChange={handleSearchChange}
-                className="block w-full pl-10 pr-3 py-2 md:py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all duration-200 text-sm md:text-base"
+                className="block w-full pl-10 pr-3 py-2 md:py-3 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-sm md:text-base"
                 placeholder="Search by name, description, or service..."
                 style={{ fontFamily: 'Inter, sans-serif' }}
               />
@@ -182,7 +182,7 @@ export default function ExplorePage() {
           {/* Service Filters */}
           <div className="mb-4">
             <label
-              className="block text-sm font-medium text-gray-700 mb-3"
+              className="block text-sm font-medium text-slate-300 mb-3"
               style={{ fontFamily: 'Inter, sans-serif' }}
             >
               Filter by service
@@ -194,8 +194,8 @@ export default function ExplorePage() {
                   onClick={() => handleServiceChange(service)}
                   className={`px-3 py-1 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all duration-200 ${
                     selectedService === service
-                      ? 'bg-gray-900 text-white shadow-sm'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
+                      ? 'bg-purple-600 text-white shadow-sm'
+                      : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700 border border-slate-600'
                   }`}
                   style={{ fontFamily: 'Inter, sans-serif' }}
                 >
@@ -207,28 +207,28 @@ export default function ExplorePage() {
 
           {/* Active Filters and Clear */}
           {(searchQuery || selectedService !== 'All') && (
-            <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+            <div className="flex items-center justify-between pt-4 border-t border-slate-700">
               <div className="flex items-center space-x-4">
                 <span
-                  className="text-sm text-gray-600"
+                  className="text-sm text-slate-400"
                   style={{ fontFamily: 'Inter, sans-serif' }}
                 >
                   Active filters:
                 </span>
                 {searchQuery && (
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-500/20 text-purple-400">
                     Search: "{searchQuery}"
                   </span>
                 )}
                 {selectedService !== 'All' && (
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400">
                     Service: {selectedService}
                   </span>
                 )}
               </div>
               <button
                 onClick={clearFilters}
-                className="text-sm text-gray-500 hover:text-gray-700 font-medium transition-colors duration-200"
+                className="text-sm text-slate-400 hover:text-white font-medium transition-colors duration-200"
                 style={{ fontFamily: 'Inter, sans-serif' }}
               >
                 Clear all
@@ -240,7 +240,7 @@ export default function ExplorePage() {
         {/* Results Count */}
         <div className="mb-6">
           <p
-            className="text-sm text-gray-600"
+            className="text-sm text-slate-400"
             style={{ fontFamily: 'Inter, sans-serif' }}
           >
             Showing {filteredTemplates.length} of {templates.length} AREA templates
@@ -253,15 +253,16 @@ export default function ExplorePage() {
             <Link
               key={template.id}
               to={getTemplateRoute(template.id)}
-              className="group bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 hover:transform hover:scale-105 cursor-pointer"
+              state={{ fromExplore: true }}
+              className="group bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 border border-slate-700 hover:border-purple-500 transition-all duration-300 hover:transform hover:scale-105 cursor-pointer"
             >
               {/* Status badge */}
               <div className="flex justify-between items-start mb-4">
-                <span className="inline-block bg-purple-100 text-purple-700 text-xs font-medium px-3 py-1 rounded-full">
+                <span className="inline-block bg-purple-500/20 text-purple-400 text-xs font-medium px-3 py-1 rounded-full">
                   Predefined
                 </span>
                 {template.can_activate && (
-                  <span className="inline-block bg-green-100 text-green-700 text-xs font-medium px-3 py-1 rounded-full">
+                  <span className="inline-block bg-green-500/20 text-green-400 text-xs font-medium px-3 py-1 rounded-full">
                     ✓ Ready
                   </span>
                 )}
@@ -271,7 +272,7 @@ export default function ExplorePage() {
               <div className="flex items-center justify-between mb-6">
                 {/* Action service */}
                 <div className="flex flex-col items-center">
-                  <div className="w-12 h-12 rounded-lg bg-white border border-gray-200 flex items-center justify-center mb-2 shadow-sm p-2">
+                  <div className="w-12 h-12 rounded-lg bg-slate-700/50 border border-slate-600 flex items-center justify-center mb-2 p-2">
                     <img
                       src={getServiceLogo(template.action_service)}
                       alt={template.action_service}
@@ -282,7 +283,7 @@ export default function ExplorePage() {
                     />
                   </div>
                   <span
-                    className="text-xs text-gray-600 font-medium text-center"
+                    className="text-xs text-slate-400 font-medium text-center"
                     style={{ fontFamily: 'Inter, sans-serif' }}
                   >
                     {template.action_service}
@@ -291,14 +292,14 @@ export default function ExplorePage() {
 
                 {/* Arrow */}
                 <div className="flex-1 flex items-center justify-center px-3">
-                  <div className="w-full h-px bg-gray-300 relative">
-                    <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-gray-300 rotate-45 translate-x-1/2"></div>
+                  <div className="w-full h-px bg-slate-600 relative">
+                    <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-purple-500 rotate-45 translate-x-1/2"></div>
                   </div>
                 </div>
 
                 {/* Reaction service */}
                 <div className="flex flex-col items-center">
-                  <div className="w-12 h-12 rounded-lg bg-white border border-gray-200 flex items-center justify-center mb-2 shadow-sm p-2">
+                  <div className="w-12 h-12 rounded-lg bg-slate-700/50 border border-slate-600 flex items-center justify-center mb-2 p-2">
                     <img
                       src={getServiceLogo(template.reaction_service)}
                       alt={template.reaction_service}
@@ -309,7 +310,7 @@ export default function ExplorePage() {
                     />
                   </div>
                   <span
-                    className="text-xs text-gray-600 font-medium text-center"
+                    className="text-xs text-slate-400 font-medium text-center"
                     style={{ fontFamily: 'Inter, sans-serif' }}
                   >
                     {template.reaction_service}
@@ -320,13 +321,13 @@ export default function ExplorePage() {
               {/* Template details */}
               <div>
                 <h3
-                  className="font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors duration-200"
+                  className="font-semibold text-white mb-2 group-hover:text-purple-400 transition-colors duration-200"
                   style={{ fontFamily: 'Inter, sans-serif' }}
                 >
                   {template.name}
                 </h3>
                 <p
-                  className="text-gray-600 text-sm leading-relaxed mb-4"
+                  className="text-slate-300 text-sm leading-relaxed mb-4"
                   style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.4' }}
                 >
                   {template.description}
@@ -339,8 +340,8 @@ export default function ExplorePage() {
                       key={service}
                       className={`text-xs px-2 py-1 rounded-md ${
                         template.services_connected[service]
-                          ? 'bg-green-50 text-green-700 border border-green-200'
-                          : 'bg-gray-50 text-gray-600 border border-gray-200'
+                          ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                          : 'bg-slate-700/50 text-slate-400 border border-slate-600'
                       }`}
                       style={{ fontFamily: 'Inter, sans-serif' }}
                     >
@@ -351,7 +352,7 @@ export default function ExplorePage() {
 
                 {/* Action button */}
                 <div className="mt-4">
-                  <span className="text-sm font-medium text-blue-600 group-hover:text-blue-700 inline-flex items-center">
+                  <span className="text-sm font-medium text-purple-400 group-hover:text-purple-300 inline-flex items-center">
                     View details →
                   </span>
                 </div>
@@ -363,22 +364,22 @@ export default function ExplorePage() {
         {/* Empty state */}
         {filteredTemplates.length === 0 && !loading && (
           <div className="text-center py-12">
-            <div className="text-gray-400 text-6xl mb-4">🔍</div>
+            <div className="text-purple-400 text-6xl mb-4">🔍</div>
             <h3
-              className="text-xl font-semibold text-gray-900 mb-2"
+              className="text-xl font-semibold text-white mb-2"
               style={{ fontFamily: 'Inter, sans-serif' }}
             >
               No templates found
             </h3>
             <p
-              className="text-gray-600 mb-4"
+              className="text-slate-300 mb-4"
               style={{ fontFamily: 'Inter, sans-serif' }}
             >
               Try adjusting your search or filter criteria
             </p>
             <button
               onClick={clearFilters}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200"
+              className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-500 transition-colors duration-200"
               style={{ fontFamily: 'Inter, sans-serif' }}
             >
               Clear filters

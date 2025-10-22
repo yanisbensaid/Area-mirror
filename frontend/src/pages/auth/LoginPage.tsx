@@ -302,7 +302,7 @@ export default function LoginPage() {
                 style={{ fontFamily: 'Inter, sans-serif' }}
               >
                 <img
-                  src="/app_logo/google.png"
+                  src="/logo/google.png"
                   alt="Google"
                   className="w-5 h-5 mr-3"
                 />
@@ -316,7 +316,7 @@ export default function LoginPage() {
                 style={{ fontFamily: 'Inter, sans-serif' }}
               >
                 <img
-                  src="/app_logo/outlook.png"
+                  src="/logo/outlook.png"
                   alt="Outlook"
                   className="w-5 h-5 mr-3"
                 />
@@ -330,7 +330,7 @@ export default function LoginPage() {
                 style={{ fontFamily: 'Inter, sans-serif' }}
               >
                 <img
-                  src="/app_logo/github.png"
+                  src="/logo/github.png"
                   alt="GitHub"
                   className="w-5 h-5 mr-3"
                 />

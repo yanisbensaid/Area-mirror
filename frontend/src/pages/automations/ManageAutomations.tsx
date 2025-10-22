@@ -248,7 +248,7 @@ export default function ManageAutomations() {
           <div className="flex items-center space-x-6 mb-8">
             <div className="w-16 h-16 flex-shrink-0">
               <img
-                src={service.icon_url || '/app_logo/default.png'}
+                src={service.icon_url || '/logo/default.png'}
                 alt={`${service.name} logo`}
                 className="w-full h-full object-contain rounded-lg"
               />
@@ -403,11 +403,11 @@ export default function ManageAutomations() {
                     <div className="flex flex-col items-center">
                       <div className="w-10 h-10 rounded-lg bg-white border border-green-300 flex items-center justify-center mb-1">
                         <img
-                          src={automation.trigger_service.icon_url || '/app_logo/default.png'}
+                          src={automation.trigger_service.icon_url || '/logo/default.png'}
                           alt={automation.trigger_service.name}
                           className="w-6 h-6 object-contain"
                           onError={(e) => {
-                            e.currentTarget.src = '/app_logo/default.png';
+                            e.currentTarget.src = '/logo/default.png';
                           }}
                         />
                       </div>
@@ -423,11 +423,11 @@ export default function ManageAutomations() {
                     <div className="flex flex-col items-center">
                       <div className="w-10 h-10 rounded-lg bg-white border border-green-300 flex items-center justify-center mb-1">
                         <img
-                          src={automation.action_service.icon_url || '/app_logo/default.png'}
+                          src={automation.action_service.icon_url || '/logo/default.png'}
                           alt={automation.action_service.name}
                           className="w-6 h-6 object-contain"
                           onError={(e) => {
-                            e.currentTarget.src = '/app_logo/default.png';
+                            e.currentTarget.src = '/logo/default.png';
                           }}
                         />
                       </div>
