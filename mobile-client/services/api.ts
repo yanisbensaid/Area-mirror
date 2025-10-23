@@ -1,6 +1,8 @@
 // API Service for AREA Mobile App
 // This mirrors the functionality from your web frontend API service
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 const API_BASE_URL = 'http://46.101.186.62/api';
 
 interface ApiResponse<T = any> {
@@ -33,22 +35,122 @@ interface AuthResponse {
   token: string;
 }
 
+interface ServiceConfig {
+  id: string;
+  name: string;
+  description: string;
+  logo: string;
+  color: string;
+  auth_url?: string;
+  is_connected?: boolean;
+}
+
+interface AutomationTrigger {
+  service: string;
+  action: string;
+  config?: Record<string, any>;
+}
+
+interface AutomationAction {
+  service: string;
+  action: string;
+  config?: Record<string, any>;
+}
+
+interface Automation {
+  id?: number;
+  name: string;
+  description: string;
+  trigger: AutomationTrigger;
+  action: AutomationAction;
+  enabled?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
 class ApiService {
   private baseURL: string;
   private token: string | null = null;
+  private initialized: boolean = false;
 
   constructor() {
     this.baseURL = API_BASE_URL;
+    this.initializeToken();
+  }
+
+  // Initialize token from AsyncStorage
+  private async initializeToken() {
+    try {
+      const storedToken = await AsyncStorage.getItem('auth_token');
+      if (storedToken) {
+        this.token = storedToken;
+      }
+    } catch (error) {
+      console.error('Error loading token from storage:', error);
+    } finally {
+      this.initialized = true;
+    }
+  }
+
+  // Wait for initialization to complete
+  private async waitForInitialization() {
+    let attempts = 0;
+    while (!this.initialized && attempts < 100) { // Max 1 second wait
+      await new Promise(resolve => setTimeout(resolve, 10));
+      attempts++;
+    }
+    if (!this.initialized) {
+      console.warn('API service initialization timeout');
+    }
   }
 
   // Set authentication token
-  setToken(token: string) {
+  async setToken(token: string) {
     this.token = token;
+    try {
+      await AsyncStorage.setItem('auth_token', token);
+    } catch (error) {
+      console.error('Error saving token to storage:', error);
+    }
   }
 
   // Clear authentication token
-  clearToken() {
+  async clearToken() {
     this.token = null;
+    try {
+      await AsyncStorage.removeItem('auth_token');
+      await AsyncStorage.removeItem('user_data');
+    } catch (error) {
+      console.error('Error clearing token from storage:', error);
+    }
+  }
+
+  // Get stored user data
+  async getStoredUser(): Promise<User | null> {
+    await this.waitForInitialization();
+    try {
+      const userData = await AsyncStorage.getItem('user_data');
+      return userData ? JSON.parse(userData) : null;
+    } catch (error) {
+      console.error('Error getting stored user:', error);
+      return null;
+    }
+  }
+
+  // Store user data
+  async storeUser(user: User) {
+    try {
+      await AsyncStorage.setItem('user_data', JSON.stringify(user));
+    } catch (error) {
+      console.error('Error storing user data:', error);
+    }
+  }
+
+  // Check if user is authenticated
+  async isAuthenticated(): Promise<boolean> {
+    await this.waitForInitialization();
+    const token = await AsyncStorage.getItem('auth_token');
+    return !!token;
   }
 
   // Get headers with auth token if available
@@ -105,17 +207,31 @@ class ApiService {
 
   // Authentication endpoints
   async login(credentials: LoginCredentials): Promise<ApiResponse<AuthResponse>> {
-    return this.makeRequest<AuthResponse>('/login', {
+    const result = await this.makeRequest<AuthResponse>('/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
     });
+    
+    if (result.success && result.data) {
+      await this.setToken(result.data.token);
+      await this.storeUser(result.data.user);
+    }
+    
+    return result;
   }
 
   async register(credentials: RegisterCredentials): Promise<ApiResponse<AuthResponse>> {
-    return this.makeRequest<AuthResponse>('/register', {
+    const result = await this.makeRequest<AuthResponse>('/register', {
       method: 'POST',
       body: JSON.stringify(credentials),
     });
+    
+    if (result.success && result.data) {
+      await this.setToken(result.data.token);
+      await this.storeUser(result.data.user);
+    }
+    
+    return result;
   }
 
   async logout(): Promise<ApiResponse> {
@@ -123,9 +239,8 @@ class ApiService {
       method: 'POST',
     });
     
-    if (result.success) {
-      this.clearToken();
-    }
+    // Clear tokens regardless of API response
+    await this.clearToken();
     
     return result;
   }
@@ -140,12 +255,44 @@ class ApiService {
   }
 
   // Services endpoints
-  async getServices(): Promise<ApiResponse<any[]>> {
-    return this.makeRequest<any[]>('/services');
+  async getServices(): Promise<ApiResponse<ServiceConfig[]>> {
+    return this.makeRequest<ServiceConfig[]>('/services');
   }
 
-  async getService(serviceName: string): Promise<ApiResponse<any>> {
-    return this.makeRequest<any>(`/services/${serviceName}`);
+  async getService(serviceName: string): Promise<ApiResponse<ServiceConfig>> {
+    return this.makeRequest<ServiceConfig>(`/services/${serviceName}`);
+  }
+
+  // Automation endpoints
+  async getAutomations(): Promise<ApiResponse<Automation[]>> {
+    return this.makeRequest<Automation[]>('/automations');
+  }
+
+  async createAutomation(automation: Omit<Automation, 'id'>): Promise<ApiResponse<Automation>> {
+    return this.makeRequest<Automation>('/automations', {
+      method: 'POST',
+      body: JSON.stringify(automation),
+    });
+  }
+
+  async updateAutomation(id: number, automation: Partial<Automation>): Promise<ApiResponse<Automation>> {
+    return this.makeRequest<Automation>(`/automations/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(automation),
+    });
+  }
+
+  async deleteAutomation(id: number): Promise<ApiResponse> {
+    return this.makeRequest(`/automations/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async toggleAutomation(id: number, enabled: boolean): Promise<ApiResponse<Automation>> {
+    return this.makeRequest<Automation>(`/automations/${id}/toggle`, {
+      method: 'POST',
+      body: JSON.stringify({ enabled }),
+    });
   }
 
   // Test endpoint
@@ -178,4 +325,8 @@ export type {
   RegisterCredentials,
   User,
   AuthResponse,
+  ServiceConfig,
+  AutomationTrigger,
+  AutomationAction,
+  Automation,
 };

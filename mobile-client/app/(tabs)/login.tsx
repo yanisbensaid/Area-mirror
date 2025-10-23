@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { ScrollView, StyleSheet, View, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { ScrollView, StyleSheet, View, TextInput, TouchableOpacity, Alert, ActivityIndicator, Image } from 'react-native';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
-import apiService from '@/services/api';
+import apiService, { User } from '@/services/api';
 
 export default function LoginScreen() {
   const colorScheme = useColorScheme();
@@ -16,21 +16,34 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Check authentication status on component mount
+    // Check authentication status on component mount
   useEffect(() => {
-    // In a real app, you would check AsyncStorage for stored tokens
-    // For now, we'll simulate this
     const checkAuth = async () => {
-      // Simulate checking stored auth
-      const storedUser = null; // await AsyncStorage.getItem('user');
-      if (storedUser) {
-        setIsAuthenticated(true);
-        setUser(JSON.parse(storedUser));
+      try {
+        const isAuth = await apiService.isAuthenticated();
+        if (isAuth) {
+          const storedUser = await apiService.getStoredUser();
+          if (storedUser) {
+            setIsAuthenticated(true);
+            setUser(storedUser);
+          }
+        } else {
+          setIsAuthenticated(false);
+          setUser(null);
+        }
+      } catch (error) {
+        console.error('Error checking authentication:', error);
+        // If there's an error, assume not authenticated
+        setIsAuthenticated(false);
+        setUser(null);
+      } finally {
+        setLoading(false);
       }
     };
+    
     checkAuth();
   }, []);
 
@@ -54,7 +67,6 @@ export default function LoginScreen() {
     if (response.success && response.data) {
       setUser(response.data.user);
       setIsAuthenticated(true);
-      apiService.setToken(response.data.token);
       Alert.alert('Success', 'Logged in successfully!');
     } else {
       Alert.alert('Login Failed', response.error || 'Unknown error');
@@ -71,24 +83,31 @@ export default function LoginScreen() {
       return;
     }
     setLoading(true);
-    const response = await apiService.register({ email, password, confirmPassword, name: email.split('@')[0] });
+    const response = await apiService.register({ 
+      email, 
+      password, 
+      confirmPassword, 
+      name: email.split('@')[0] 
+    });
     setLoading(false);
     if (response.success && response.data) {
       setUser(response.data.user);
       setIsAuthenticated(true);
-      apiService.setToken(response.data.token);
       Alert.alert('Success', 'Account created successfully!');
     } else {
       Alert.alert('Registration Failed', response.error || 'Unknown error');
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    setLoading(true);
+    await apiService.logout();
     setUser(null);
     setIsAuthenticated(false);
     setEmail('');
     setPassword('');
     setConfirmPassword('');
+    setLoading(false);
     Alert.alert('Success', 'Logged out successfully');
   };
 
@@ -208,10 +227,63 @@ export default function LoginScreen() {
             style={[styles.authButton, { backgroundColor: colors.tint }]}
             onPress={handleAuth}
           >
-            <ThemedText style={styles.authButtonText}>
+            <ThemedText style={styles.authButtonText} forceColor="#fff">
               {isLogin ? 'Sign In' : 'Create Account'}
             </ThemedText>
           </TouchableOpacity>
+
+          {/* OAuth Options */}
+          <View style={styles.divider}>
+            <View style={[styles.dividerLine, { backgroundColor: colorScheme === 'dark' ? '#333' : '#e5e5e5' }]} />
+            <ThemedText style={[styles.dividerText, { color: colors.text, opacity: 0.6 }]}>
+              Or continue with
+            </ThemedText>
+            <View style={[styles.dividerLine, { backgroundColor: colorScheme === 'dark' ? '#333' : '#e5e5e5' }]} />
+          </View>
+
+          <View style={styles.oauthContainer}>
+            <TouchableOpacity
+              style={[
+                styles.oauthButton,
+                {
+                  backgroundColor: colorScheme === 'dark' ? '#1a1a1a' : '#fff',
+                  borderColor: colorScheme === 'dark' ? '#333' : '#e5e5e5',
+                }
+              ]}
+              onPress={() => Alert.alert('OAuth', 'Google login coming soon')}
+            >
+              <Image source={require('@/assets/images/app_logo/google.png')} style={styles.oauthIcon} />
+              <ThemedText style={[styles.oauthText, { color: colorScheme === 'dark' ? '#fff' : '#000' }]}>Google</ThemedText>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.oauthButton,
+                {
+                  backgroundColor: colorScheme === 'dark' ? '#1a1a1a' : '#fff',
+                  borderColor: colorScheme === 'dark' ? '#333' : '#e5e5e5',
+                }
+              ]}
+              onPress={() => Alert.alert('OAuth', 'GitHub login coming soon')}
+            >
+              <Image source={require('@/assets/images/app_logo/github.png')} style={styles.oauthIcon} />
+              <ThemedText style={[styles.oauthText, { color: colorScheme === 'dark' ? '#fff' : '#000' }]}>GitHub</ThemedText>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.oauthButton,
+                {
+                  backgroundColor: colorScheme === 'dark' ? '#1a1a1a' : '#fff',
+                  borderColor: colorScheme === 'dark' ? '#333' : '#e5e5e5',
+                }
+              ]}
+              onPress={() => Alert.alert('OAuth', 'Outlook login coming soon')}
+            >
+              <Image source={require('@/assets/images/app_logo/outlook.png')} style={styles.oauthIcon} />
+              <ThemedText style={[styles.oauthText, { color: colorScheme === 'dark' ? '#fff' : '#000' }]}>Outlook</ThemedText>
+            </TouchableOpacity>
+          </View>
 
           <TouchableOpacity
             style={styles.switchButton}
@@ -316,5 +388,39 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 24,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    paddingHorizontal: 16,
+    fontSize: 14,
+  },
+  oauthContainer: {
+    gap: 12,
+  },
+  oauthButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 48,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+  },
+  oauthIcon: {
+    width: 20,
+    height: 20,
+    marginRight: 12,
+  },
+  oauthText: {
+    fontSize: 14,
+    fontWeight: '500',
   },
 });

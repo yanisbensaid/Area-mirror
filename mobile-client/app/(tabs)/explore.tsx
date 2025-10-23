@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
-import { ScrollView, StyleSheet, View, TextInput, TouchableOpacity, FlatList } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { ScrollView, StyleSheet, View, TextInput, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import apiService, { Automation } from '@/services/api';
+import { router } from 'expo-router';
 
 export default function ExploreScreen() {
   const colorScheme = useColorScheme();
@@ -12,53 +14,112 @@ export default function ExploreScreen() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [automations, setAutomations] = useState<Automation[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadAutomations();
+  }, []);
+
+  const loadAutomations = async () => {
+    try {
+      const response = await apiService.getAutomations();
+      if (response.success && response.data) {
+        setAutomations(response.data);
+      } else {
+        // Fallback to mock data if API fails
+        setAutomations(mockAutomations);
+      }
+    } catch (error) {
+      console.error('Error loading automations:', error);
+      setAutomations(mockAutomations);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Sample automation examples (converted from your web app)
-  const automationExamples = [
+  const mockAutomations: Automation[] = [
     {
       id: 1,
-      title: 'Email to Spotify Playlist',
+      name: 'Email to Spotify Playlist',
       description: 'Add songs to Spotify when receiving specific emails',
-      trigger: { service: 'Mail', action: 'New Email' },
-      reaction: { service: 'Spotify', action: 'Add to Playlist' },
-      category: 'Music'
+      trigger: { service: 'Mail', action: 'New Email Received' },
+      action: { service: 'Spotify', action: 'Add to Playlist' },
+      enabled: true,
     },
     {
       id: 2,
-      title: 'Steam Achievement to Discord',
+      name: 'Steam Achievement to Discord',
       description: 'Post Steam achievements to Discord channel',
       trigger: { service: 'Steam', action: 'Achievement Unlocked' },
-      reaction: { service: 'Telegram', action: 'Send Message' },
-      category: 'Gaming'
+      action: { service: 'Telegram', action: 'Send Message' },
+      enabled: true,
     },
     {
       id: 3,
-      title: 'YouTube Upload Notification',
+      name: 'YouTube Upload Notification',
       description: 'Get notified when favorite YouTuber uploads',
       trigger: { service: 'YouTube', action: 'New Upload' },
-      reaction: { service: 'Mail', action: 'Send Email' },
-      category: 'Social'
+      action: { service: 'Mail', action: 'Send Email' },
+      enabled: true,
     },
     {
       id: 4,
-      title: 'Twitch Stream to Twitter',
+      name: 'Twitch Stream to Twitter',
       description: 'Auto-tweet when going live on Twitch',
       trigger: { service: 'Twitch', action: 'Stream Started' },
-      reaction: { service: 'Mail', action: 'Send Notification' },
-      category: 'Streaming'
+      action: { service: 'Mail', action: 'Send Notification' },
+      enabled: true,
     }
   ];
 
   const categories = ['All', 'Music', 'Gaming', 'Social', 'Streaming'];
 
-  const filteredAutomations = automationExamples.filter(automation => {
-    const matchesSearch = automation.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  // Determine category based on services used
+  const getAutomationCategory = (automation: Automation): string => {
+    // Safety checks to ensure automation has required properties
+    if (!automation || !automation.trigger || !automation.action) {
+      return 'Other';
+    }
+
+    const musicServices = ['Spotify', 'YouTube'];
+    const gamingServices = ['Steam'];
+    const socialServices = ['Telegram', 'Mail'];
+    const streamingServices = ['Twitch'];
+
+    const triggerService = automation.trigger?.service || '';
+    const actionService = automation.action?.service || '';
+
+    if (musicServices.includes(triggerService) || musicServices.includes(actionService)) {
+      return 'Music';
+    }
+    if (gamingServices.includes(triggerService) || gamingServices.includes(actionService)) {
+      return 'Gaming';
+    }
+    if (socialServices.includes(triggerService) || socialServices.includes(actionService)) {
+      return 'Social';
+    }
+    if (streamingServices.includes(triggerService) || streamingServices.includes(actionService)) {
+      return 'Streaming';
+    }
+    return 'Other';
+  };
+
+  const filteredAutomations = automations.filter(automation => {
+    // Safety check for automation structure
+    if (!automation || !automation.name || !automation.description) {
+      return false;
+    }
+
+    const matchesSearch = automation.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          automation.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'All' || automation.category === selectedCategory;
+    const automationCategory = getAutomationCategory(automation);
+    const matchesCategory = selectedCategory === 'All' || automationCategory === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
-  const renderAutomationCard = ({ item }: { item: typeof automationExamples[0] }) => (
+  const renderAutomationCard = ({ item }: { item: Automation }) => (
     <View
       style={[
         styles.automationCard,
@@ -69,7 +130,7 @@ export default function ExploreScreen() {
       ]}
     >
       <ThemedText type="defaultSemiBold" style={styles.automationTitle}>
-        {item.title}
+        {item.name}
       </ThemedText>
       <ThemedText style={[styles.automationDescription, { color: colors.text, opacity: 0.7 }]}>
         {item.description}
@@ -78,9 +139,9 @@ export default function ExploreScreen() {
       <View style={styles.automationFlow}>
         <View style={styles.flowStep}>
           <ThemedText style={styles.stepLabel}>TRIGGER</ThemedText>
-          <ThemedText style={styles.stepService}>{item.trigger.service}</ThemedText>
+          <ThemedText style={styles.stepService}>{item.trigger?.service || 'Unknown'}</ThemedText>
           <ThemedText style={[styles.stepAction, { color: colors.text, opacity: 0.8 }]}>
-            {item.trigger.action}
+            {item.trigger?.action || 'Unknown'}
           </ThemedText>
         </View>
         
@@ -88,9 +149,9 @@ export default function ExploreScreen() {
         
         <View style={styles.flowStep}>
           <ThemedText style={styles.stepLabel}>ACTION</ThemedText>
-          <ThemedText style={styles.stepService}>{item.reaction.service}</ThemedText>
+          <ThemedText style={styles.stepService}>{item.action?.service || 'Unknown'}</ThemedText>
           <ThemedText style={[styles.stepAction, { color: colors.text, opacity: 0.8 }]}>
-            {item.reaction.action}
+            {item.action?.action || 'Unknown'}
           </ThemedText>
         </View>
       </View>
@@ -159,13 +220,20 @@ export default function ExploreScreen() {
         </View>
 
         {/* Automation Cards */}
-        <FlatList
-          data={filteredAutomations}
-          renderItem={renderAutomationCard}
-          keyExtractor={(item) => item.id.toString()}
-          scrollEnabled={false}
-          contentContainerStyle={styles.automationsList}
-        />
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.tint} />
+            <ThemedText style={styles.loadingText}>Loading automations...</ThemedText>
+          </View>
+        ) : (
+          <FlatList
+            data={filteredAutomations}
+            renderItem={renderAutomationCard}
+            keyExtractor={(item) => (item.id || 0).toString()}
+            scrollEnabled={false}
+            contentContainerStyle={styles.automationsList}
+          />
+        )}
 
         {filteredAutomations.length === 0 && (
           <View style={styles.emptyState}>
@@ -291,5 +359,13 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     textAlign: 'center',
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 16,
+    opacity: 0.7,
   },
 });

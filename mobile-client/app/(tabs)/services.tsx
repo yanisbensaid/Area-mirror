@@ -53,7 +53,7 @@ export default function ServicesScreen() {
               onPress={() => handleServicePress(service.name)}
             >
               <Image source={service.logo} style={styles.serviceLogo} />
-              <ThemedText style={styles.serviceName}>{service.name}</ThemedText>
+              <ThemedText style={styles.serviceName} forceColor={colorScheme === 'dark' ? '#fff' : '#000'}>{service.name}</ThemedText>
             </TouchableOpacity>
           ))}
         </View>

@@ -1,11 +1,13 @@
 import { StyleSheet, Text, type TextProps } from 'react-native';
 
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export type ThemedTextProps = TextProps & {
   lightColor?: string;
   darkColor?: string;
   type?: 'default' | 'title' | 'defaultSemiBold' | 'subtitle' | 'link';
+  forceColor?: string; // New prop to force a specific color
 };
 
 export function ThemedText({
@@ -13,9 +15,14 @@ export function ThemedText({
   lightColor,
   darkColor,
   type = 'default',
+  forceColor,
   ...rest
 }: ThemedTextProps) {
-  const color = useThemeColor({ light: lightColor, dark: darkColor }, 'text');
+  const colorScheme = useColorScheme();
+  const themeColor = useThemeColor({ light: lightColor, dark: darkColor }, 'text');
+  
+  // Use forceColor if provided, otherwise use theme color
+  const color = forceColor || themeColor;
 
   return (
     <Text
@@ -25,7 +32,7 @@ export function ThemedText({
         type === 'title' ? styles.title : undefined,
         type === 'defaultSemiBold' ? styles.defaultSemiBold : undefined,
         type === 'subtitle' ? styles.subtitle : undefined,
-        type === 'link' ? styles.link : undefined,
+        type === 'link' ? [styles.link, { color: colorScheme === 'dark' ? '#4FC3F7' : '#0a7ea4' }] : undefined,
         style,
       ]}
       {...rest}
@@ -55,6 +62,6 @@ const styles = StyleSheet.create({
   link: {
     lineHeight: 30,
     fontSize: 16,
-    color: '#0a7ea4',
+    // Color is now set dynamically above
   },
 });

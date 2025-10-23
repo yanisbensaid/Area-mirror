@@ -8,7 +8,8 @@ import { Colors } from '@/constants/theme';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 
 export default function ModalScreen() {
-  const { service } = useLocalSearchParams<{ service?: string }>();
+  const params = useLocalSearchParams();
+  const service = typeof params.service === 'string' ? params.service : undefined;
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
 
@@ -38,21 +39,78 @@ export default function ModalScreen() {
       triggers: ['Achievement unlocked', 'New game purchase', 'Friend came online'],
       actions: ['Post to social', 'Send notification', 'Update status']
     },
-    // Add more services as needed
+    'Telegram': {
+      name: 'Telegram',
+      description: 'Connect Telegram for messaging automation',
+      logo: require('@/assets/images/app_logo/telegram.png'),
+      features: ['Message automation', 'Bot integration', 'Channel management', 'Group notifications'],
+      triggers: ['New message received', 'Mentioned in group', 'Channel post'],
+      actions: ['Send message', 'Post to channel', 'Forward message']
+    },
+    'Twitch': {
+      name: 'Twitch',
+      description: 'Automate your streaming workflow and notifications',
+      logo: require('@/assets/images/app_logo/twitch.png'),
+      features: ['Stream notifications', 'Viewer management', 'Chat automation', 'Clip creation'],
+      triggers: ['Stream started', 'New follower', 'Viewer milestone reached'],
+      actions: ['Post notification', 'Send chat message', 'Create clip']
+    },
+    'YouTube': {
+      name: 'YouTube',
+      description: 'Automate YouTube channel management and notifications',
+      logo: require('@/assets/images/app_logo/youtube.png'),
+      features: ['Upload notifications', 'Comment management', 'Subscriber tracking', 'Analytics'],
+      triggers: ['New video uploaded', 'New subscriber', 'Comment received'],
+      actions: ['Send notification', 'Post to social', 'Reply to comment']
+    },
+    'GitHub': {
+      name: 'GitHub',
+      description: 'Automate your development workflow and repository management',
+      logo: require('@/assets/images/app_logo/github.png'),
+      features: ['Repository automation', 'Issue tracking', 'Pull request management', 'Release notifications'],
+      triggers: ['New commit pushed', 'Issue created', 'Pull request opened'],
+      actions: ['Create issue', 'Send notification', 'Update status']
+    },
+    'Google': {
+      name: 'Google',
+      description: 'Connect Google services for productivity automation',
+      logo: require('@/assets/images/app_logo/google.png'),
+      features: ['Calendar integration', 'Drive automation', 'Gmail management', 'Docs collaboration'],
+      triggers: ['New calendar event', 'File shared', 'Email received'],
+      actions: ['Create calendar event', 'Send email', 'Share file']
+    },
+    'Outlook': {
+      name: 'Outlook',
+      description: 'Automate Microsoft Outlook email and calendar workflows',
+      logo: require('@/assets/images/app_logo/outlook.png'),
+      features: ['Email automation', 'Calendar management', 'Contact sync', 'Meeting scheduling'],
+      triggers: ['New email received', 'Meeting scheduled', 'Calendar reminder'],
+      actions: ['Send email', 'Create meeting', 'Update calendar']
+    }
   };
 
   const currentService = service ? serviceData[service] : null;
 
-  if (!currentService) {
+  if (!service || !currentService) {
     return (
       <ThemedView style={styles.container}>
-        <ThemedText type="title">Service Details</ThemedText>
-        <ThemedText style={[styles.errorText, { color: colors.text }]}>
-          Service not found. Please select a valid service.
-        </ThemedText>
-        <Link href="/(tabs)/services" style={styles.link}>
-          <ThemedText type="link">Back to Services</ThemedText>
-        </Link>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={styles.header}>
+            <IconSymbol name="exclamationmark.triangle.fill" size={60} color="#ff9500" />
+            <ThemedText type="title" style={styles.serviceTitle}>Service Details</ThemedText>
+            <ThemedText style={[styles.errorText, { color: colors.text }]}>
+              {!service ? 'No service selected.' : 'Service not found.'} Please select a valid service from the services page.
+            </ThemedText>
+          </View>
+          
+          <View style={styles.buttonContainer}>
+            <Link href="/(tabs)/services" asChild>
+              <TouchableOpacity style={[styles.primaryButton, { backgroundColor: colors.tint }]}>
+                <ThemedText style={styles.primaryButtonText} forceColor="#fff">Back to Services</ThemedText>
+              </TouchableOpacity>
+            </Link>
+          </View>
+        </ScrollView>
       </ThemedView>
     );
   }
@@ -79,11 +137,11 @@ export default function ModalScreen() {
             borderColor: colorScheme === 'dark' ? '#333' : '#e5e5e5',
           }
         ]}>
-          <ThemedText type="subtitle" style={styles.sectionTitle}>Features</ThemedText>
+          <ThemedText type="subtitle" style={styles.sectionTitle} forceColor={colorScheme === 'dark' ? '#fff' : '#000'}>Features</ThemedText>
           {currentService.features.map((feature: string, index: number) => (
             <View key={index} style={styles.listItem}>
               <IconSymbol name="checkmark.circle.fill" size={20} color={colors.tint} />
-              <ThemedText style={[styles.listText, { color: colors.text }]}>
+              <ThemedText style={[styles.listText, { color: colorScheme === 'dark' ? '#fff' : '#000' }]}>
                 {feature}
               </ThemedText>
             </View>
@@ -98,11 +156,11 @@ export default function ModalScreen() {
             borderColor: colorScheme === 'dark' ? '#333' : '#e5e5e5',
           }
         ]}>
-          <ThemedText type="subtitle" style={styles.sectionTitle}>Available Triggers</ThemedText>
+          <ThemedText type="subtitle" style={styles.sectionTitle} forceColor={colorScheme === 'dark' ? '#fff' : '#000'}>Available Triggers</ThemedText>
           {currentService.triggers.map((trigger: string, index: number) => (
             <View key={index} style={styles.listItem}>
               <IconSymbol name="bolt.fill" size={20} color="#ff9500" />
-              <ThemedText style={[styles.listText, { color: colors.text }]}>
+              <ThemedText style={[styles.listText, { color: colorScheme === 'dark' ? '#fff' : '#000' }]}>
                 {trigger}
               </ThemedText>
             </View>
@@ -117,11 +175,11 @@ export default function ModalScreen() {
             borderColor: colorScheme === 'dark' ? '#333' : '#e5e5e5',
           }
         ]}>
-          <ThemedText type="subtitle" style={styles.sectionTitle}>Available Actions</ThemedText>
+          <ThemedText type="subtitle" style={styles.sectionTitle} forceColor={colorScheme === 'dark' ? '#fff' : '#000'}>Available Actions</ThemedText>
           {currentService.actions.map((action: string, index: number) => (
             <View key={index} style={styles.listItem}>
               <IconSymbol name="gearshape.fill" size={20} color="#34c759" />
-              <ThemedText style={[styles.listText, { color: colors.text }]}>
+              <ThemedText style={[styles.listText, { color: colorScheme === 'dark' ? '#fff' : '#000' }]}>
                 {action}
               </ThemedText>
             </View>
@@ -133,7 +191,7 @@ export default function ModalScreen() {
           <TouchableOpacity
             style={[styles.primaryButton, { backgroundColor: colors.tint }]}
           >
-            <ThemedText style={styles.primaryButtonText}>Connect {currentService.name}</ThemedText>
+            <ThemedText style={styles.primaryButtonText} forceColor="#fff">Connect {currentService.name}</ThemedText>
           </TouchableOpacity>
           
           <Link href="/(tabs)/services" asChild>

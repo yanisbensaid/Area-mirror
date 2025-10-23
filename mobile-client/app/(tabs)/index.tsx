@@ -72,10 +72,10 @@ export default function HomeScreen() {
                 <View style={[styles.featureIcon, { backgroundColor: colors.tint }]}>
                   <IconSymbol name={feature.icon as any} size={24} color="#fff" />
                 </View>
-                <ThemedText type="defaultSemiBold" style={styles.featureTitle}>
+                <ThemedText type="defaultSemiBold" style={styles.featureTitle} forceColor={colorScheme === 'dark' ? '#fff' : '#000'}>
                   {feature.title}
                 </ThemedText>
-                <ThemedText style={[styles.featureDescription, { color: colors.text, opacity: 0.7 }]}>
+                <ThemedText style={[styles.featureDescription, { color: colorScheme === 'dark' ? '#ccc' : '#666' }]}>
                   {feature.description}
                 </ThemedText>
               </View>
@@ -100,7 +100,7 @@ export default function HomeScreen() {
                 onPress={() => router.push('/(tabs)/services')}
               >
                 <Image source={service.logo} style={styles.serviceLogo} />
-                <ThemedText style={styles.serviceName}>{service.name}</ThemedText>
+                <ThemedText style={styles.serviceName} forceColor={colorScheme === 'dark' ? '#fff' : '#000'}>{service.name}</ThemedText>
               </TouchableOpacity>
             ))}
           </View>
@@ -109,7 +109,7 @@ export default function HomeScreen() {
             style={[styles.viewAllButton, { backgroundColor: colors.tint }]}
             onPress={() => router.push('/(tabs)/services')}
           >
-            <ThemedText style={styles.viewAllButtonText}>View All Services</ThemedText>
+            <ThemedText style={styles.viewAllButtonText} forceColor="#fff">View All Services</ThemedText>
           </TouchableOpacity>
         </View>
       </ScrollView>
