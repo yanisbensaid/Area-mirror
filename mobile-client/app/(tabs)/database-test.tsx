@@ -57,6 +57,7 @@ export default function DatabaseTestScreen() {
   const testServices = async () => {
     setLoading(true);
     addResult('Testing services endpoint (PostgreSQL query)...');
+    addResult(`API URL: ${apiService['baseURL']}/services`);
     
     try {
       const response = await apiService.getServices();
@@ -65,6 +66,9 @@ export default function DatabaseTestScreen() {
         addResult(`Found ${response.data?.length || 0} services`);
         if (response.data && response.data.length > 0) {
           addResult(`First service: ${JSON.stringify(response.data[0])}`);
+          addResult(`All services: ${response.data.map(s => s.name).join(', ')}`);
+        } else {
+          addResult('⚠️ No services found in response');
         }
       } else {
         addResult(`❌ Services query failed: ${response.error}`);

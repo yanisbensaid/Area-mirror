@@ -10,12 +10,16 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   
+  // Control development features visibility
+  // Set SHOW_DEV_FEATURES to false to hide development-only tabs
+  const SHOW_DEV_FEATURES = true; // Change this to false to hide DB test tab
+  
   // Check if we're in development mode
   // __DEV__ is true during development, false in production builds
   // Also check environment config as fallback
-  const isDevelopment = __DEV__ || 
+  const isDevelopment = (__DEV__ || 
     Constants.expoConfig?.extra?.environment === 'development' ||
-    process.env.EXPO_PUBLIC_ENV !== 'production';
+    process.env.EXPO_PUBLIC_ENV !== 'production') && SHOW_DEV_FEATURES;
 
   return (
     <Tabs

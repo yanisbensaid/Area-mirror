@@ -256,7 +256,46 @@ class ApiService {
 
   // Services endpoints
   async getServices(): Promise<ApiResponse<ServiceConfig[]>> {
-    return this.makeRequest<ServiceConfig[]>('/services');
+    const result = await this.makeRequest<any>('/services');
+    
+    // Handle the specific response format from the backend
+    // Backend returns: { client: {...}, server: { current_time: ..., services: [...] } }
+    if (result.success && result.data?.server?.services) {
+      return {
+        success: true,
+        data: result.data.server.services.map((service: any) => ({
+          id: service.id.toString(),
+          name: service.name,
+          description: service.description,
+          logo: service.icon_url || `https://logo.clearbit.com/${service.name.toLowerCase()}.com`,
+          color: this.getServiceColor(service.name),
+          auth_url: service.auth_url,
+          is_connected: service.status === 'active',
+        }))
+      };
+    }
+    
+    return result;
+  }
+
+  // Helper method to get service colors
+  private getServiceColor(serviceName: string): string {
+    const colors: Record<string, string> = {
+      'Facebook': '#1877F2',
+      'Twitter': '#1DA1F2', 
+      'Instagram': '#E4405F',
+      'LinkedIn': '#0A66C2',
+      'GitHub': '#181717',
+      'Spotify': '#1DB954',
+      'YouTube': '#FF0000',
+      'Pinterest': '#BD081C',
+      'Discord': '#5865F2',
+      'Telegram': '#0088CC',
+      'Twitch': '#9146FF',
+      'Steam': '#00ADEE',
+      'Mail': '#EA4335',
+    };
+    return colors[serviceName] || '#6B7280';
   }
 
   async getService(serviceName: string): Promise<ApiResponse<ServiceConfig>> {
