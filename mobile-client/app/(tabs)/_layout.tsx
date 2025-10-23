@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
+import Constants from 'expo-constants';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -8,6 +9,13 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  
+  // Check if we're in development mode
+  // __DEV__ is true during development, false in production builds
+  // Also check environment config as fallback
+  const isDevelopment = __DEV__ || 
+    Constants.expoConfig?.extra?.environment === 'development' ||
+    process.env.EXPO_PUBLIC_ENV !== 'production';
 
   return (
     <Tabs
@@ -48,13 +56,16 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="plus.circle.fill" color={color} />,
         }}
       />
-      <Tabs.Screen
-        name="database-test"
-        options={{
-          title: 'DB Test',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="cylinder.fill" color={color} />,
-        }}
-      />
+      {isDevelopment && (
+        <Tabs.Screen
+          name="database-test"
+          options={{
+            title: 'DB Test',
+            tabBarIcon: ({ color }) => <IconSymbol size={28} name="cylinder.fill" color={color} />,
+          }}
+        />
+      )}
+      {/* Database test tab only shows in development builds */}
       <Tabs.Screen
         name="login"
         options={{
