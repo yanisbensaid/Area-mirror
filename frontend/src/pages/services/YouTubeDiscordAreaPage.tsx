@@ -38,11 +38,10 @@ export default function YouTubeDiscordAreaPage() {
   const [creating, setCreating] = useState(false)
   const [toggling, setToggling] = useState(false)
 
-  // Discord connection modal state
-  const [showDiscordModal, setShowDiscordModal] = useState(false)
-  const [botToken, setBotToken] = useState('')
+  // Discord webhook configuration for reactions
+  const [showWebhookModal, setShowWebhookModal] = useState(false)
   const [webhookUrl, setWebhookUrl] = useState('')
-  const [discordError, setDiscordError] = useState<string | null>(null)
+  const [webhookError, setWebhookError] = useState<string | null>(null)
 
   // Fetch template and user's AREA
   useEffect(() => {
@@ -173,50 +172,26 @@ export default function YouTubeDiscordAreaPage() {
     }
   }
 
-  const handleConnectDiscord = async () => {
-    setDiscordError(null)
-    setConnecting('Discord')
+  const handleConnectDiscord = () => {
+    const token = getToken()
+    const popup = window.open(
+      `${API_URL}/api/oauth/discord/redirect?token=${token}`,
+      'Discord OAuth',
+      'width=600,height=700,left=200,top=100'
+    )
 
-    if (!botToken.trim() || !webhookUrl.trim()) {
-      setDiscordError('Please provide both Bot Token and Webhook URL')
-      setConnecting(null)
+    if (!popup) {
+      setError('Popup blocked. Please allow popups for this site.')
       return
     }
 
-    try {
-      const token = getToken()
-      const response = await fetch(`${API_URL}/api/services/connect`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          service: 'Discord',
-          credentials: {
-            bot_token: botToken,
-            webhook_url: webhookUrl
-          }
-        })
-      })
-
-      const data = await response.json()
-
-      if (data.success) {
-        setShowDiscordModal(false)
-        setBotToken('')
-        setWebhookUrl('')
+    // Poll to check if popup was closed
+    const pollTimer = setInterval(async () => {
+      if (popup.closed) {
+        clearInterval(pollTimer)
         await refreshData()
-      } else {
-        setDiscordError(data.message || 'Failed to connect Discord')
       }
-    } catch (err) {
-      console.error('Error connecting Discord:', err)
-      setDiscordError('Failed to connect to Discord')
-    } finally {
-      setConnecting(null)
-    }
+    }, 500)
   }
 
   const handleDisconnectDiscord = async () => {
@@ -252,15 +227,32 @@ export default function YouTubeDiscordAreaPage() {
     }
   }
 
+  const handleCreateAreaClick = () => {
+    // Show modal to configure webhook before creating AREA
+    setShowWebhookModal(true)
+    setWebhookError(null)
+  }
+
   const handleCreateArea = async () => {
     if (!template) return
 
+    // Validate webhook URL
+    if (!webhookUrl.trim()) {
+      setWebhookError('Webhook URL is required')
+      return
+    }
+
+    if (!webhookUrl.startsWith('https://discord.com/api/webhooks/')) {
+      setWebhookError('Invalid Discord webhook URL')
+      return
+    }
+
     setCreating(true)
-    setError(null)
+    setWebhookError(null)
 
     try {
       const token = getToken()
-      const response = await fetch(`${API_URL}/api/areas`, {
+      const response = await fetch(`${API_URL}/api/areas/custom`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -268,21 +260,32 @@ export default function YouTubeDiscordAreaPage() {
           'Accept': 'application/json'
         },
         body: JSON.stringify({
-          template_id: template.id,
-          name: template.name
+          name: template.name,
+          description: template.description,
+          action_service: 'YouTube',
+          action_type: 'video_liked',
+          action_config: {},
+          reaction_service: 'Discord',
+          reaction_type: 'send_message',
+          reaction_config: {
+            webhook_url: webhookUrl,
+            content: '🎥 New video liked!\n{title}\n{url}'
+          },
+          active: false
         })
       })
 
       const data = await response.json()
 
       if (data.success) {
+        setShowWebhookModal(false)
         await refreshData()
       } else {
-        setError(data.error || 'Failed to create AREA')
+        setWebhookError(data.error || 'Failed to create AREA')
       }
     } catch (err) {
       console.error('Error creating AREA:', err)
-      setError('Failed to create AREA')
+      setWebhookError('Failed to create AREA')
     } finally {
       setCreating(false)
     }
@@ -428,7 +431,7 @@ export default function YouTubeDiscordAreaPage() {
               <div className="flex gap-2">
                 {!template.services_connected.Discord && (
                   <button
-                    onClick={() => setShowDiscordModal(true)}
+                    onClick={handleConnectDiscord}
                     disabled={connecting === 'Discord'}
                     className="bg-purple-600 hover:bg-purple-700 px-6 py-2 rounded-lg font-semibold transition disabled:opacity-50"
                   >
@@ -481,7 +484,7 @@ export default function YouTubeDiscordAreaPage() {
         <div className="flex gap-4">
           {!userArea && template.can_activate && (
             <button
-              onClick={handleCreateArea}
+              onClick={handleCreateAreaClick}
               disabled={creating}
               className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-8 py-4 rounded-lg font-semibold text-lg transition disabled:opacity-50"
             >
@@ -511,69 +514,73 @@ export default function YouTubeDiscordAreaPage() {
         )}
       </div>
 
-      {/* Discord Connection Modal */}
-      {showDiscordModal && (
+      {/* Webhook Configuration Modal */}
+      {showWebhookModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-800 rounded-lg p-6 max-w-md w-full border border-slate-700">
-            <h3 className="text-2xl font-bold mb-4">Connect Discord</h3>
-            <p className="text-slate-300 mb-4 text-sm">
-              Enter your Discord Bot Token and Webhook URL to send messages.
+          <div className="bg-slate-800 rounded-lg p-6 max-w-lg w-full border border-slate-700">
+            <h3 className="text-2xl font-bold mb-4">Configure Discord Webhook</h3>
+            <p className="text-slate-300 mb-6">
+              When you like a video on YouTube, a message with the video link will be automatically sent to your Discord channel.
             </p>
 
-            {discordError && (
-              <div className="bg-red-500/10 border border-red-500 text-red-200 px-4 py-3 rounded mb-4 text-sm">
-                {discordError}
-              </div>
-            )}
+            {/* Guide to get webhook */}
+            <div className="bg-slate-900/50 rounded-lg p-4 mb-6 border border-slate-700">
+              <h4 className="font-semibold mb-3 text-purple-400">How to get a Discord Webhook URL:</h4>
+              <ul className="space-y-2 text-sm text-slate-300">
+                <li className="flex items-start">
+                  <span className="text-purple-400 mr-2">1.</span>
+                  <span>Open your Discord server and go to <strong>Server Settings</strong></span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-purple-400 mr-2">2.</span>
+                  <span>Navigate to <strong>Integrations</strong> → <strong>Webhooks</strong></span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-purple-400 mr-2">3.</span>
+                  <span>Click <strong>New Webhook</strong> or select an existing one</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-purple-400 mr-2">4.</span>
+                  <span>Choose the channel where messages will be sent and click <strong>Copy Webhook URL</strong></span>
+                </li>
+              </ul>
+            </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Bot Token</label>
-                <input
-                  type="text"
-                  value={botToken}
-                  onChange={(e) => setBotToken(e.target.value)}
-                  placeholder="MTIzNDU2Nzg5MDEyMzQ1Njc4OQ.GaBcDe.FgHiJkLmNoPqRsTuVwXyZ1234567890"
-                  className="w-full px-4 py-2 bg-slate-900 border border-slate-600 rounded-lg focus:border-purple-500 focus:outline-none"
-                />
-                <p className="text-xs text-slate-400 mt-1">
-                  Get your bot token from <a href="https://discord.com/developers/applications" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300">Discord Developer Portal</a>
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">Webhook URL</label>
+                <label className="block text-sm font-medium mb-2">
+                  Discord Webhook URL <span className="text-red-400">*</span>
+                </label>
                 <input
                   type="text"
                   value={webhookUrl}
                   onChange={(e) => setWebhookUrl(e.target.value)}
-                  placeholder="https://discord.com/api/webhooks/123456789/abcdefghijklmnop"
-                  className="w-full px-4 py-2 bg-slate-900 border border-slate-600 rounded-lg focus:border-purple-500 focus:outline-none"
+                  placeholder="https://discord.com/api/webhooks/..."
+                  className="w-full px-4 py-2 bg-slate-900 border border-slate-600 rounded-lg focus:border-purple-500 focus:outline-none text-white"
                 />
-                <p className="text-xs text-slate-400 mt-1">
-                  Create a webhook in your Discord server settings
-                </p>
               </div>
             </div>
 
+            {webhookError && (
+              <div className="mt-4 bg-red-500/10 border border-red-500 text-red-200 px-4 py-3 rounded">
+                {webhookError}
+              </div>
+            )}
+
             <div className="flex gap-3 mt-6">
               <button
-                onClick={() => {
-                  setShowDiscordModal(false)
-                  setDiscordError(null)
-                  setBotToken('')
-                  setWebhookUrl('')
-                }}
-                className="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition"
+                onClick={() => setShowWebhookModal(false)}
+                disabled={creating}
+                className="flex-1 px-4 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg transition"
               >
                 Cancel
               </button>
               <button
-                onClick={handleConnectDiscord}
-                disabled={connecting === 'Discord'}
-                className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-semibold transition disabled:opacity-50"
+                onClick={handleCreateArea}
+                disabled={creating}
+                className="flex-1 px-4 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-semibold transition disabled:opacity-50"
               >
-                {connecting === 'Discord' ? 'Connecting...' : 'Connect'}
+                {creating ? 'Creating...' : 'Create AREA'}
               </button>
             </div>
           </div>

@@ -56,6 +56,17 @@ export default function CreateAutomation() {
   const [error, setError] = useState<string | null>(null)
   const [showSummary, setShowSummary] = useState(false)
 
+  // Service connection state
+  const [servicesConnected, setServicesConnected] = useState<{[key: string]: boolean}>({})
+  const [missingServices, setMissingServices] = useState<{[key: string]: boolean}>({})
+
+  // Telegram connection modal
+  const [showTelegramModal, setShowTelegramModal] = useState(false)
+  const [telegramBotToken, setTelegramBotToken] = useState('')
+  const [telegramChatId, setTelegramChatId] = useState('')
+  const [telegramConnecting, setTelegramConnecting] = useState(false)
+  const [telegramError, setTelegramError] = useState<string | null>(null)
+
   // Fetch actions when action service changes
   useEffect(() => {
     if (selectedActionService) {
@@ -106,6 +117,118 @@ export default function CreateAutomation() {
     }
   }, [selectedReactionService])
 
+  // Check if a service is connected
+  const checkServiceConnection = async (serviceName: string) => {
+    const token = getToken()
+    try {
+      const response = await fetch(`${API_URL}/api/services/${serviceName}/check`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        }
+      })
+      const data = await response.json()
+      return data.connected || false
+    } catch (err) {
+      console.error(`Error checking ${serviceName} connection:`, err)
+      return false
+    }
+  }
+
+  // Handle service connection
+  const handleConnectService = (serviceName: string) => {
+    const token = getToken()
+
+    // For Telegram, show modal
+    if (serviceName === 'Telegram') {
+      setShowTelegramModal(true)
+      setTelegramError(null)
+      return
+    }
+
+    // For OAuth services, open popup
+    if (['YouTube', 'Gmail', 'Twitch', 'Discord'].includes(serviceName)) {
+      const popup = window.open(
+        `${API_URL}/api/oauth/${serviceName.toLowerCase()}/redirect?token=${token}`,
+        `${serviceName} OAuth`,
+        'width=600,height=700,left=200,top=100'
+      )
+
+      if (!popup) {
+        setError('Popup blocked. Please allow popups for this site.')
+        return
+      }
+
+      // Poll to check if popup was closed
+      const pollTimer = setInterval(async () => {
+        if (popup.closed) {
+          clearInterval(pollTimer)
+          // Refresh connection status
+          const connected = await checkServiceConnection(serviceName)
+          setServicesConnected(prev => ({ ...prev, [serviceName]: connected }))
+          if (connected) {
+            setMissingServices(prev => ({ ...prev, [serviceName]: false }))
+            setError(null)
+          }
+        }
+      }, 500)
+    }
+  }
+
+  // Handle Telegram connection
+  const handleConnectTelegram = async () => {
+    if (!telegramBotToken.trim()) {
+      setTelegramError('Bot Token is required')
+      return
+    }
+
+    if (!telegramChatId.trim()) {
+      setTelegramError('Chat ID is required')
+      return
+    }
+
+    setTelegramConnecting(true)
+    setTelegramError(null)
+
+    try {
+      const token = getToken()
+      const response = await fetch(`${API_URL}/api/services/connect`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          service: 'Telegram',
+          credentials: {
+            bot_token: telegramBotToken,
+            chat_id: telegramChatId
+          }
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setShowTelegramModal(false)
+        setTelegramBotToken('')
+        setTelegramChatId('')
+        // Refresh connection status
+        const connected = await checkServiceConnection('Telegram')
+        setServicesConnected(prev => ({ ...prev, 'Telegram': connected }))
+        setMissingServices(prev => ({ ...prev, 'Telegram': false }))
+      } else {
+        setTelegramError(data.message || 'Failed to connect Telegram')
+      }
+    } catch (err) {
+      console.error('Error connecting Telegram:', err)
+      setTelegramError('Failed to connect Telegram')
+    } finally {
+      setTelegramConnecting(false)
+    }
+  }
+
   const handleActionSelect = (actionId: string) => {
     const action = availableActions.find(a => a.id.toString() === actionId)
     setSelectedAction(action || null)
@@ -141,6 +264,40 @@ export default function CreateAutomation() {
     try {
       const token = getToken()
 
+      // Prepare reaction config
+      let finalReactionConfig = { ...reactionParams }
+
+      // Auto-fill content for Discord reactions based on action service
+      if (selectedReactionService === 'Discord' && selectedReaction.reaction_key === 'send_message') {
+        if (selectedActionService === 'YouTube') {
+          finalReactionConfig.content = '🎥 New video liked!\n{title}\n{url}'
+        } else if (selectedActionService === 'Twitch') {
+          finalReactionConfig.content = '🎮 Twitch event!\n{title}\n{url}'
+        } else if (selectedActionService === 'Gmail') {
+          finalReactionConfig.content = '📧 New email!\n{subject}\nFrom: {from}'
+        } else {
+          // Default message for other services
+          finalReactionConfig.content = '🔔 New event from {service}'
+        }
+      }
+
+      // Auto-fill text and chat_id for Telegram reactions based on action service
+      if (selectedReactionService === 'Telegram' && selectedReaction.reaction_key === 'send_message') {
+        // Get chat_id from connected Telegram service token (will be set by backend)
+        if (selectedActionService === 'YouTube') {
+          finalReactionConfig.text = '🎥 New video liked!\n\n📺 Title: {title}\n🔗 Link: {url}\n📅 Detected: {detected_at}'
+        } else if (selectedActionService === 'Gmail') {
+          finalReactionConfig.text = '📧 New email received!\n\n📨 From: {from}\n📝 Subject: {subject}\n📅 Date: {date}'
+        } else if (selectedActionService === 'Twitch') {
+          finalReactionConfig.text = '🎮 Twitch event!\n\n📺 {title}\n🔗 {url}'
+        } else {
+          // Default message for other services
+          finalReactionConfig.text = '🔔 New event detected!'
+        }
+        // chat_id will be automatically filled from the user's Telegram connection
+        finalReactionConfig.chat_id = '{auto}'
+      }
+
       // Prepare AREA data
       const areaData = {
         name: `${selectedActionService} to ${selectedReactionService}`,
@@ -150,7 +307,7 @@ export default function CreateAutomation() {
         action_config: actionParams,
         reaction_service: selectedReactionService,
         reaction_type: selectedReaction.reaction_key,
-        reaction_config: reactionParams,
+        reaction_config: finalReactionConfig,
         active: false
       }
 
@@ -175,6 +332,10 @@ export default function CreateAutomation() {
         }, 1500)
       } else {
         setError(data.error || 'Failed to create AREA')
+        // If the error is about missing services, store them
+        if (data.missing_services) {
+          setMissingServices(data.missing_services)
+        }
       }
     } catch (err) {
       console.error('Error creating AREA:', err)
@@ -365,6 +526,78 @@ export default function CreateAutomation() {
                   <p className="text-slate-400 text-sm">{selectedReaction.description}</p>
                 </div>
               )}
+
+              {/* Reaction Parameters */}
+              {selectedReaction && selectedReaction.parameters && Object.keys(selectedReaction.parameters).length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg">Configure Reaction</h3>
+
+                  {/* Discord webhook guide */}
+                  {selectedReactionService === 'Discord' && selectedReaction.parameters.webhook_url && (
+                    <div className="bg-slate-900/50 rounded-lg p-4 mb-4 border border-slate-700">
+                      <h4 className="font-semibold mb-3 text-purple-400">How to get a Discord Webhook URL:</h4>
+                      <ul className="space-y-2 text-sm text-slate-300">
+                        <li className="flex items-start">
+                          <span className="text-purple-400 mr-2">1.</span>
+                          <span>Open your Discord server and go to <strong>Server Settings</strong></span>
+                        </li>
+                        <li className="flex items-start">
+                          <span className="text-purple-400 mr-2">2.</span>
+                          <span>Navigate to <strong>Integrations</strong> → <strong>Webhooks</strong></span>
+                        </li>
+                        <li className="flex items-start">
+                          <span className="text-purple-400 mr-2">3.</span>
+                          <span>Click <strong>New Webhook</strong> or select an existing one</span>
+                        </li>
+                        <li className="flex items-start">
+                          <span className="text-purple-400 mr-2">4.</span>
+                          <span>Choose the channel where messages will be sent and click <strong>Copy Webhook URL</strong></span>
+                        </li>
+                      </ul>
+                    </div>
+                  )}
+
+                  {Object.entries(selectedReaction.parameters).map(([paramKey, paramDef]: [string, any]) => {
+                    // Skip 'content' parameter for Discord - it will be auto-filled
+                    if (selectedReactionService === 'Discord' && paramKey === 'content') {
+                      return null;
+                    }
+
+                    // Skip Telegram message fields - they will be auto-filled
+                    if (selectedReactionService === 'Telegram' && (paramKey === 'chat_id' || paramKey === 'text' || paramKey === 'parse_mode' || paramKey === 'disable_notification')) {
+                      return null;
+                    }
+
+                    return (
+                      <div key={paramKey}>
+                        <label className="block text-sm font-medium mb-2">
+                          {paramDef.description || paramKey}
+                          {paramDef.required && <span className="text-red-400 ml-1">*</span>}
+                        </label>
+                        {paramDef.type === 'text' ? (
+                          <textarea
+                            value={reactionParams[paramKey] || ''}
+                            onChange={(e) => setReactionParams({ ...reactionParams, [paramKey]: e.target.value })}
+                            placeholder={paramDef.placeholder || ''}
+                            className="w-full px-4 py-2 bg-slate-900 border border-slate-600 rounded-lg focus:border-purple-500 focus:outline-none text-white"
+                            rows={3}
+                            required={paramDef.required}
+                          />
+                        ) : (
+                          <input
+                            type={paramDef.type === 'number' ? 'number' : 'text'}
+                            value={reactionParams[paramKey] || ''}
+                            onChange={(e) => setReactionParams({ ...reactionParams, [paramKey]: e.target.value })}
+                            placeholder={paramDef.placeholder || ''}
+                            className="w-full px-4 py-2 bg-slate-900 border border-slate-600 rounded-lg focus:border-purple-500 focus:outline-none text-white"
+                            required={paramDef.required}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Action Buttons */}
@@ -444,6 +677,31 @@ export default function CreateAutomation() {
               </div>
             )}
 
+            {/* Missing Services - Show connection buttons */}
+            {Object.keys(missingServices).some(key => missingServices[key]) && (
+              <div className="bg-yellow-500/10 border border-yellow-500 text-yellow-200 px-4 py-3 rounded mb-4">
+                <p className="font-semibold mb-3">Please connect the following services:</p>
+                <div className="space-y-2">
+                  {Object.entries(missingServices).map(([service, isMissing]) =>
+                    isMissing && (
+                      <div key={service} className="flex items-center justify-between bg-slate-900/50 p-3 rounded">
+                        <div className="flex items-center gap-3">
+                          <img src={getServiceLogo(service)} alt={service} className="w-8 h-8" />
+                          <span className="font-medium">{service}</span>
+                        </div>
+                        <button
+                          onClick={() => handleConnectService(service)}
+                          className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm font-semibold transition"
+                        >
+                          Connect {service}
+                        </button>
+                      </div>
+                    )
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Buttons */}
             <div className="flex gap-3">
               <button
@@ -459,6 +717,92 @@ export default function CreateAutomation() {
                 className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-semibold transition disabled:opacity-50"
               >
                 {creating ? 'Creating...' : '✓ Create AREA'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Telegram Connection Modal */}
+      {showTelegramModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-800 rounded-lg p-6 max-w-lg w-full border border-slate-700">
+            <h3 className="text-2xl font-bold mb-4">Connect Telegram Bot</h3>
+
+            {/* Guide */}
+            <div className="bg-slate-900/50 rounded-lg p-4 mb-6 border border-slate-700">
+              <h4 className="font-semibold mb-3 text-purple-400">How to get Bot Token and Chat ID:</h4>
+
+              <div className="mb-4">
+                <h5 className="font-semibold text-slate-200 mb-2">🤖 Get Bot Token:</h5>
+                <ol className="text-sm text-slate-300 space-y-1 list-decimal list-inside ml-2">
+                  <li>Open Telegram and search for <strong>@BotFather</strong></li>
+                  <li>Send <code className="bg-slate-800 px-1 rounded">/newbot</code> and follow instructions</li>
+                  <li>Copy the bot token (format: <code className="bg-slate-800 px-1 rounded">123456:ABC...</code>)</li>
+                </ol>
+              </div>
+
+              <div>
+                <h5 className="font-semibold text-slate-200 mb-2">💬 Get Chat ID:</h5>
+                <ol className="text-sm text-slate-300 space-y-1 list-decimal list-inside ml-2">
+                  <li>Search for <strong>@userinfobot</strong> on Telegram</li>
+                  <li>Send <code className="bg-slate-800 px-1 rounded">/start</code> to the bot</li>
+                  <li>The bot will reply with your Chat ID</li>
+                  <li>Copy your Chat ID (number like <code className="bg-slate-800 px-1 rounded">123456789</code>)</li>
+                </ol>
+              </div>
+            </div>
+
+            {/* Form */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Bot Token <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={telegramBotToken}
+                  onChange={(e) => setTelegramBotToken(e.target.value)}
+                  placeholder="123456789:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"
+                  className="w-full px-4 py-2 bg-slate-900 border border-slate-600 rounded-lg focus:border-purple-500 focus:outline-none text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Chat ID <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={telegramChatId}
+                  onChange={(e) => setTelegramChatId(e.target.value)}
+                  placeholder="123456789"
+                  className="w-full px-4 py-2 bg-slate-900 border border-slate-600 rounded-lg focus:border-purple-500 focus:outline-none text-white"
+                />
+              </div>
+            </div>
+
+            {telegramError && (
+              <div className="mt-4 bg-red-500/10 border border-red-500 text-red-200 px-4 py-3 rounded">
+                {telegramError}
+              </div>
+            )}
+
+            {/* Buttons */}
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowTelegramModal(false)}
+                disabled={telegramConnecting}
+                className="flex-1 px-4 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConnectTelegram}
+                disabled={telegramConnecting}
+                className="flex-1 px-4 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-semibold transition disabled:opacity-50"
+              >
+                {telegramConnecting ? 'Connecting...' : 'Connect'}
               </button>
             </div>
           </div>

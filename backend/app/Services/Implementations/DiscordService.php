@@ -9,89 +9,83 @@ use Illuminate\Support\Facades\Log;
 /**
  * Discord Service Implementation
  *
- * Integrates with Discord API to provide messaging and notification functionality.
- * Supports monitoring messages, keywords, and mentions, as well as sending messages and embeds.
+ * Integrates with Discord API to provide user authentication and guild information.
+ * Supports OAuth2 authentication to access user profile and guilds.
  *
- * Authentication: Bot Token + Webhook URL
+ * Authentication: OAuth2
  * API Documentation: https://discord.com/developers/docs/intro
  *
  * Important Notes:
- * 1. Requires Discord Bot Token for reading messages
- * 2. Requires Webhook URL for sending messages
- * 3. Bot needs appropriate permissions in the server
- * 4. Rate limits: 50 requests per second per bot
+ * 1. OAuth2 scopes: identify, email, guilds
+ * 2. Bot Token still used for webhook actions/reactions (from config)
+ * 3. OAuth2 provides: user ID, username, email, guilds list
+ * 4. Rate limits: 50 requests per second
  *
  * Design Decisions:
- * 1. Using Bot Token for authentication
- * 2. Using Webhooks for sending messages (simpler than bot commands)
- * 3. Channel IDs are required for monitoring
- * 4. State tracking for last_message_id to avoid duplicates
+ * 1. OAuth2 for user authentication and data access
+ * 2. Bot Token (from config) for webhook reactions
+ * 3. Hybrid approach: OAuth2 auth + Bot functionality
+ * 4. State tracking for guild changes detection
  */
 class DiscordService extends BaseService
 {
     protected string $name = 'Discord';
     protected string $description = 'Chat and notification integration for Discord servers';
-    protected string $authType = 'bot_token';
+    protected string $authType = 'oauth2';
     protected ?string $icon = 'https://discord.com/assets/847541504914fd33810e70a0ea73177e.ico';
     protected ?string $color = '#5865F2';
 
     private string $baseUrl = 'https://discord.com/api/v10';
-    private ?string $botToken = null;
-    private ?string $webhookUrl = null;
+    private ?string $accessToken = null;
 
     /**
-     * Validate that required credentials are present
+     * Validate that required credentials are present (OAuth2 token)
      */
     protected function validateCredentials(): bool
     {
-        return isset($this->credentials['bot_token']) &&
-               !empty($this->credentials['bot_token']) &&
-               isset($this->credentials['webhook_url']) &&
-               !empty($this->credentials['webhook_url']);
+        return isset($this->credentials['access_token']) &&
+               !empty($this->credentials['access_token']);
     }
 
     /**
-     * Set credentials and initialize bot token and webhook URL
+     * Set credentials and initialize OAuth2 access token
      */
     public function setCredentials(array $credentials): void
     {
         parent::setCredentials($credentials);
-        $this->botToken = $credentials['bot_token'] ?? config('services.discord.bot_token');
-        $this->webhookUrl = $credentials['webhook_url'] ?? config('services.discord.webhook_url');
+        $this->accessToken = $credentials['access_token'] ?? null;
     }
 
     /**
-     * Authenticate with Discord API
+     * Authenticate with Discord API using OAuth2
      */
     public function authenticate(array $credentials): bool
     {
         $this->setCredentials($credentials);
 
-        if (empty($this->botToken) || empty($this->webhookUrl)) {
-            Log::error('Discord authentication failed: missing credentials', [
-                'has_bot_token' => !empty($this->botToken),
-                'has_webhook_url' => !empty($this->webhookUrl)
-            ]);
+        if (empty($this->accessToken)) {
+            Log::error('Discord OAuth2 authentication failed: missing access token');
             return false;
         }
 
         try {
-            // Validate by fetching bot user information
+            // Validate by fetching user information with OAuth2 token
             $response = Http::withHeaders([
-                'Authorization' => "Bot {$this->botToken}",
+                'Authorization' => "Bearer {$this->accessToken}",
                 'Content-Type' => 'application/json',
             ])->get("{$this->baseUrl}/users/@me");
 
             if ($response->successful()) {
                 $data = $response->json();
-                Log::info('Discord authentication successful', [
-                    'bot_username' => $data['username'] ?? null,
-                    'bot_id' => $data['id'] ?? null
+                Log::info('Discord OAuth2 authentication successful', [
+                    'username' => $data['username'] ?? null,
+                    'user_id' => $data['id'] ?? null,
+                    'email' => $data['email'] ?? null
                 ]);
                 return true;
             }
 
-            Log::error('Discord authentication failed: invalid response', [
+            Log::error('Discord OAuth2 authentication failed: invalid response', [
                 'status' => $response->status(),
                 'body' => $response->body()
             ]);
@@ -107,17 +101,17 @@ class DiscordService extends BaseService
     }
 
     /**
-     * Test the connection
+     * Test the connection using OAuth2 token
      */
     public function testConnection(): bool
     {
         try {
-            if (empty($this->botToken)) {
+            if (empty($this->accessToken)) {
                 return false;
             }
 
             $response = Http::withHeaders([
-                'Authorization' => "Bot {$this->botToken}",
+                'Authorization' => "Bearer {$this->accessToken}",
             ])->get("{$this->baseUrl}/users/@me");
 
             return $response->successful();
@@ -139,9 +133,9 @@ class DiscordService extends BaseService
         ]);
 
         return match ($actionType) {
-            'new_message_in_channel' => $this->checkNewMessages($params),
-            'message_with_keyword' => $this->checkMessagesWithKeyword($params),
-            'bot_mentioned' => $this->checkBotMentions($params),
+            'user_joined_guild' => $this->checkUserJoinedGuild($params),
+            'guild_list_changed' => $this->checkGuildListChanged($params),
+            'get_user_profile' => $this->getUserProfileAction($params),
             default => throw new \InvalidArgumentException("Unknown action type: {$actionType}")
         };
     }
@@ -163,121 +157,124 @@ class DiscordService extends BaseService
     }
 
     /**
-     * ACTION: Check for new messages in a channel
+     * ACTION: Check if user joined a new guild
      *
-     * Monitors a specific Discord channel for new messages
-     *
-     * @param array $params ['channel_id' => string, 'last_message_id' => string|null]
-     * @return array Array of new messages
+     * @param array $params ['previous_guilds' => array|null]
+     * @return array Returns guild info if user joined new guild
      */
-    private function checkNewMessages(array $params): array
+    private function checkUserJoinedGuild(array $params): array
     {
-        $this->validateParams($params, ['channel_id']);
-        $channelId = $params['channel_id'];
-        $lastMessageId = $params['last_message_id'] ?? null;
+        $currentGuilds = $this->getUserGuilds();
 
-        try {
-            $url = "{$this->baseUrl}/channels/{$channelId}/messages";
-            $queryParams = ['limit' => 50];
+        if (empty($params['previous_guilds'])) {
+            // First run, store current guilds for next check
+            return [
+                'triggered' => false,
+                'guilds' => $currentGuilds
+            ];
+        }
 
-            if ($lastMessageId) {
-                $queryParams['after'] = $lastMessageId;
-            }
+        $previousIds = array_column($params['previous_guilds'], 'id');
+        $currentIds = array_column($currentGuilds, 'id');
 
-            $response = Http::withHeaders([
-                'Authorization' => "Bot {$this->botToken}",
-            ])->get($url, $queryParams);
+        $addedIds = array_diff($currentIds, $previousIds);
 
-            if (!$response->successful()) {
-                Log::error('Failed to fetch Discord messages', [
-                    'status' => $response->status(),
-                    'body' => $response->body()
-                ]);
-                return [];
-            }
+        if (!empty($addedIds)) {
+            // Find the newly joined guild(s)
+            $newGuilds = array_filter($currentGuilds, function($guild) use ($addedIds) {
+                return in_array($guild['id'], $addedIds);
+            });
 
-            $messages = $response->json();
-
-            if (empty($messages)) {
-                return [];
-            }
-
-            // Transform messages to standard format
-            return array_map(function ($message) {
-                return [
-                    'message_id' => $message['id'],
-                    'content' => $message['content'] ?? '',
-                    'author' => $message['author']['username'] ?? 'Unknown',
-                    'author_id' => $message['author']['id'] ?? null,
-                    'timestamp' => $message['timestamp'] ?? now()->toISOString(),
-                    'channel_id' => $message['channel_id'] ?? null,
-                ];
-            }, $messages);
-
-        } catch (\Throwable $e) {
-            Log::error('Discord checkNewMessages error', [
-                'error' => $e->getMessage(),
-                'channel_id' => $channelId
+            Log::info('Discord user joined new guild', [
+                'count' => count($newGuilds),
+                'guild_names' => array_column($newGuilds, 'name')
             ]);
-            return [];
+
+            return [
+                'triggered' => true,
+                'new_guilds' => array_values($newGuilds),
+                'guilds' => $currentGuilds
+            ];
         }
+
+        return [
+            'triggered' => false,
+            'guilds' => $currentGuilds
+        ];
     }
 
     /**
-     * ACTION: Check for messages containing a specific keyword
+     * ACTION: Check if guild list changed
      *
-     * Monitors messages in a channel for specific keywords
-     *
-     * @param array $params ['channel_id' => string, 'keyword' => string, 'last_message_id' => string|null]
-     * @return array Array of messages containing the keyword
+     * @param array $params ['previous_guilds' => array|null]
+     * @return array Returns change info if guild list changed
      */
-    private function checkMessagesWithKeyword(array $params): array
+    private function checkGuildListChanged(array $params): array
     {
-        $this->validateParams($params, ['channel_id', 'keyword']);
-        $keyword = strtolower($params['keyword']);
+        $currentGuilds = $this->getUserGuilds();
 
-        // First get all new messages
-        $allMessages = $this->checkNewMessages($params);
+        if (empty($params['previous_guilds'])) {
+            // First run, store current guilds for next check
+            return [
+                'triggered' => false,
+                'guilds' => $currentGuilds
+            ];
+        }
 
-        // Filter messages containing the keyword
-        return array_filter($allMessages, function ($message) use ($keyword) {
-            return stripos($message['content'], $keyword) !== false;
-        });
+        $previousIds = array_column($params['previous_guilds'], 'id');
+        $currentIds = array_column($currentGuilds, 'id');
+
+        $added = array_diff($currentIds, $previousIds);
+        $removed = array_diff($previousIds, $currentIds);
+
+        if (!empty($added) || !empty($removed)) {
+            Log::info('Discord guild list changed', [
+                'added' => count($added),
+                'removed' => count($removed)
+            ]);
+
+            return [
+                'triggered' => true,
+                'added_count' => count($added),
+                'removed_count' => count($removed),
+                'guilds' => $currentGuilds
+            ];
+        }
+
+        return [
+            'triggered' => false,
+            'guilds' => $currentGuilds
+        ];
     }
 
     /**
-     * ACTION: Check for bot mentions
+     * ACTION: Get user profile
      *
-     * Monitors when the bot is mentioned in messages
-     *
-     * @param array $params ['channel_id' => string, 'bot_id' => string, 'last_message_id' => string|null]
-     * @return array Array of messages mentioning the bot
+     * @param array $params
+     * @return array User profile data
      */
-    private function checkBotMentions(array $params): array
+    private function getUserProfileAction(array $params): array
     {
-        $this->validateParams($params, ['channel_id']);
+        $profile = $this->getUserProfile();
 
-        // Get bot ID if not provided
-        if (!isset($params['bot_id'])) {
-            $botInfo = $this->getBotInfo();
-            $params['bot_id'] = $botInfo['id'] ?? null;
+        if ($profile) {
+            return [
+                'triggered' => true,
+                'profile' => [
+                    'id' => $profile['id'] ?? null,
+                    'username' => $profile['username'] ?? null,
+                    'discriminator' => $profile['discriminator'] ?? null,
+                    'email' => $profile['email'] ?? null,
+                    'avatar' => $profile['avatar'] ?? null,
+                    'verified' => $profile['verified'] ?? false,
+                ]
+            ];
         }
 
-        if (!$params['bot_id']) {
-            Log::error('Discord bot ID not available for mention check');
-            return [];
-        }
-
-        $botId = $params['bot_id'];
-
-        // Get all new messages
-        $allMessages = $this->checkNewMessages($params);
-
-        // Filter messages mentioning the bot
-        return array_filter($allMessages, function ($message) use ($botId) {
-            return stripos($message['content'], "<@{$botId}>") !== false ||
-                   stripos($message['content'], "<@!{$botId}>") !== false;
-        });
+        return [
+            'triggered' => false,
+            'error' => 'Failed to fetch user profile'
+        ];
     }
 
     /**
@@ -285,15 +282,15 @@ class DiscordService extends BaseService
      *
      * Sends a text message via webhook
      *
-     * @param array $params ['content' => string]
+     * @param array $params ['webhook_url' => string, 'content' => string, 'username' => string|null]
      * @return bool Success status
      */
     private function sendMessage(array $params): bool
     {
-        $this->validateParams($params, ['content']);
+        $this->validateParams($params, ['webhook_url', 'content']);
 
         try {
-            $response = Http::post($this->webhookUrl, [
+            $response = Http::post($params['webhook_url'], [
                 'content' => $params['content'],
                 'username' => $params['username'] ?? 'AREA Bot',
             ]);
@@ -322,12 +319,12 @@ class DiscordService extends BaseService
      *
      * Sends a rich embed message via webhook
      *
-     * @param array $params ['title' => string, 'description' => string, 'color' => int|null, 'fields' => array|null]
+     * @param array $params ['webhook_url' => string, 'title' => string, 'description' => string, 'color' => int|null, 'fields' => array|null]
      * @return bool Success status
      */
     private function sendEmbed(array $params): bool
     {
-        $this->validateParams($params, ['title', 'description']);
+        $this->validateParams($params, ['webhook_url', 'title', 'description']);
 
         try {
             $embed = [
@@ -354,7 +351,7 @@ class DiscordService extends BaseService
                 $embed['image'] = ['url' => $params['image']];
             }
 
-            $response = Http::post($this->webhookUrl, [
+            $response = Http::post($params['webhook_url'], [
                 'embeds' => [$embed],
                 'username' => $params['username'] ?? 'AREA Bot',
             ]);
@@ -379,81 +376,31 @@ class DiscordService extends BaseService
     }
 
     /**
-     * Get bot information
-     */
-    private function getBotInfo(): array
-    {
-        try {
-            $response = Http::withHeaders([
-                'Authorization' => "Bot {$this->botToken}",
-            ])->get("{$this->baseUrl}/users/@me");
-
-            if ($response->successful()) {
-                return $response->json();
-            }
-
-            return [];
-        } catch (\Throwable $e) {
-            Log::error('Failed to get Discord bot info', [
-                'error' => $e->getMessage()
-            ]);
-            return [];
-        }
-    }
-
-    /**
-     * Get available actions
+     * Get available actions (OAuth2-based)
      */
     public function getAvailableActions(): array
     {
         return [
-            'new_message_in_channel' => [
-                'name' => 'New Message in Channel',
-                'description' => 'Triggers when a new message is posted in a specific Discord channel',
-                'params' => [
-                    'channel_id' => [
-                        'type' => 'string',
-                        'required' => true,
-                        'description' => 'Discord Channel ID to monitor',
-                        'placeholder' => '123456789012345678'
-                    ]
-                ]
+            'user_joined_guild' => [
+                'name' => 'User Joined Guild',
+                'description' => 'Triggers when you join a new Discord server',
+                'params' => []
             ],
-            'message_with_keyword' => [
-                'name' => 'Message with Keyword',
-                'description' => 'Triggers when a message contains a specific keyword',
-                'params' => [
-                    'channel_id' => [
-                        'type' => 'string',
-                        'required' => true,
-                        'description' => 'Discord Channel ID to monitor',
-                        'placeholder' => '123456789012345678'
-                    ],
-                    'keyword' => [
-                        'type' => 'string',
-                        'required' => true,
-                        'description' => 'Keyword to search for in messages',
-                        'placeholder' => 'important'
-                    ]
-                ]
+            'guild_list_changed' => [
+                'name' => 'Guild List Changed',
+                'description' => 'Triggers when your Discord server list changes (join or leave)',
+                'params' => []
             ],
-            'bot_mentioned' => [
-                'name' => 'Bot Mentioned',
-                'description' => 'Triggers when the bot is mentioned in a message',
-                'params' => [
-                    'channel_id' => [
-                        'type' => 'string',
-                        'required' => true,
-                        'description' => 'Discord Channel ID to monitor',
-                        'placeholder' => '123456789012345678'
-                    ]
-                ]
+            'get_user_profile' => [
+                'name' => 'Get User Profile',
+                'description' => 'Retrieves your Discord profile information',
+                'params' => []
             ]
         ];
     }
 
     /**
-     * Get available reactions
+     * Get available reactions (webhook-based, requires webhook URL in credentials)
      */
     public function getAvailableReactions(): array
     {
@@ -462,6 +409,12 @@ class DiscordService extends BaseService
                 'name' => 'Send Message',
                 'description' => 'Sends a simple text message to a Discord channel via webhook',
                 'params' => [
+                    'webhook_url' => [
+                        'type' => 'string',
+                        'required' => true,
+                        'description' => 'Discord Webhook URL',
+                        'placeholder' => 'https://discord.com/api/webhooks/...'
+                    ],
                     'content' => [
                         'type' => 'text',
                         'required' => true,
@@ -480,6 +433,12 @@ class DiscordService extends BaseService
                 'name' => 'Send Embed',
                 'description' => 'Sends a rich embed message to a Discord channel via webhook',
                 'params' => [
+                    'webhook_url' => [
+                        'type' => 'string',
+                        'required' => true,
+                        'description' => 'Discord Webhook URL',
+                        'placeholder' => 'https://discord.com/api/webhooks/...'
+                    ],
                     'title' => [
                         'type' => 'string',
                         'required' => true,
@@ -507,5 +466,96 @@ class DiscordService extends BaseService
                 ]
             ]
         ];
+    }
+
+    /**
+     * Get Discord user profile information
+     *
+     * @return array|null User profile data or null on failure
+     */
+    public function getUserProfile(): ?array
+    {
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => "Bearer {$this->accessToken}",
+                'Content-Type' => 'application/json',
+            ])->get("{$this->baseUrl}/users/@me");
+
+            if ($response->successful()) {
+                return $response->json();
+            }
+
+            Log::error('Failed to fetch Discord user profile', [
+                'status' => $response->status(),
+                'body' => $response->body()
+            ]);
+            return null;
+
+        } catch (\Throwable $e) {
+            Log::error('Error fetching Discord user profile', [
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Get user's Discord guilds (servers)
+     *
+     * @return array List of guilds the user is a member of
+     */
+    public function getUserGuilds(): array
+    {
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => "Bearer {$this->accessToken}",
+                'Content-Type' => 'application/json',
+            ])->get("{$this->baseUrl}/users/@me/guilds");
+
+            if ($response->successful()) {
+                return $response->json();
+            }
+
+            Log::error('Failed to fetch Discord user guilds', [
+                'status' => $response->status(),
+                'body' => $response->body()
+            ]);
+            return [];
+
+        } catch (\Throwable $e) {
+            Log::error('Error fetching Discord user guilds', [
+                'error' => $e->getMessage()
+            ]);
+            return [];
+        }
+    }
+
+    /**
+     * Check if user's guild list has changed
+     *
+     * @param array $previousGuilds Previous guild list from state
+     * @return bool True if guilds have changed
+     */
+    public function checkGuildChanges(array $previousGuilds): bool
+    {
+        $currentGuilds = $this->getUserGuilds();
+
+        // Extract guild IDs for comparison
+        $previousIds = array_column($previousGuilds, 'id');
+        $currentIds = array_column($currentGuilds, 'id');
+
+        // Check if there are any differences
+        $added = array_diff($currentIds, $previousIds);
+        $removed = array_diff($previousIds, $currentIds);
+
+        if (!empty($added) || !empty($removed)) {
+            Log::info('Discord guild changes detected', [
+                'added' => count($added),
+                'removed' => count($removed)
+            ]);
+            return true;
+        }
+
+        return false;
     }
 }

@@ -61,11 +61,14 @@ export const apiService = {
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       return api.post('/api/test/telegram/send', data, { headers });
     },
-    connectBot: (botToken: string, token?: string) => {
+    connectBot: (botToken: string, chatId: string, token?: string) => {
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       return api.post('/api/services/connect', {
         service: 'Telegram',
-        credentials: { bot_token: botToken }
+        credentials: {
+          bot_token: botToken,
+          chat_id: chatId
+        }
       }, { headers });
     },
     getStatus: (token?: string) => {

@@ -536,4 +536,188 @@ class OAuthController extends Controller
 
         return false;
     }
+
+    /**
+     * Redirect user to Discord OAuth page (for popup, accepts token in query)
+     */
+    public function redirectToDiscordPopup(Request $request)
+    {
+        try {
+            // Get user from token in query parameter
+            $token = $request->query('token');
+            if (!$token) {
+                return response()->json(['error' => 'Token required'], 400);
+            }
+
+            // Find user by token
+            $personalAccessToken = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
+            if (!$personalAccessToken) {
+                return response()->json(['error' => 'Invalid token'], 401);
+            }
+
+            $user = $personalAccessToken->tokenable;
+
+            // Pass user_id in state parameter
+            $state = base64_encode(json_encode([
+                'user_id' => $user->id
+            ]));
+
+            $config = config('services.discord');
+            $scopes = implode(' ', $config['scopes']);
+
+            $authUrl = 'https://discord.com/oauth2/authorize?' . http_build_query([
+                'client_id' => $config['client_id'],
+                'redirect_uri' => $config['redirect'],
+                'response_type' => 'code',
+                'scope' => $scopes,
+                'state' => $state,
+            ]);
+
+            return redirect($authUrl);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to redirect to Discord OAuth', [
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to redirect to Discord'
+            ], 500);
+        }
+    }
+
+    /**
+     * Handle Discord OAuth callback
+     */
+    public function handleDiscordCallback(Request $request)
+    {
+        try {
+            $code = $request->input('code');
+            $state = $request->input('state');
+
+            if (!$code || !$state) {
+                Log::error('Discord callback missing code or state');
+                return redirect(env('FRONTEND_URL', 'http://localhost:5173') . '?error=oauth_failed');
+            }
+
+            // Decode state to get user_id
+            $stateData = json_decode(base64_decode($state), true);
+            $userId = $stateData['user_id'] ?? null;
+
+            if (!$userId) {
+                Log::error('Discord callback missing user_id in state');
+                return redirect(env('FRONTEND_URL', 'http://localhost:5173') . '?error=invalid_state');
+            }
+
+            // Exchange code for access token
+            $config = config('services.discord');
+            $response = Http::asForm()->post('https://discord.com/api/oauth2/token', [
+                'client_id' => $config['client_id'],
+                'client_secret' => $config['client_secret'],
+                'grant_type' => 'authorization_code',
+                'code' => $code,
+                'redirect_uri' => $config['redirect'],
+            ]);
+
+            if (!$response->successful()) {
+                Log::error('Discord token exchange failed', [
+                    'status' => $response->status(),
+                    'body' => $response->body()
+                ]);
+                return redirect(env('FRONTEND_URL', 'http://localhost:5173') . '?error=token_exchange_failed');
+            }
+
+            $tokenData = $response->json();
+
+            // Fetch user information
+            $userInfoResponse = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $tokenData['access_token']
+            ])->get('https://discord.com/api/users/@me');
+
+            if (!$userInfoResponse->successful()) {
+                Log::error('Failed to fetch Discord user info');
+                return redirect(env('FRONTEND_URL', 'http://localhost:5173') . '?error=user_info_failed');
+            }
+
+            $userInfo = $userInfoResponse->json();
+
+            // Store or update the token
+            UserServiceToken::updateOrCreate(
+                [
+                    'user_id' => $userId,
+                    'service_name' => 'Discord'
+                ],
+                [
+                    'access_token' => $tokenData['access_token'],
+                    'refresh_token' => $tokenData['refresh_token'] ?? null,
+                    'expires_at' => isset($tokenData['expires_in'])
+                        ? now()->addSeconds($tokenData['expires_in'])
+                        : null,
+                    'service_user_id' => $userInfo['id'],
+                    'service_user_email' => $userInfo['email'] ?? null,
+                    'additional_data' => json_encode([
+                        'username' => $userInfo['username'],
+                        'discriminator' => $userInfo['discriminator'] ?? null,
+                        'avatar' => $userInfo['avatar'] ?? null,
+                    ])
+                ]
+            );
+
+            Log::info('Discord OAuth successful', [
+                'user_id' => $userId,
+                'discord_user_id' => $userInfo['id'],
+                'discord_username' => $userInfo['username']
+            ]);
+
+            return redirect(env('FRONTEND_URL', 'http://localhost:5173') . '?discord_connected=true');
+
+        } catch (\Exception $e) {
+            Log::error('Discord callback error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return redirect(env('FRONTEND_URL', 'http://localhost:5173') . '?error=oauth_exception');
+        }
+    }
+
+    /**
+     * Refresh Discord access token
+     */
+    public function refreshDiscordToken(UserServiceToken $token): bool
+    {
+        try {
+            if (!$token->refresh_token) {
+                return false;
+            }
+
+            $config = config('services.discord');
+            $response = Http::asForm()->post('https://discord.com/api/oauth2/token', [
+                'client_id' => $config['client_id'],
+                'client_secret' => $config['client_secret'],
+                'grant_type' => 'refresh_token',
+                'refresh_token' => $token->refresh_token,
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+
+                $token->update([
+                    'access_token' => $data['access_token'],
+                    'refresh_token' => $data['refresh_token'] ?? $token->refresh_token,
+                    'expires_at' => now()->addSeconds($data['expires_in']),
+                ]);
+
+                return true;
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to refresh Discord token', [
+                'user_id' => $token->user_id,
+                'error' => $e->getMessage()
+            ]);
+        }
+
+        return false;
+    }
 }

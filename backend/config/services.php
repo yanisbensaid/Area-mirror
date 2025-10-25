@@ -125,8 +125,15 @@ return [
     ],
 
     'discord' => [
-        'bot_token' => env('DISCORD_BOT_TOKEN'),
-        'webhook_url' => env('DISCORD_WEBHOOK_URL'),
+        'client_id' => env('DISCORD_CLIENT_ID'),
+        'client_secret' => env('DISCORD_CLIENT_SECRET'),
+        'redirect' => env('DISCORD_REDIRECT_URI', 'http://127.0.0.1:8000/api/oauth/discord/callback'),
+        'scopes' => [
+            'identify',
+            'email',
+            'guilds',
+        ],
+        'bot_token' => env('DISCORD_BOT_TOKEN'), // Keep for bot actions/reactions
         'base_url' => 'https://discord.com/api/v10',
     ],
 

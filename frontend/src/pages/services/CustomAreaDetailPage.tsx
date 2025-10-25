@@ -166,8 +166,8 @@ export default function CustomAreaDetailPage() {
     setConnecting(true)
     setConnectionError(null)
 
-    // For OAuth services (YouTube, Gmail, Twitch), open popup
-    if (serviceName === 'YouTube' || serviceName === 'Gmail' || serviceName === 'Twitch') {
+    // For OAuth services (YouTube, Gmail, Twitch, Discord), open popup
+    if (serviceName === 'YouTube' || serviceName === 'Gmail' || serviceName === 'Twitch' || serviceName === 'Discord') {
       const token = localStorage.getItem('token')
       const popup = window.open(
         `${API_URL}/api/oauth/${serviceName.toLowerCase()}/redirect?token=${token}`,
@@ -236,44 +236,59 @@ export default function CustomAreaDetailPage() {
   const getServiceConnectionFields = (serviceName: string) => {
     switch (serviceName) {
       case 'Telegram':
+        // Show Telegram guide and fields
         return (
-          <div>
-            <label className="block text-sm font-medium mb-2">Bot Token</label>
-            <input
-              type="text"
-              value={credentials.bot_token || ''}
-              onChange={(e) => setCredentials({ bot_token: e.target.value })}
-              className="w-full px-4 py-2 border border-slate-600 bg-slate-900 text-white placeholder-slate-400 rounded-lg focus:ring-2 focus:ring-purple-500"
-              placeholder="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"
-            />
-          </div>
-        )
+          <div className="space-y-4">
+            <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+              <h4 className="font-semibold mb-3 text-purple-400">How to get Bot Token and Chat ID:</h4>
 
-      case 'Discord':
-        return (
-          <>
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-2">Bot Token</label>
+              <div className="mb-4">
+                <h5 className="font-semibold text-slate-200 mb-2">🤖 Get Bot Token:</h5>
+                <ol className="text-sm text-slate-300 space-y-1 list-decimal list-inside ml-2">
+                  <li>Open Telegram and search for <strong>@BotFather</strong></li>
+                  <li>Send <code className="bg-slate-800 px-1 rounded">/newbot</code> and follow instructions</li>
+                  <li>Copy the bot token (format: <code className="bg-slate-800 px-1 rounded">123456:ABC...</code>)</li>
+                </ol>
+              </div>
+
+              <div>
+                <h5 className="font-semibold text-slate-200 mb-2">💬 Get Chat ID:</h5>
+                <ol className="text-sm text-slate-300 space-y-1 list-decimal list-inside ml-2">
+                  <li>Search for <strong>@userinfobot</strong> on Telegram</li>
+                  <li>Send <code className="bg-slate-800 px-1 rounded">/start</code> to the bot</li>
+                  <li>The bot will reply with your Chat ID</li>
+                  <li>Copy your Chat ID (number like <code className="bg-slate-800 px-1 rounded">123456789</code>)</li>
+                </ol>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Bot Token <span className="text-red-400">*</span></label>
               <input
                 type="text"
                 value={credentials.bot_token || ''}
                 onChange={(e) => setCredentials({ ...credentials, bot_token: e.target.value })}
                 className="w-full px-4 py-2 border border-slate-600 bg-slate-900 text-white placeholder-slate-400 rounded-lg focus:ring-2 focus:ring-purple-500"
-                placeholder="Your Discord bot token"
+                placeholder="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"
               />
             </div>
+
             <div>
-              <label className="block text-sm font-medium mb-2">Webhook URL</label>
+              <label className="block text-sm font-medium mb-2">Chat ID <span className="text-red-400">*</span></label>
               <input
                 type="text"
-                value={credentials.webhook_url || ''}
-                onChange={(e) => setCredentials({ ...credentials, webhook_url: e.target.value })}
+                value={credentials.chat_id || ''}
+                onChange={(e) => setCredentials({ ...credentials, chat_id: e.target.value })}
                 className="w-full px-4 py-2 border border-slate-600 bg-slate-900 text-white placeholder-slate-400 rounded-lg focus:ring-2 focus:ring-purple-500"
-                placeholder="https://discord.com/api/webhooks/..."
+                placeholder="123456789"
               />
             </div>
-          </>
+          </div>
         )
+
+      case 'Discord':
+        // Discord uses OAuth2 - no manual fields needed
+        return null
 
       case 'Steam':
         return (

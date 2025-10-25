@@ -352,6 +352,7 @@ class CheckAreas extends Command
                     $this->info("📤 Sending message to Discord...");
 
                     $reactionParams = [
+                        'webhook_url' => $area->reaction_config['webhook_url'] ?? null,
                         'content' => $content,
                         'username' => $area->reaction_config['username'] ?? 'AREA Bot'
                     ];
@@ -391,7 +392,8 @@ class CheckAreas extends Command
 
     private function buildMessage(array $config, array $data): string
     {
-        $template = $config['message_template'] ?? "🎥 New video liked!\n{title}\n{url}";
+        // Use 'text' field if available (new format), otherwise fall back to 'message_template' (old format)
+        $template = $config['text'] ?? $config['message_template'] ?? "🎥 New video liked!\n{title}\n{url}";
 
         // Replace placeholders with actual data
         foreach ($data as $key => $value) {

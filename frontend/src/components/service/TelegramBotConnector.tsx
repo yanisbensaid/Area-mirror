@@ -7,6 +7,7 @@ interface TelegramBotConnectorProps {
 
 export const TelegramBotConnector: React.FC<TelegramBotConnectorProps> = ({ onConnectionSuccess }) => {
   const [botToken, setBotToken] = useState('');
+  const [chatId, setChatId] = useState('');
   const [connecting, setConnecting] = useState(false);
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
 
@@ -19,12 +20,20 @@ export const TelegramBotConnector: React.FC<TelegramBotConnectorProps> = ({ onCo
       return;
     }
 
+    if (!chatId) {
+      setResult({
+        success: false,
+        message: 'Please enter your chat ID',
+      });
+      return;
+    }
+
     setConnecting(true);
     setResult(null);
 
     try {
       const token = localStorage.getItem('token');
-      const response = await ServiceService.connectTelegramBot(botToken, token || undefined);
+      const response = await ServiceService.connectTelegramBot(botToken, chatId, token || undefined);
 
       setResult({
         success: true,
@@ -32,6 +41,7 @@ export const TelegramBotConnector: React.FC<TelegramBotConnectorProps> = ({ onCo
       });
 
       setBotToken('');
+      setChatId('');
       onConnectionSuccess();
     } catch (error: any) {
       setResult({
@@ -54,14 +64,26 @@ export const TelegramBotConnector: React.FC<TelegramBotConnectorProps> = ({ onCo
 
       <div className="space-y-4">
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="font-medium text-blue-900 mb-2">📋 Setup Instructions:</h3>
-          <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
-            <li>Open Telegram and search for <strong>@BotFather</strong></li>
-            <li>Send <code className="bg-blue-100 px-1 rounded">/newbot</code> and follow instructions</li>
-            <li>Copy your bot token (looks like: <code className="bg-blue-100 px-1 rounded">123456789:ABC...</code>)</li>
-            <li>Paste it below and click "Connect Bot"</li>
-            <li>Send <code className="bg-blue-100 px-1 rounded">/start</code> to your bot to complete setup</li>
-          </ol>
+          <h3 className="font-medium text-blue-900 mb-3">📋 How to get Bot Token and Chat ID:</h3>
+
+          <div className="mb-4">
+            <h4 className="font-semibold text-blue-900 mb-2">🤖 Get Bot Token:</h4>
+            <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside ml-2">
+              <li>Open Telegram and search for <strong>@BotFather</strong></li>
+              <li>Send <code className="bg-blue-100 px-1 rounded">/newbot</code> and follow instructions</li>
+              <li>Copy the bot token (format: <code className="bg-blue-100 px-1 rounded">123456:ABC...</code>)</li>
+            </ol>
+          </div>
+
+          <div>
+            <h4 className="font-semibold text-blue-900 mb-2">💬 Get Chat ID:</h4>
+            <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside ml-2">
+              <li>Search for <strong>@userinfobot</strong> on Telegram</li>
+              <li>Send <code className="bg-blue-100 px-1 rounded">/start</code> to the bot</li>
+              <li>The bot will reply with your user info including your <strong>Chat ID</strong></li>
+              <li>Copy your Chat ID (it's a number like <code className="bg-blue-100 px-1 rounded">123456789</code>)</li>
+            </ol>
+          </div>
         </div>
 
         <div>
@@ -70,7 +92,7 @@ export const TelegramBotConnector: React.FC<TelegramBotConnectorProps> = ({ onCo
             className="block text-sm font-medium text-gray-700 mb-2"
             style={{ fontFamily: 'Inter, sans-serif' }}
           >
-            Bot Token
+            Bot Token <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
@@ -78,6 +100,25 @@ export const TelegramBotConnector: React.FC<TelegramBotConnectorProps> = ({ onCo
             value={botToken}
             onChange={(e) => setBotToken(e.target.value)}
             placeholder="123456789:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            style={{ fontFamily: 'Inter, sans-serif' }}
+          />
+        </div>
+
+        <div>
+          <label
+            htmlFor="chatId"
+            className="block text-sm font-medium text-gray-700 mb-2"
+            style={{ fontFamily: 'Inter, sans-serif' }}
+          >
+            Chat ID <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            id="chatId"
+            value={chatId}
+            onChange={(e) => setChatId(e.target.value)}
+            placeholder="123456789"
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             style={{ fontFamily: 'Inter, sans-serif' }}
           />

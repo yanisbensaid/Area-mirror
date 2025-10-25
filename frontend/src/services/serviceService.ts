@@ -83,8 +83,8 @@ export class ServiceService {
     return apiService.telegram.getStatus(token);
   }
 
-  static async connectTelegramBot(botToken: string, authToken?: string): Promise<any> {
-    return apiService.telegram.connectBot(botToken, authToken);
+  static async connectTelegramBot(botToken: string, chatId: string, authToken?: string): Promise<any> {
+    return apiService.telegram.connectBot(botToken, chatId, authToken);
   }
 
   static async sendTelegramMessage(

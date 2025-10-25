@@ -51,11 +51,13 @@ Route::post('/webhooks/telegram', [TelegramWebhookController::class, 'handle']);
 Route::get('/oauth/youtube/callback', [OAuthController::class, 'handleYouTubeCallback']);
 Route::get('/oauth/twitch/callback', [OAuthController::class, 'handleTwitchCallback']);
 Route::get('/oauth/gmail/callback', [OAuthController::class, 'handleGmailCallback']);
+Route::get('/oauth/discord/callback', [OAuthController::class, 'handleDiscordCallback']);
 
 // OAuth redirect routes for popups (public - token in query)
 Route::get('/oauth/youtube/redirect', [OAuthController::class, 'redirectToYouTubePopup']);
 Route::get('/oauth/gmail/redirect', [OAuthController::class, 'redirectToGmailPopup']);
 Route::get('/oauth/twitch/redirect', [OAuthController::class, 'redirectToTwitchPopup']);
+Route::get('/oauth/discord/redirect', [OAuthController::class, 'redirectToDiscordPopup']);
 
 // Protected routes (requires authentication)
 Route::middleware('auth:sanctum')->group(function () {

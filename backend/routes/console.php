@@ -12,4 +12,4 @@ Artisan::command('inspire', function () {
 Schedule::command('areas:check')
     ->everyMinute()
     ->withoutOverlapping()
-    ->appendOutputTo(storage_path('logs/areas-check.log'));
+    ->appendOutputTo('/dev/stdout');
