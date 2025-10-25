@@ -99,13 +99,13 @@ class TelegramService extends BaseService
                 ]
             ],
             'message_contains_keyword' => [
-                'name' => 'Message Contains Keyword',
-                'description' => 'Triggers when you receive a message containing specific keyword(s)',
+                'name' => 'Message Received by Bot Contains Keyword',
+                'description' => 'Triggers when the bot receives a message containing specific keyword(s)',
                 'params' => [
                     'keyword' => [
                         'type' => 'string',
                         'required' => true,
-                        'description' => 'Keyword to search for in messages (case-insensitive)',
+                        'description' => 'Keyword to search for in messages sent to the bot (case-insensitive)',
                         'placeholder' => 'urgent'
                     ],
                     'exact_match' => [
@@ -424,10 +424,26 @@ class TelegramService extends BaseService
         $this->validateParams($params, ['chat_id']);
 
         try {
-            $response = $this->makeRequest('GET', $this->baseUrl . $this->botToken . '/getUpdates', [
-                'limit' => 10,
+            // Get the last processed update_id from params (passed from action_config)
+            $lastUpdateId = $params['last_update_id'] ?? 0;
+            $offset = $lastUpdateId > 0 ? $lastUpdateId + 1 : null;
+
+            $requestParams = [
+                'limit' => 100,  // Get up to 100 updates
                 'timeout' => 0,
+            ];
+
+            if ($offset !== null) {
+                $requestParams['offset'] = $offset;
+            }
+
+            Log::info("Fetching Telegram updates", [
+                'last_update_id' => $lastUpdateId,
+                'offset' => $offset,
+                'target_chat_id' => $params['chat_id']
             ]);
+
+            $response = $this->makeRequest('GET', $this->baseUrl . $this->botToken . '/getUpdates', $requestParams);
 
             if (!$response->successful()) {
                 throw new \RuntimeException($this->handleApiError($response));
@@ -435,9 +451,18 @@ class TelegramService extends BaseService
 
             $data = $response->json();
             $messages = [];
+            $maxUpdateId = $lastUpdateId;
+
+            Log::info("Received Telegram updates", [
+                'updates_count' => count($data['result'] ?? []),
+                'target_chat_id' => $params['chat_id']
+            ]);
 
             if (isset($data['result'])) {
                 foreach ($data['result'] as $update) {
+                    $updateId = $update['update_id'];
+                    $maxUpdateId = max($maxUpdateId, $updateId);
+
                     if (isset($update['message'])) {
                         $message = $update['message'];
 
@@ -445,8 +470,16 @@ class TelegramService extends BaseService
                         $chatId = (string) $message['chat']['id'];
                         $targetChatId = $this->normalizeChatId($params['chat_id']);
 
+                        Log::debug("Checking message", [
+                            'update_id' => $updateId,
+                            'message_chat_id' => $chatId,
+                            'target_chat_id' => $targetChatId,
+                            'text' => substr($message['text'] ?? '[Non-text]', 0, 100)
+                        ]);
+
                         if ($chatId === $targetChatId || $this->chatMatches($message['chat'], $targetChatId)) {
                             $messages[] = [
+                                'update_id' => $updateId,
                                 'message_id' => $message['message_id'],
                                 'text' => $message['text'] ?? '[Non-text message]',
                                 'from' => [
@@ -459,10 +492,23 @@ class TelegramService extends BaseService
                                     'id' => $message['chat']['id'],
                                     'type' => $message['chat']['type'],
                                     'title' => $message['chat']['title'] ?? null,
-                                ]
+                                ],
+                                'last_update_id' => $maxUpdateId  // Include for state tracking
                             ];
                         }
                     }
+                }
+            }
+
+            Log::info("Filtered messages for chat", [
+                'messages_count' => count($messages),
+                'max_update_id' => $maxUpdateId
+            ]);
+
+            // Store the max update_id in messages for state tracking
+            if (!empty($messages)) {
+                foreach ($messages as &$message) {
+                    $message['_last_update_id'] = $maxUpdateId;
                 }
             }
 
@@ -499,6 +545,13 @@ class TelegramService extends BaseService
         $exactMatch = $params['exact_match'] ?? false;
         $matchedMessages = [];
 
+        Log::info("Checking keyword messages", [
+            'keyword' => $keyword,
+            'exact_match' => $exactMatch,
+            'messages_count' => count($messages),
+            'chat_id' => $params['chat_id']
+        ]);
+
         foreach ($messages as $message) {
             $text = strtolower($message['text']);
             $matched = false;
@@ -511,11 +564,22 @@ class TelegramService extends BaseService
                 $matched = str_contains($text, $keyword);
             }
 
+            Log::debug("Checking message for keyword", [
+                'message_text' => $message['text'],
+                'keyword' => $keyword,
+                'exact_match' => $exactMatch,
+                'matched' => $matched
+            ]);
+
             if ($matched) {
                 $message['matched_keyword'] = $keyword;
                 $matchedMessages[] = $message;
             }
         }
+
+        Log::info("Keyword check complete", [
+            'matched_count' => count($matchedMessages)
+        ]);
 
         return $matchedMessages;
     }

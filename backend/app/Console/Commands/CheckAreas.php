@@ -106,13 +106,18 @@ class CheckAreas extends Command
                 'user_id' => $additionalData['user_id'] ?? null
             ]);
         } elseif ($area->action_service === 'Discord') {
-            // Discord uses bot_token + webhook_url
-            $additionalData = $actionToken->additional_data ?? [];
+            // Discord uses OAuth2 access_token
+            $actionService->authenticate([
+                'access_token' => $actionToken->getDecryptedAccessToken()
+            ]);
+        } elseif ($area->action_service === 'Telegram') {
+            // Telegram uses bot_token + chat_id
             $actionService->authenticate([
                 'bot_token' => $actionToken->getDecryptedAccessToken(),
-                'webhook_url' => $additionalData['webhook_url'] ?? null
+                'chat_id' => $actionToken->getChatId()
             ]);
         } else {
+            // OAuth2 services (YouTube, Gmail, Twitch)
             $actionService->authenticate([
                 'access_token' => $actionToken->getDecryptedAccessToken()
             ]);
@@ -151,6 +156,12 @@ class CheckAreas extends Command
             if ($area->action_type === 'message_with_keyword') {
                 $actionParams['keyword'] = $actionConfig['keyword'] ?? null;
             }
+        } elseif ($area->action_service === 'Telegram') {
+            // Telegram uses action_config for state tracking (update_id)
+            $actionConfig = $area->action_config ?? [];
+            $actionParams = array_merge($actionConfig, [
+                'last_update_id' => $actionConfig['last_update_id'] ?? 0,
+            ]);
         } else {
             // Default for other services
             $actionParams = $area->action_config ?? [];
@@ -265,6 +276,13 @@ class CheckAreas extends Command
                 if ($lastMessageId) {
                     $area->action_config = array_merge($area->action_config ?? [], ['last_message_id' => $lastMessageId]);
                 }
+            } elseif ($area->action_service === 'Telegram' && !empty($results)) {
+                // Telegram: update last_update_id from the last result
+                $lastUpdateId = $results[count($results) - 1]['_last_update_id'] ?? null;
+                if ($lastUpdateId) {
+                    $area->action_config = array_merge($area->action_config ?? [], ['last_update_id' => $lastUpdateId]);
+                    Log::info('Telegram state updated', ['last_update_id' => $lastUpdateId]);
+                }
             }
         }
 
@@ -334,10 +352,17 @@ class CheckAreas extends Command
                     // Build email parameters
                     $reactionParams = $area->reaction_config;
 
+                    // Add action service and action type to data for placeholders
+                    $resultWithMeta = array_merge($result, [
+                        'service' => $area->action_service,
+                        'action_type' => $area->action_type,
+                        'action_name' => $this->getActionDisplayName($area->action_service, $area->action_type)
+                    ]);
+
                     // Replace placeholders in email content
                     foreach ($reactionParams as $key => $value) {
                         if (is_string($value)) {
-                            $reactionParams[$key] = $this->replacePlaceholders($value, $result);
+                            $reactionParams[$key] = $this->replacePlaceholders($value, $resultWithMeta);
                         }
                     }
 
@@ -346,8 +371,15 @@ class CheckAreas extends Command
                     // Build Discord message parameters
                     $content = $area->reaction_config['content'] ?? "🎥 New video!\n{title}\n{url}";
 
+                    // Add action service and action type to data for placeholders
+                    $resultWithMeta = array_merge($result, [
+                        'service' => $area->action_service,
+                        'action_type' => $area->action_type,
+                        'action_name' => $this->getActionDisplayName($area->action_service, $area->action_type)
+                    ]);
+
                     // Replace placeholders with actual data
-                    $content = $this->replacePlaceholders($content, $result);
+                    $content = $this->replacePlaceholders($content, $resultWithMeta);
 
                     $this->info("📤 Sending message to Discord...");
 
@@ -415,5 +447,39 @@ class CheckAreas extends Command
         }
 
         return $template;
+    }
+
+    private function getActionDisplayName(string $serviceName, string $actionType): string
+    {
+        // Map of action types to human-readable names
+        $actionNames = [
+            'YouTube' => [
+                'video_liked' => 'YouTube Video Liked',
+                'new_video_uploaded' => 'New YouTube Video',
+            ],
+            'Gmail' => [
+                'new_email' => 'New Email',
+                'email_from_sender' => 'Email from Specific Sender',
+            ],
+            'Telegram' => [
+                'message_contains_keyword' => 'Telegram Message with Keyword',
+                'new_message' => 'New Telegram Message',
+            ],
+            'Twitch' => [
+                'stream_started' => 'Twitch Stream Started',
+                'new_follower' => 'New Twitch Follower',
+                'stream_title_changed' => 'Twitch Stream Title Changed',
+            ],
+            'Discord' => [
+                'new_message' => 'New Discord Message',
+                'message_with_keyword' => 'Discord Message with Keyword',
+            ],
+            'Steam' => [
+                'game_time_milestone' => 'Steam Game Time Milestone',
+                'new_game_purchased' => 'New Steam Game Purchased',
+            ]
+        ];
+
+        return $actionNames[$serviceName][$actionType] ?? "$serviceName - $actionType";
     }
 }
