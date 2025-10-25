@@ -100,18 +100,13 @@ class TelegramService extends BaseService
             ],
             'message_contains_keyword' => [
                 'name' => 'Message Contains Keyword',
-                'description' => 'Triggers when a message contains specific keyword(s)',
+                'description' => 'Triggers when you receive a message containing specific keyword(s)',
                 'params' => [
-                    'chat_id' => [
-                        'type' => 'string',
-                        'required' => true,
-                        'description' => 'Chat ID or username'
-                    ],
                     'keyword' => [
                         'type' => 'string',
                         'required' => true,
-                        'description' => 'Keyword to search for (case-insensitive)',
-                        'example' => 'urgent'
+                        'description' => 'Keyword to search for in messages (case-insensitive)',
+                        'placeholder' => 'urgent'
                     ],
                     'exact_match' => [
                         'type' => 'boolean',
@@ -487,7 +482,17 @@ class TelegramService extends BaseService
      */
     private function checkKeywordMessages(array $params): array
     {
-        $this->validateParams($params, ['chat_id', 'keyword']);
+        $this->validateParams($params, ['keyword']);
+
+        // Use chat_id from credentials if not provided in params
+        if (!isset($params['chat_id'])) {
+            $params['chat_id'] = $this->credentials['chat_id'] ?? null;
+        }
+
+        if (!$params['chat_id']) {
+            Log::warning('No chat_id available for keyword message check');
+            return [];
+        }
 
         $messages = $this->checkNewMessages($params);
         $keyword = strtolower($params['keyword']);

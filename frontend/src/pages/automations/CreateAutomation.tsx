@@ -454,6 +454,50 @@ export default function CreateAutomation() {
                   <p className="text-slate-400 text-sm">{selectedAction.description}</p>
                 </div>
               )}
+
+              {/* Action Parameters */}
+              {selectedAction && selectedAction.parameters && Object.keys(selectedAction.parameters).length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg">Configure Action</h3>
+                  {Object.entries(selectedAction.parameters).map(([paramKey, paramDef]: [string, any]) => (
+                    <div key={paramKey}>
+                      <label className="block text-sm font-medium mb-2">
+                        {paramDef.description || paramKey}
+                        {paramDef.required && <span className="text-red-400 ml-1">*</span>}
+                      </label>
+                      {paramDef.type === 'text' ? (
+                        <textarea
+                          value={actionParams[paramKey] || ''}
+                          onChange={(e) => setActionParams({ ...actionParams, [paramKey]: e.target.value })}
+                          placeholder={paramDef.placeholder || paramDef.example || ''}
+                          className="w-full px-4 py-2 bg-slate-900 border border-slate-600 rounded-lg focus:border-purple-500 focus:outline-none text-white"
+                          rows={3}
+                          required={paramDef.required}
+                        />
+                      ) : paramDef.type === 'boolean' ? (
+                        <select
+                          value={actionParams[paramKey] !== undefined ? String(actionParams[paramKey]) : ''}
+                          onChange={(e) => setActionParams({ ...actionParams, [paramKey]: e.target.value === 'true' })}
+                          className="w-full px-4 py-2 bg-slate-900 border border-slate-600 rounded-lg focus:border-purple-500 focus:outline-none text-white"
+                        >
+                          <option value="">-- Select --</option>
+                          <option value="true">Yes</option>
+                          <option value="false">No</option>
+                        </select>
+                      ) : (
+                        <input
+                          type={paramDef.type === 'number' || paramDef.type === 'integer' ? 'number' : 'text'}
+                          value={actionParams[paramKey] || ''}
+                          onChange={(e) => setActionParams({ ...actionParams, [paramKey]: e.target.value })}
+                          placeholder={paramDef.placeholder || paramDef.example || ''}
+                          className="w-full px-4 py-2 bg-slate-900 border border-slate-600 rounded-lg focus:border-purple-500 focus:outline-none text-white"
+                          required={paramDef.required}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Next Button */}
