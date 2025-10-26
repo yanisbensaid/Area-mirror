@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { getApiUrl } from '../../config/api'  // Keep for login redirect
 
 interface AREATemplate {
@@ -88,6 +88,7 @@ export default function AREATemplatesPage() {
     fetchData()
   }, [isLoggedIn, token])
 
+  // @ts-ignore - Function will be used in future implementation
   const handleConnectYouTube = async () => {
     try {
       setConnecting('YouTube')
@@ -147,6 +148,7 @@ export default function AREATemplatesPage() {
     }
   }
 
+  // @ts-ignore - Function will be used in future implementation  
   const handleCreateArea = async (templateId: string) => {
     try {
       const response = await fetch('http://localhost:8000/api/areas', {
@@ -182,6 +184,7 @@ export default function AREATemplatesPage() {
     }
   }
 
+  // @ts-ignore - Function will be used in future implementation
   const handleToggleArea = async (areaId: number) => {
     try {
       const response = await fetch(`http://localhost:8000/api/areas/${areaId}/toggle`, {

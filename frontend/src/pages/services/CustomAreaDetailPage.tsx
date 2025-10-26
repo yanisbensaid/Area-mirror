@@ -25,6 +25,7 @@ const getServiceLogo = (serviceName: string) => {
 
 export default function CustomAreaDetailPage() {
   const { id } = useParams()
+  // @ts-ignore - Variable will be used in future implementation
   const navigate = useNavigate()
   const location = useLocation()
   const { isLoggedIn } = useAuth()
