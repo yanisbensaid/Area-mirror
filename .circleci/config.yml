@@ -44,7 +44,7 @@ jobs:
           command: |
             cd backend
             # Create a clean .env for CI with SQLite
-            cat > .env \<< 'EOF'
+            cat > .env << 'EOF'
             APP_NAME=AREA
             APP_ENV=testing
             APP_DEBUG=true
@@ -331,12 +331,12 @@ jobs:
             sleep 10
             
             # Test the website
-            response=\$(curl -s -o /dev/null -w '%{http_code}' http://46.101.186.62/)
+            response=$(curl -s -o /dev/null -w '%{http_code}' http://46.101.186.62/)
             
-            if [ \$response -eq 200 ]; then
+            if [ $response -eq 200 ]; then
               echo '✅ Deployment successful! Website is responding with HTTP 200'
               echo '🌐 Your AREA app is live at: http://46.101.186.62/'
             else
-              echo '❌ Health check failed. HTTP response code: '\$response
+              echo '❌ Health check failed. HTTP response code: '$response
               exit 1
             fi
