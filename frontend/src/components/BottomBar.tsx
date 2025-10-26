@@ -10,7 +10,7 @@ export default function BottomBar() {
 
   useEffect(() => {
     // Get deployment info from build time
-    const buildTime = (window as any).__BUILD_TIME__ || Date.now()
+    const buildTime = import.meta.env.VITE_BUILD_TIME || (window as any).__BUILD_TIME__ || Date.now()
     const deployDate = new Date(Number(buildTime))
     
     setDeploymentInfo({
