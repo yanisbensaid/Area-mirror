@@ -286,6 +286,8 @@ jobs:
               
               # Seed the database with services and initial data
               echo '🌱 Seeding database...'
+              # Update existing services to active status and seed new ones
+              php artisan tinker --execute=\"\\App\\Models\\Service::where('status', 'inactive')->update(['status' => 'active'])\" || echo 'Service status update failed'
               timeout 60 php artisan db:seed --force --quiet || {
                 echo 'Database seeding failed or took too long, continuing...'
               }

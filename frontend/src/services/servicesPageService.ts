@@ -1,4 +1,5 @@
 import type { DatabaseService } from './serviceService';
+import { API_CONFIG } from '../config/api';
 
 export interface Service {
   id: string;
@@ -27,7 +28,7 @@ export interface AREATemplate {
 }
 
 export class ServicesPageService {
-  private static readonly BASE_URL = 'http://localhost:8000/api';
+  private static readonly BASE_URL = API_CONFIG.API_URL;
 
   static async getAllServices(): Promise<Service[]> {
     try {
