@@ -58,15 +58,17 @@ jobs:
             LOG_LEVEL=debug
             EOF
             
+            # Create SQLite database FIRST
+            echo "Creating SQLite database at /tmp/database.sqlite"
+            touch /tmp/database.sqlite
+            chmod 666 /tmp/database.sqlite
+            ls -la /tmp/database.sqlite
+            
             # Ensure Laravel directories exist
             mkdir -p storage/{app,framework,logs}
             mkdir -p storage/framework/{cache,sessions,testing,views}
             mkdir -p bootstrap/cache
             chmod -R 775 storage bootstrap/cache
-            
-            # Create SQLite database
-            touch /tmp/database.sqlite
-            chmod 666 /tmp/database.sqlite
             
             # Generate application key
             php artisan key:generate
@@ -92,11 +94,16 @@ jobs:
           command: |
             cd backend
             echo "=== Pre-migration Setup ==="
-            # Clear all caches
+            # Create database file FIRST before any Laravel commands
+            echo "Creating database file..."
+            touch /tmp/database.sqlite
+            chmod 666 /tmp/database.sqlite
+            
+            # Now clear caches (database file exists now)
             php artisan config:clear
-            php artisan cache:clear
-            php artisan route:clear
-            php artisan view:clear
+            php artisan cache:clear || echo "Cache clear failed but continuing..."
+            php artisan route:clear || echo "Route clear failed but continuing..."
+            php artisan view:clear || echo "View clear failed but continuing..."
             
             echo "=== Simple PHP/SQLite Test ==="
             php -r "
