@@ -309,6 +309,13 @@ jobs:
               # Build with production optimizations
               NODE_ENV=production npm run build
               
+              # Copy built frontend to web server directory
+              echo '📋 Deploying frontend files...'
+              sudo rm -rf /var/www/html/*
+              sudo cp -r dist/* /var/www/html/
+              sudo chown -R www-data:www-data /var/www/html/
+              sudo chmod -R 755 /var/www/html/
+              
               echo '✅ Code deployment complete'
             "
       - run:
