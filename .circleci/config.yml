@@ -223,19 +223,24 @@ jobs:
       - checkout
       - attach_workspace:
           at: /tmp/workspace
-      - add_ssh_keys:
-          fingerprints:
-            - "SHA256:bSe+ZtgIkA4V/VgHX9iS6m5a9ZJPaPT1Ltn/3oaAezQ"
       - run:
-          name: Setup SSH
+          name: Setup SSH with Password Authentication
           command: |
+            # Install sshpass for password authentication
+            sudo apt-get update && sudo apt-get install -y sshpass
+            
+            # Setup SSH known hosts
             mkdir -p ~/.ssh
             chmod 700 ~/.ssh
             ssh-keyscan -H 46.101.186.62 >> ~/.ssh/known_hosts
+            
+            # Test connection
+            echo "Testing SSH connection..."
+            sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no root@46.101.186.62 "echo 'SSH connection successful'"
       - run:
           name: Deploy to Production Server
           command: |
-            ssh -o StrictHostKeyChecking=no root@46.101.186.62 "
+            sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no root@46.101.186.62 "
               echo '🚀 Starting deployment...'
               
               # Navigate to deployment directory
@@ -309,7 +314,7 @@ jobs:
       - run:
           name: Restart Services
           command: |
-            ssh -o StrictHostKeyChecking=no root@46.101.186.62 "
+            sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no root@46.101.186.62 "
               echo '🔄 Restarting services...'
               
               # Restart services in parallel
