@@ -44,7 +44,7 @@ jobs:
           command: |
             cd backend
             # Create a clean .env for CI with SQLite
-            cat > .env << 'EOF'
+            cat > .env \<< 'EOF'
             APP_NAME=AREA
             APP_ENV=testing
             APP_DEBUG=true
