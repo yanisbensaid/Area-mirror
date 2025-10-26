@@ -293,4 +293,4 @@ To enable deployment, configure the following environment variables in CircleCI:
 
 ---
 
-## 📂 Project Structure
+## 📂 Project Structure# Force deployment - Sun Oct 26 17:44:28 CET 2025
