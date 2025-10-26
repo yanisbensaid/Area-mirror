@@ -44,11 +44,38 @@ jobs:
           command: |
             cd backend
             cp .env.example .env
-            touch database/database.sqlite
+            # Configure for SQLite instead of PostgreSQL
+            sed -i 's/DB_CONNECTION=pgsql/DB_CONNECTION=sqlite/' .env
+            sed -i 's|DB_HOST=.*|DB_HOST=|' .env
+            sed -i 's|DB_PORT=.*|DB_PORT=|' .env
+            sed -i 's|DB_DATABASE=.*|DB_DATABASE=/tmp/database.sqlite|' .env
+            sed -i 's|DB_USERNAME=.*|DB_USERNAME=|' .env
+            sed -i 's|DB_PASSWORD=.*|DB_PASSWORD=|' .env
+            # Ensure database directory exists
+            mkdir -p database
+            touch /tmp/database.sqlite
+            chmod 664 /tmp/database.sqlite
+            # Generate application key
             php artisan key:generate
+            echo "Laravel environment prepared with SQLite database"
       - run:
           name: Run Laravel Migrations
-          command: cd backend && php artisan migrate --force
+          command: |
+            cd backend
+            echo "Checking database connection..."
+            php artisan migrate:status || echo "Migration status check failed, continuing..."
+            echo "Running migrations..."
+            php artisan migrate --force --verbose || {
+              echo "Migration failed, trying to reset and migrate..."
+              php artisan migrate:reset --force || echo "Reset failed, continuing..."
+              php artisan migrate --force --verbose || {
+                echo "Migration still failed, checking database file..."
+                ls -la database/
+                echo "Checking Laravel config..."
+                php artisan config:show database.connections.sqlite || echo "Config check failed"
+                exit 1
+              }
+            }
       - run:
           name: Run Backend Tests
           command: cd backend && php artisan test || echo "Tests failed but continuing deployment"
