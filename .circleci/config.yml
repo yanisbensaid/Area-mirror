@@ -44,19 +44,17 @@ jobs:
           command: |
             cd backend
             # Create a clean .env for CI with SQLite
-            cat > .env \<< 'EOF'
-            APP_NAME=AREA
-            APP_ENV=testing
-            APP_DEBUG=true
-            APP_KEY=
-            APP_URL=http://localhost
-            
-            DB_CONNECTION=sqlite
-            DB_DATABASE=/tmp/database.sqlite
-            
-            LOG_CHANNEL=stderr
-            LOG_LEVEL=debug
-            EOF
+            echo "APP_NAME=AREA" > .env
+            echo "APP_ENV=testing" >> .env
+            echo "APP_DEBUG=true" >> .env
+            echo "APP_KEY=" >> .env
+            echo "APP_URL=http://localhost" >> .env
+            echo "" >> .env
+            echo "DB_CONNECTION=sqlite" >> .env
+            echo "DB_DATABASE=/tmp/database.sqlite" >> .env
+            echo "" >> .env
+            echo "LOG_CHANNEL=stderr" >> .env
+            echo "LOG_LEVEL=debug" >> .env
             
             # Create SQLite database FIRST
             echo "Creating SQLite database at /tmp/database.sqlite"
@@ -211,22 +209,7 @@ jobs:
             cp tsconfig.app.json tsconfig.app.json.backup
             
             # Create a very permissive tsconfig for deployment
-            cat > tsconfig.deployment.json << 'EOF'
-{
-  "extends": "./tsconfig.node.json",
-  "compilerOptions": {
-    "strict": false,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "exactOptionalPropertyTypes": false,
-    "noImplicitAny": false,
-    "skipLibCheck": true,
-    "allowUnusedLabels": true,
-    "allowUnreachableCode": true
-  },
-  "include": ["src"]
-}
-EOF
+            echo '{"extends":"./tsconfig.node.json","compilerOptions":{"strict":false,"noUnusedLocals":false,"noUnusedParameters":false,"exactOptionalPropertyTypes":false,"noImplicitAny":false,"skipLibCheck":true,"allowUnusedLabels":true,"allowUnreachableCode":true},"include":["src"]}' > tsconfig.deployment.json
             
             echo "Modified TypeScript config for deployment build"
             
@@ -413,27 +396,7 @@ EOF
                   NODE_ENV=production npx vite build --mode production || {
                     echo 'All build attempts failed, deploying error page'
                     mkdir -p dist
-                    cat > dist/index.html << 'EOF'
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AREA - Deployment Error</title>
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; }
-        .error { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-    </style>
-</head>
-<body>
-    <div class="error">
-        <h1>🚧 Deployment Error</h1>
-        <p>The frontend build process failed. Please check the deployment logs.</p>
-        <p>API is available at: <a href="/api/services">/api/services</a></p>
-    </div>
-</body>
-</html>
-EOF
+                    echo '<!DOCTYPE html><html><head><title>AREA - Deployment Error</title><style>body{font-family:Arial,sans-serif;text-align:center;padding:50px;background:#f5f5f5}.error{background:white;padding:30px;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,0.1)}</style></head><body><div class="error"><h1>🚧 Deployment Error</h1><p>The frontend build process failed. Please check the deployment logs.</p><p>API is available at: <a href="/api/services">/api/services</a></p></div></body></html>' > dist/index.html
                   }
                 }
               fi
@@ -501,33 +464,7 @@ EOF
               # Test nginx configuration
               nginx -t || {
                 echo 'Nginx config test failed, using minimal config...'
-                cat > /tmp/nginx.conf << 'EOF'
-events {
-    worker_connections 1024;
-}
-
-http {
-    include /etc/nginx/mime.types;
-    default_type application/octet-stream;
-
-    server {
-        listen 80;
-        server_name 46.101.186.62;
-        root /var/www/html;
-        index index.html;
-
-        location / {
-            try_files \$uri \$uri/ /index.html;
-        }
-
-        location /api/ {
-            proxy_pass http://127.0.0.1:8000;
-            proxy_set_header Host \$host;
-            proxy_set_header X-Real-IP \$remote_addr;
-        }
-    }
-}
-EOF
+                echo 'events{worker_connections 1024;}http{include /etc/nginx/mime.types;default_type application/octet-stream;server{listen 80;server_name 46.101.186.62;root /var/www/html;index index.html;location /{try_files \$uri \$uri/ /index.html;}location /api/{proxy_pass http://127.0.0.1:8000;proxy_set_header Host \$host;proxy_set_header X-Real-IP \$remote_addr;}}}' > /tmp/nginx.conf
                 cp /tmp/nginx.conf /etc/nginx/nginx.conf
                 nginx -t
               }
