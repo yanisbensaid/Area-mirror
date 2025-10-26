@@ -335,6 +335,9 @@ jobs:
             sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no root@46.101.186.62 "
               echo '🔄 Restarting services...'
               
+              # Reload systemd daemon if needed
+              systemctl daemon-reload
+              
               # Restart services in parallel
               supervisorctl restart laravel-backend &
               systemctl reload nginx &
