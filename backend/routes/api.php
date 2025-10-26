@@ -5,8 +5,14 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ApiTestController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ServicesController;
+use App\Http\Controllers\ServiceConnectionController;
+use App\Http\Controllers\TestController;
+use App\Http\Controllers\AutomationController;
 use App\Http\Controllers\MailController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\TelegramWebhookController;
+use App\Http\Controllers\OAuthController;
+use App\Http\Controllers\AreaController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -25,9 +31,33 @@ Route::get('/services', [ServicesController::class, 'index']);
 Route::get('/services/{service}', [ServicesController::class, 'show']);
 Route::get('/services/{service}/actions', [ServicesController::class, 'showActions']);
 Route::get('/services/{service}/reactions', [ServicesController::class, 'showReactions']);
+Route::get('/services/{service}/automations', [AutomationController::class, 'getAutomationsForService']);
+Route::get('/services/{service}/automations', [AutomationController::class, 'getAutomationsForService']);
+
+// Public automation endpoints
+Route::get('/automations', [AutomationController::class, 'index']);
+
+// New service integration endpoints
+Route::get('/services/available', [ServiceConnectionController::class, 'availableServices']);
+Route::get('/services/info/{service}', [ServiceConnectionController::class, 'serviceInfo']);
 
 // Mail endpoints
 Route::post('/mail/test', [MailController::class, 'testEmail']);
+
+// Webhook endpoints (public - no authentication)
+Route::post('/webhooks/telegram', [TelegramWebhookController::class, 'handle']);
+
+// OAuth callbacks (public - user_id passed via state)
+Route::get('/oauth/youtube/callback', [OAuthController::class, 'handleYouTubeCallback']);
+Route::get('/oauth/twitch/callback', [OAuthController::class, 'handleTwitchCallback']);
+Route::get('/oauth/gmail/callback', [OAuthController::class, 'handleGmailCallback']);
+Route::get('/oauth/discord/callback', [OAuthController::class, 'handleDiscordCallback']);
+
+// OAuth redirect routes for popups (public - token in query)
+Route::get('/oauth/youtube/redirect', [OAuthController::class, 'redirectToYouTubePopup']);
+Route::get('/oauth/gmail/redirect', [OAuthController::class, 'redirectToGmailPopup']);
+Route::get('/oauth/twitch/redirect', [OAuthController::class, 'redirectToTwitchPopup']);
+Route::get('/oauth/discord/redirect', [OAuthController::class, 'redirectToDiscordPopup']);
 
 // Protected routes (requires authentication)
 Route::middleware('auth:sanctum')->group(function () {
@@ -42,6 +72,46 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/mail/notification', [MailController::class, 'sendNotificationEmail']);
     Route::post('/mail/bulk', [MailController::class, 'sendBulkEmail']);
 
+    // Service connection management
+    Route::post('/services/connect', [ServiceConnectionController::class, 'connectService']);
+    Route::post('/services/disconnect', [ServiceConnectionController::class, 'disconnectService']);
+    Route::delete('/services/{service}/disconnect', [ServiceConnectionController::class, 'disconnectService']);
+    Route::post('/services/{service}/test', [ServiceConnectionController::class, 'testConnection']);
+    Route::get('/services/connected', [ServiceConnectionController::class, 'connectedServices']);
+    Route::get('/services/{service}/check', [ServiceConnectionController::class, 'checkServiceConnection']);
+    Route::get('/services/telegram/status', [ServiceConnectionController::class, 'telegramStatus']);
+    Route::post('/services/steam/connect', [ServiceConnectionController::class, 'connectSteam']);
+
+    // OAuth routes (redirect requires auth, callback is public)
+    Route::get('/oauth/youtube', [OAuthController::class, 'redirectToYouTube']);
+    Route::get('/oauth/twitch', [OAuthController::class, 'redirectToTwitch']);
+    Route::get('/oauth/gmail', [OAuthController::class, 'redirectToGmail']);
+
+    // AREA management
+    Route::get('/areas', [AreaController::class, 'index']);
+    Route::get('/areas/templates', [AreaController::class, 'templates']);
+    Route::get('/areas/{id}', [AreaController::class, 'show']);
+    Route::post('/areas', [AreaController::class, 'store']);
+    Route::post('/areas/custom', [AreaController::class, 'storeCustom']);
+    Route::post('/areas/{area}/toggle', [AreaController::class, 'toggle']);
+    Route::delete('/areas/{area}', [AreaController::class, 'destroy']);
+
+    // Actions and Reactions endpoints
+    Route::get('/actions', [AreaController::class, 'getActions']);
+    Route::get('/reactions', [AreaController::class, 'getReactions']);
+    Route::get('/actions-and-reactions', [AreaController::class, 'getActionsAndReactions']);
+
+    // Testing endpoints for development
+    Route::prefix('test')->group(function () {
+        Route::post('/telegram/send', [TestController::class, 'testTelegramSend']);
+        Route::get('/telegram/info', [TestController::class, 'testTelegramInfo']);
+        Route::post('/telegram/photo', [TestController::class, 'testTelegramPhoto']);
+        Route::post('/telegram/messages', [TestController::class, 'testTelegramMessages']);
+        Route::get('/health', [TestController::class, 'healthCheck']);
+    });
+    // User automation management
+    Route::resource('automations', AutomationController::class)->except(['index']);
+
     // Admin only routes
     Route::middleware('admin')->group(function () {
         // User management
@@ -53,8 +123,19 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Services management (admin only)
         Route::post('/services', [ServicesController::class, 'store']);
-        Route::post('/services/{service}/actions', [ServicesController::class, 'storeActions']);
-        Route::post('/services/{service}/reactions', [ServicesController::class, 'storeReactions']);
+        Route::put('/services/{service}', [ServicesController::class, 'update']);
+        Route::post('/services/{service}/actions', [ServicesController::class, 'storeAction']);
+        Route::post('/services/{service}/reactions', [ServicesController::class, 'storeReaction']);
+
+        // Individual action management (admin only)
+        Route::get('/actions/{action}', [ServicesController::class, 'showAction']);
+        Route::put('/actions/{action}', [ServicesController::class, 'updateAction']);
+        Route::delete('/actions/{action}', [ServicesController::class, 'deleteAction']);
+
+        // Individual reaction management (admin only)
+        Route::get('/reactions/{reaction}', [ServicesController::class, 'showReaction']);
+        Route::put('/reactions/{reaction}', [ServicesController::class, 'updateReaction']);
+        Route::delete('/reactions/{reaction}', [ServicesController::class, 'deleteReaction']);
 
         Route::delete('/services/{service}', [ServicesController::class, 'destroy']);
         Route::delete('/services/{service}/actions/{action}', [ServicesController::class, 'destroyAction']);

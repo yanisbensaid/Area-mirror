@@ -53,6 +53,21 @@ class UserSeeder extends Seeder
             ],
         ];
 
+        $demoUsers = [
+            [
+                'name' => 'Demo User 1',
+                'email' => 'user1@area.com',
+                'password' => bcrypt('user123'),
+                'role' => User::ROLE_USER,
+            ],
+            [
+                'name' => 'Demo User 2',
+                'email' => 'user2@area.com',
+                'password' => bcrypt('user123'),
+                'role' => User::ROLE_USER,
+            ]
+        ];
+
         foreach ($teamMembers as $member) {
             $user = User::firstOrCreate(
                 ['email' => $member['email']],
@@ -74,6 +89,17 @@ class UserSeeder extends Seeder
                 } else {
                     $this->command->info("ℹ️  {$member['name']} is already an admin");
                 }
+            }
+        }
+
+        foreach ($demoUsers as $userData) {
+            $user = User::firstOrCreate(
+                ['email' => $userData['email']],
+                $userData
+            );
+
+            if ($user->wasRecentlyCreated) {
+                $this->command->info("✅ Demo user created: {$userData['email']}");
             }
         }
 

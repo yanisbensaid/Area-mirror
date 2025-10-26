@@ -1,0 +1,1025 @@
+{
+	"info": {
+		"_postman_id": "area-telegram-service-test",
+		"name": "AREA Telegram Service Testing",
+		"description": "Complete API testing collection for AREA Telegram service integration. This collection covers user authentication, service connection, and all Telegram bot operations.\n\n## Setup Instructions\n\n1. Set the `baseUrl` variable to your backend URL (default: http://localhost:8000)\n2. Register a user and copy the token to the `authToken` variable\n3. Set your `telegramBotToken` in the collection variables\n4. Set your `chatId` for testing message sending\n\n## Test Flow\n\n1. Authentication & User Management\n2. Service Discovery\n3. Service Connection\n4. Testing Operations\n5. Health Checks\n6. Cleanup",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "area-backend-team"
+	},
+	"item": [
+		{
+			"name": "1. Authentication",
+			"item": [
+				{
+					"name": "Register User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('authToken', response.token);",
+									"    pm.collectionVariables.set('userId', response.user.id);",
+									"    pm.test('User registered successfully', () => {",
+									"        pm.expect(response.token).to.exist;",
+									"        pm.expect(response.user.email).to.eql('test@example.com');",
+									"    });",
+									"} else {",
+									"    pm.test('Registration failed', () => {",
+									"        pm.expect.fail('Registration should succeed');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('authToken', response.token);",
+									"    pm.test('Login successful', () => {",
+									"        pm.expect(response.token).to.exist;",
+									"        pm.expect(response.user.email).to.eql('test@example.com');",
+									"    });",
+									"} else {",
+									"    pm.test('Login failed', () => {",
+									"        console.log(pm.response.text());",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Current User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('User data retrieved', () => {",
+									"    pm.response.to.have.status(200);",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.email).to.exist;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/user",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"user"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "2. Service Discovery",
+			"item": [
+				{
+					"name": "Get Available Services",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Services retrieved successfully', () => {",
+									"    pm.response.to.have.status(200);",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.expect(response.data.services).to.be.an('array');",
+									"    pm.expect(response.data.total).to.be.at.least(1);",
+									"});",
+									"",
+									"pm.test('Telegram service is available', () => {",
+									"    const response = pm.response.json();",
+									"    const telegramService = response.data.services.find(s => s.name === 'Telegram');",
+									"    pm.expect(telegramService).to.exist;",
+									"    pm.expect(telegramService.auth_type).to.eql('api_key');",
+									"    pm.expect(telegramService.is_connected).to.be.false;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/services/available",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"services",
+								"available"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Telegram Service Info",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Telegram service info retrieved', () => {",
+									"    pm.response.to.have.status(200);",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.expect(response.data.name).to.eql('Telegram');",
+									"    pm.expect(response.data.actions).to.exist;",
+									"    pm.expect(response.data.reactions).to.exist;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/services/info/Telegram",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"services",
+								"info",
+								"Telegram"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "3. Service Connection",
+			"item": [
+				{
+					"name": "Connect Telegram Service",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    pm.test('Telegram service connected successfully', () => {",
+									"        const response = pm.response.json();",
+									"        pm.expect(response.success).to.be.true;",
+									"        pm.expect(response.message).to.include('Successfully connected');",
+									"        pm.expect(response.data.service).to.eql('Telegram');",
+									"    });",
+									"} else {",
+									"    pm.test('Connection failed - check bot token', () => {",
+									"        console.log('Response:', pm.response.text());",
+									"        console.log('Make sure to set a valid telegramBotToken in collection variables');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"service\": \"Telegram\",\n  \"credentials\": {\n    \"bot_token\": \"{{telegramBotToken}}\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/services/connect",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"services",
+								"connect"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Test Telegram Connection",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Connection test successful', () => {",
+									"    pm.response.to.have.status(200);",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.expect(response.data.connection_status).to.eql('healthy');",
+									"    pm.expect(response.data.authenticated).to.be.true;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/services/Telegram/test",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"services",
+								"Telegram",
+								"test"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Connected Services",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Connected services retrieved', () => {",
+									"    pm.response.to.have.status(200);",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.expect(response.data.connected_services).to.be.an('array');",
+									"    pm.expect(response.data.total).to.be.at.least(1);",
+									"});",
+									"",
+									"pm.test('Telegram is in connected services', () => {",
+									"    const response = pm.response.json();",
+									"    const telegramConnection = response.data.connected_services.find(s => s.service === 'Telegram');",
+									"    pm.expect(telegramConnection).to.exist;",
+									"    pm.expect(telegramConnection.is_valid).to.be.true;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/services/connected",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"services",
+								"connected"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "4. Telegram Operations",
+			"item": [
+				{
+					"name": "Get Bot Info",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Bot info retrieved successfully', () => {",
+									"    pm.response.to.have.status(200);",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.expect(response.data.service).to.eql('Telegram');",
+									"    pm.expect(response.data.connection_status).to.eql('healthy');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/test/telegram/info",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"test",
+								"telegram",
+								"info"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Send Text Message",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    pm.test('Message sent successfully', () => {",
+									"        const response = pm.response.json();",
+									"        pm.expect(response.success).to.be.true;",
+									"        pm.expect(response.message).to.include('sent successfully');",
+									"        pm.expect(response.data.chat_id).to.exist;",
+									"    });",
+									"} else {",
+									"    pm.test('Message sending failed - check chat ID', () => {",
+									"        console.log('Response:', pm.response.text());",
+									"        console.log('Make sure to set a valid chatId in collection variables');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"chat_id\": \"{{chatId}}\",\n  \"text\": \"🤖 **Test Message from AREA System**\\n\\nThis is a test message sent via the AREA Telegram integration.\\n\\n*Features tested:*\\n- Service connection ✅\\n- Authentication ✅\\n- Message sending ✅\\n\\nTimestamp: {{$timestamp}}\",\n  \"parse_mode\": \"Markdown\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/test/telegram/send",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"test",
+								"telegram",
+								"send"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Send Photo with Caption",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    pm.test('Photo sent successfully', () => {",
+									"        const response = pm.response.json();",
+									"        pm.expect(response.success).to.be.true;",
+									"        pm.expect(response.message).to.include('sent successfully');",
+									"    });",
+									"} else {",
+									"    pm.test('Photo sending failed', () => {",
+									"        console.log('Response:', pm.response.text());",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"chat_id\": \"{{chatId}}\",\n  \"photo_url\": \"https://picsum.photos/400/300?random={{$randomInt}}\",\n  \"caption\": \"📸 **Test Photo from AREA System**\\n\\nThis random image was sent via the Telegram integration to test photo sending capabilities.\\n\\nPhoto ID: {{$randomInt}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/test/telegram/photo",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"test",
+								"telegram",
+								"photo"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Check Recent Messages (Action Test)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Messages check completed', () => {",
+									"    pm.response.to.have.status(200);",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.expect(response.data.messages).to.be.an('array');",
+									"    pm.expect(response.data.count).to.be.a('number');",
+									"});",
+									"",
+									"const response = pm.response.json();",
+									"if (response.data.count > 0) {",
+									"    pm.test('Recent messages found', () => {",
+									"        pm.expect(response.data.messages[0]).to.have.property('message_id');",
+									"        pm.expect(response.data.messages[0]).to.have.property('text');",
+									"        pm.expect(response.data.messages[0]).to.have.property('from');",
+									"    });",
+									"} else {",
+									"    console.log('No recent messages found - this is normal if chat is empty');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"chat_id\": \"{{chatId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/test/telegram/messages",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"test",
+								"telegram",
+								"messages"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "5. Health & Monitoring",
+			"item": [
+				{
+					"name": "System Health Check",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Health check completed', () => {",
+									"    pm.response.to.have.status(200);",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.expect(response.data.services).to.exist;",
+									"    pm.expect(response.data.overall_status).to.exist;",
+									"});",
+									"",
+									"pm.test('Telegram service is healthy', () => {",
+									"    const response = pm.response.json();",
+									"    const telegramHealth = response.data.services.Telegram;",
+									"    if (telegramHealth) {",
+									"        pm.expect(telegramHealth.status).to.be.oneOf(['healthy', 'unhealthy']);",
+									"        pm.expect(telegramHealth.last_checked).to.exist;",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/test/health",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"test",
+								"health"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Legacy Services Endpoint",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Legacy services endpoint works', () => {",
+									"    pm.response.to.have.status(200);",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.server.services).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/services",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"services"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "6. Error Testing",
+			"item": [
+				{
+					"name": "Connect with Invalid Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Invalid token rejected', () => {",
+									"    pm.response.to.have.status(401);",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.false;",
+									"    pm.expect(response.message).to.include('Authentication failed');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"service\": \"Telegram\",\n  \"credentials\": {\n    \"bot_token\": \"invalid_token_format\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/services/connect",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"services",
+								"connect"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Send Message to Invalid Chat",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Invalid chat ID handled', () => {",
+									"    // This should either fail gracefully or handle the error",
+									"    if (pm.response.code !== 200) {",
+									"        const response = pm.response.json();",
+									"        pm.expect(response.success).to.be.false;",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"chat_id\": \"invalid_chat_id_12345\",\n  \"text\": \"This should fail\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/test/telegram/send",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"test",
+								"telegram",
+								"send"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Access Without Authentication",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Unauthenticated access denied', () => {",
+									"    pm.response.to.have.status(401);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/services/available",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"services",
+								"available"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "7. Cleanup",
+			"item": [
+				{
+					"name": "Disconnect Telegram Service",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Service disconnected successfully', () => {",
+									"    pm.response.to.have.status(200);",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.expect(response.message).to.include('disconnected');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/services/Telegram/disconnect",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"services",
+								"Telegram",
+								"disconnect"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Disconnection",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Service no longer connected', () => {",
+									"    pm.response.to.have.status(200);",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.data.total).to.eql(0);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/services/connected",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"services",
+								"connected"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Logout User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('User logged out successfully', () => {",
+									"    pm.response.to.have.status(200);",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.message).to.include('Logged out');",
+									"});",
+									"",
+									"// Clear the auth token",
+									"pm.collectionVariables.set('authToken', '');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/logout",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"logout"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Auto-generate timestamp for dynamic content",
+					"pm.globals.set('timestamp', new Date().toISOString());"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global test for all requests",
+					"pm.test('Response time is reasonable', () => {",
+					"    pm.expect(pm.response.responseTime).to.be.below(5000);",
+					"});",
+					"",
+					"// Log request details for debugging",
+					"if (pm.response.code >= 400) {",
+					"    console.log('Request failed:');",
+					"    console.log('Status:', pm.response.status);",
+					"    console.log('Response:', pm.response.text());",
+					"}"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8000",
+			"type": "string"
+		},
+		{
+			"key": "authToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "telegramBotToken",
+			"value": "YOUR_BOT_TOKEN_HERE",
+			"type": "string"
+		},
+		{
+			"key": "chatId",
+			"value": "YOUR_CHAT_ID_HERE",
+			"type": "string"
+		}
+	]
+}

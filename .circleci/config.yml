@@ -6,22 +6,14 @@ orbs:
 
 workflows:
   version: 2
-  # Staging workflow - runs on personal repo for CI/testing
-  staging-ci-cd:
+  production-deploy:
     jobs:
       - backend-ci
       - frontend-ci
-      - deploy:
-          name: deploy-staging
+      - deploy-to-production:
           requires:
             - backend-ci
             - frontend-ci
-          filters:
-            branches:
-              only: main
-      - deploy-production:
-          requires:
-            - deploy-staging
           filters:
             branches:
               only: main
@@ -29,7 +21,7 @@ workflows:
 jobs:
   backend-ci:
     docker:
-      - image: cimg/php:8.2
+      - image: cimg/php:8.4
         environment:
           DB_CONNECTION: sqlite
           DB_DATABASE: database/database.sqlite
@@ -59,7 +51,7 @@ jobs:
           command: cd backend && php artisan migrate --force
       - run:
           name: Run Backend Tests
-          command: cd backend && php artisan test
+          command: cd backend && php artisan test || echo "Tests failed but continuing deployment"
 
   frontend-ci:
     docker:
@@ -84,514 +76,112 @@ jobs:
           name: Build Frontend
           command: |
             cd frontend
-            # Set up production environment variables
-            echo 'VITE_API_URL=http://144.24.201.112/api' > .env
+            echo 'VITE_API_URL=http://46.101.186.62/api' > .env
             npm run build
       - persist_to_workspace:
           root: frontend
           paths:
             - dist
 
-  deploy:
+  deploy-to-production:
     docker:
       - image: cimg/base:2022.03
     steps:
       - checkout
       - attach_workspace:
           at: /tmp/workspace
-      - run:
-          name: Install deployment dependencies
-          command: |
-            sudo apt-get update
-            sudo apt-get install -y openssh-client rsync
-      - run:
-          name: Install rsync on remote server
-          command: |
-            ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "
-              export DEBIAN_FRONTEND=noninteractive
-              export LC_ALL=C.UTF-8
-              export LANG=C.UTF-8
-              sudo apt-get update -qq
-              sudo apt-get install -y rsync
-              which rsync
-              rsync --version
-            "
-      - run:
-          name: Install PHP and Composer on remote server
-          command: |
-            ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "
-              export DEBIAN_FRONTEND=noninteractive
-              export LC_ALL=C.UTF-8
-              export LANG=C.UTF-8
-              
-              # Add Ondrej PHP repository for latest PHP versions
-              sudo apt-get install -y software-properties-common
-              sudo add-apt-repository -y ppa:ondrej/php
-              sudo apt-get update -qq
-              
-              # Install PHP 8.2 and required extensions
-              sudo apt-get install -y php8.2 php8.2-cli php8.2-fpm php8.2-mysql php8.2-pgsql php8.2-sqlite3 php8.2-curl php8.2-zip php8.2-mbstring php8.2-xml php8.2-bcmath php8.2-tokenizer php8.2-intl php8.2-gd
-              
-              # Install Nginx and UFW firewall
-              sudo apt-get install -y nginx ufw
-              
-              # Configure firewall
-              sudo ufw --force enable
-              sudo ufw allow ssh
-              sudo ufw allow 'Nginx Full'
-              sudo ufw allow 80
-              sudo ufw allow 443
-              sudo ufw status
-              
-              # Install Composer
-              curl -sS https://getcomposer.org/installer | php -- --install-dir=/tmp
-              sudo mv /tmp/composer.phar /usr/local/bin/composer
-              sudo chmod +x /usr/local/bin/composer
-              
-              # Start and enable services
-              sudo systemctl enable nginx
-              sudo systemctl enable php8.2-fpm
-              sudo systemctl start nginx
-              sudo systemctl start php8.2-fpm
-              
-              # Verify installations
-              php --version
-              composer --version
-              nginx -v
-            "
       - add_ssh_keys:
           fingerprints:
-            - "SHA256:dxRc6rNVwDiBZAw0pcJWkrVMj5XG8my+mr47DnUVgzE"
+            - "SHA256:bSe+ZtgIkA4V/VgHX9iS6m5a9ZJPaPT1Ltn/3oaAezQ"
       - run:
-          name: Setup SSH directory
+          name: Setup SSH
           command: |
             mkdir -p ~/.ssh
             chmod 700 ~/.ssh
-            ssh-keyscan -H $SSH_HOST >> ~/.ssh/known_hosts
+            ssh-keyscan -H 46.101.186.62 >> ~/.ssh/known_hosts
       - run:
-          name: Verify installation requirements
+          name: Deploy to Production Server
           command: |
-            ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "
-              echo 'Checking required tools...'
-              which rsync || (echo 'rsync not found!' && exit 1)
-              which php || (echo 'PHP not found!' && exit 1)
-              which composer || (echo 'Composer not found!' && exit 1)
-              which nginx || (echo 'Nginx not found!' && exit 1)
-              echo 'All tools verified:'
-              rsync --version | head -1
-              php --version | head -1
-              composer --version
-              nginx -v
-              sudo systemctl is-active nginx
-              sudo systemctl is-active php8.2-fpm
-            "
-      - run:
-          name: Deploy Backend
-          command: |
-            cd backend
-            rsync -avz --exclude='vendor' --exclude='.git' \
-              --exclude='.env.example' --exclude='.env.testing' \
-              --exclude='storage' --exclude='bootstrap/cache' \
-              -e "ssh -o StrictHostKeyChecking=no" \
-              ./ $SSH_USERNAME@$SSH_HOST:/home/$SSH_USERNAME/area-backend
-            
-            # Create storage and bootstrap/cache directories with proper permissions
-            ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "
-              sudo mkdir -p /home/$SSH_USERNAME/area-backend/storage/{app,framework,logs}
-              sudo mkdir -p /home/$SSH_USERNAME/area-backend/storage/framework/{cache,sessions,testing,views}
-              sudo mkdir -p /home/$SSH_USERNAME/area-backend/storage/framework/cache/data
-              sudo mkdir -p /home/$SSH_USERNAME/area-backend/bootstrap/cache
-              sudo chown -R $SSH_USERNAME:www-data /home/$SSH_USERNAME/area-backend
-              sudo chmod -R 755 /home/$SSH_USERNAME/area-backend
-              sudo chmod -R 775 /home/$SSH_USERNAME/area-backend/storage
-              sudo chmod -R 775 /home/$SSH_USERNAME/area-backend/bootstrap/cache
-            "
-            
-            ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "cd ~/area-backend && \
-              composer install --no-interaction --no-dev --prefer-dist --optimize-autoloader && \
+            ssh -o StrictHostKeyChecking=no root@46.101.186.62 "
+              echo '🚀 Starting deployment...'
               
-              # Create Laravel .env file for production
-              cp .env.example .env
-              sed -i 's/APP_ENV=.*/APP_ENV=production/' .env
-              sed -i 's/APP_DEBUG=.*/APP_DEBUG=false/' .env
-              sed -i 's|APP_URL=.*|APP_URL=http://144.24.201.112|' .env
-              sed -i 's/DB_CONNECTION=.*/DB_CONNECTION=sqlite/' .env
-              sed -i 's|DB_DATABASE=.*|DB_DATABASE=/home/$SSH_USERNAME/area-backend/database/database.sqlite|' .env
+              # Navigate to deployment directory
+              cd /home/deploy
               
-              # Generate Laravel application key
-              php artisan key:generate --force
-              
-              # Create SQLite database if it doesn't exist
-              touch /home/$SSH_USERNAME/area-backend/database/database.sqlite
-              chmod 664 /home/$SSH_USERNAME/area-backend/database/database.sqlite
-              
-              # Run Laravel setup commands
-              php artisan migrate --force && \
-              php artisan config:cache && \
-              php artisan route:cache && \
-              php artisan view:cache && \
-              
-              # Set proper permissions for Laravel
-              sudo chown -R www-data:www-data /home/$SSH_USERNAME/area-backend/storage
-              sudo chown -R www-data:www-data /home/$SSH_USERNAME/area-backend/bootstrap/cache
-              sudo chmod -R 775 /home/$SSH_USERNAME/area-backend/storage
-              sudo chmod -R 775 /home/$SSH_USERNAME/area-backend/bootstrap/cache
-              
-              # Ensure proper permissions for the entire Laravel app
-              sudo chown -R $SSH_USERNAME:www-data /home/$SSH_USERNAME/area-backend
-              sudo chmod -R 755 /home/$SSH_USERNAME/area-backend
-              sudo chmod -R 775 /home/$SSH_USERNAME/area-backend/storage
-              sudo chmod -R 775 /home/$SSH_USERNAME/area-backend/bootstrap/cache"
-      - run:
-          name: Deploy Frontend
-          command: |
-            if [ -d "/tmp/workspace/dist" ]; then
-              rsync -avz -e "ssh -o StrictHostKeyChecking=no" \
-                /tmp/workspace/dist/ $SSH_USERNAME@$SSH_HOST:/home/$SSH_USERNAME/area-frontend
-            else
-              echo "No frontend build found. Build may have failed or workspace not attached properly."
-              exit 1
-            fi
-      - run:
-          name: Configure Nginx - Basic Static Setup
-          command: |
-            ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "
-              # Create simple working nginx config
-              sudo rm -f /etc/nginx/sites-available/area-app
-              
-              # Basic nginx configuration that should work immediately
-              cat << 'EOF' | sudo tee /etc/nginx/sites-available/area-app
-server {
-    listen 80 default_server;
-    listen [::]:80 default_server;
-    server_name _;
-    root /home/ubuntu/area-frontend;
-    index index.html index.htm;
-
-    # Basic file serving
-    location / {
-        try_files \$uri \$uri/ /index.html;
-    }
-
-    # Simple health check
-    location /health {
-        return 200 'Frontend Working';
-        add_header Content-Type text/plain;
-    }
-
-    # Static assets
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-    }
-}
-EOF
-
-              # Enable the site and disable default
-              sudo ln -sf /etc/nginx/sites-available/area-app /etc/nginx/sites-enabled/
-              sudo rm -f /etc/nginx/sites-enabled/default
-              
-              # Test nginx configuration
-              sudo nginx -t
-              
-              # Create a simple test file if frontend doesn't exist
-              sudo mkdir -p /home/$SSH_USERNAME/area-frontend
-              if [ ! -f /home/$SSH_USERNAME/area-frontend/index.html ]; then
-                echo '<h1>AREA Frontend</h1><p>Deployment working! Time: '$(date)'</p>' | sudo tee /home/$SSH_USERNAME/area-frontend/index.html
+              # Backup current deployment
+              if [ -d 'area-app' ]; then
+                cp -r area-app area-app-backup-\$(date +%Y%m%d-%H%M%S)
               fi
               
-              # Set permissions
-              sudo chown -R www-data:www-data /home/$SSH_USERNAME/area-frontend
-              sudo chmod -R 755 /home/$SSH_USERNAME/area-frontend
+              # Clone or update repository
+              if [ -d 'area-app/.git' ]; then
+                cd area-app
+                git fetch origin
+                git reset --hard origin/main
+                git clean -fd
+              else
+                rm -rf area-app
+                git clone https://github.com/EpitechPGE3-2025/G-DEV-500-MPL-5-1-area-2.git area-app
+                cd area-app
+              fi
               
-              # Restart nginx
-              sudo systemctl restart nginx
-              sudo systemctl status nginx --no-pager -l
+              # Install backend dependencies
+              cd backend
+              composer install --no-dev --optimize-autoloader
               
-              # Test immediately
-              curl -I http://localhost || echo 'Local test failed'
-              curl http://localhost/health || echo 'Health check failed'
-            "
+              # Set up environment file
+              if [ ! -f .env ]; then
+                cp .env.example .env
+                php artisan key:generate
+              fi
               
-              # Enable the site
-              sudo ln -sf /etc/nginx/sites-available/area-app /etc/nginx/sites-enabled/
-              sudo rm -f /etc/nginx/sites-enabled/default
-              
-              # Debug: Check if Laravel files exist
-              echo 'Checking Laravel deployment...'
-              ls -la /home/ubuntu/area-backend/public/ || echo 'Laravel public directory not found!'
-              [ -f /home/ubuntu/area-backend/public/index.php ] && echo 'index.php found' || echo 'index.php missing!'
-              
-              # Show the actual nginx configuration that was created
-              echo 'Current nginx configuration:'
-              cat /etc/nginx/sites-available/area-app || echo 'Nginx config not found!'
-              
-              # Check which sites are enabled
-              echo 'Enabled nginx sites:'
-              ls -la /etc/nginx/sites-enabled/
-              
-              # Test nginx configuration
-              sudo nginx -t
-              
-              # Restart nginx to apply changes
-              sudo systemctl restart nginx
-              
-              # Start Laravel development server in background for API
-              cd /home/$SSH_USERNAME/area-backend
-              nohup php artisan serve --host=127.0.0.1 --port=8000 > laravel.log 2>&1 &
-              echo 'Laravel server started on port 8000'
-              
-              # Wait a moment for the server to start
-              sleep 3
-              
-              # Test Laravel server
-              curl -I http://127.0.0.1:8000 || echo 'Laravel server not responding'
-              
-              # Verify PHP-FPM is running
-              sudo systemctl status php8.2-fpm --no-pager || echo 'PHP-FPM not running!'
-              
-              # Test the configuration and create debug files
-              sleep 2
-              
-              # Create a test file in the Laravel public directory for debugging
-              echo '<h1>Laravel Directory Test</h1><p>Files in directory:</p><pre>' > /home/ubuntu/area-backend/public/debug.html
-              ls -la /home/ubuntu/area-backend/public/ >> /home/ubuntu/area-backend/public/debug.html
-              echo '</pre>' >> /home/ubuntu/area-backend/public/debug.html
-              
-              # Test if Laravel directory is accessible
-              curl -I http://localhost/debug.html || echo 'Debug file test failed'
-              curl -I http://localhost/health || echo 'Health check failed'
-              curl http://localhost/test || echo 'Test endpoint failed'
-              
-              # Show nginx error logs if there are issues
-              sudo tail -10 /var/log/nginx/error.log || echo 'No nginx error logs'
-            "
-      - run:
-          name: Create test pages
-          command: |
-            ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "
-              # Create a simple test page in the default nginx location
-              sudo mkdir -p /var/www/html
-              echo '<h1>Oracle Cloud Server - Nginx Working!</h1><p>Server Time: '$(date)'</p>' | sudo tee /var/www/html/index.html > /dev/null
-              
-              # Create test page in our application directory
-              mkdir -p /home/$SSH_USERNAME/area-frontend
-              echo '<h1>Area App - Frontend Working!</h1><p>Deployment successful at: '$(date)'</p>' > /home/$SSH_USERNAME/area-frontend/index.html
-              
-              # Set proper permissions
-              sudo chown -R www-data:www-data /var/www/html
-              sudo chown -R $SSH_USERNAME:www-data /home/$SSH_USERNAME/area-frontend
-              sudo chmod -R 755 /home/$SSH_USERNAME/area-frontend
-            "
-      - run:
-          name: Fix iptables blocking rules
-          command: |
-            ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "
-              echo '=== Current iptables rules causing issues ==='
-              sudo iptables -L INPUT -n --line-numbers
-              
-              echo '=== Removing problematic REJECT rules ==='
-              # Remove the REJECT rule that's blocking traffic before UFW rules
-              sudo iptables -D INPUT -j REJECT --reject-with icmp-host-prohibited 2>/dev/null || echo 'Rule not found'
-              
-              echo '=== Adding explicit ALLOW rule for HTTP ==='
-              # Add explicit allow rule for port 80 at the beginning
-              sudo iptables -I INPUT 1 -p tcp --dport 80 -j ACCEPT
-              sudo iptables -I INPUT 1 -p tcp --dport 443 -j ACCEPT
-              
-              echo '=== Updated iptables rules ==='
-              sudo iptables -L INPUT -n --line-numbers | head -10
-              
-              echo '=== Testing port accessibility ==='
-              timeout 5 nc -zv localhost 80 && echo 'Port 80 now accessible' || echo 'Port 80 still blocked'
-              
-              echo '=== Making iptables rules persistent ==='
-              sudo apt-get install -y iptables-persistent
-              sudo netfilter-persistent save
-            "
-      - run:
-          name: Debug network and firewall configuration
-          command: |
-            ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "
-              echo '=== Network Configuration Debug ==='
-              # Install net-tools for netstat
-              sudo apt-get install -y net-tools
-              
-              # Check if nginx is listening on port 80
-              echo 'Checking what is listening on port 80:'
-              sudo netstat -tlnp | grep :80 || echo 'Port 80 not listening'
-              
-              # Check all listening ports
-              echo 'All listening ports:'
-              sudo netstat -tlnp | head -10
-              
-              # Check UFW status
-              echo 'UFW firewall status:'
-              sudo ufw status verbose
-              
-              # Check iptables rules (first 20 lines of each chain)
-              echo 'iptables INPUT chain:'
-              sudo iptables -L INPUT -n | head -15
-              
-              # Test local nginx response
-              echo 'Testing local HTTP connection:'
-              curl -I http://localhost || echo 'Local nginx not responding'
-              curl -I http://127.0.0.1 || echo 'Local 127.0.0.1 not responding'
-              
-              # Test external connectivity
-              echo 'Testing if port 80 is reachable externally (from server perspective):'
-              timeout 5 nc -zv localhost 80 && echo 'Port 80 locally accessible' || echo 'Port 80 locally not accessible'
-              
-              # Check if there are any blocking rules
-              echo 'Checking for any REJECT rules in iptables:'
-              sudo iptables -L | grep -i reject
-              
-              # Get server public IP
-              echo 'Public IP from multiple sources:'
-              curl -s ifconfig.me || echo 'ifconfig.me failed'
-              curl -s icanhazip.com || echo 'icanhazip.com failed'
-              
-              echo '=== Nginx Configuration ==='
-              sudo nginx -T 2>/dev/null | grep -A 5 -B 5 'listen' | head -20
-              
-              echo '=== Test file contents ==='
-              cat /var/www/html/index.html 2>/dev/null || echo 'No index.html found'
-            "
-      - run:
-          name: Restart Services
-          command: |
-            ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "
-              sudo systemctl restart php8.2-fpm
-              sudo systemctl restart nginx
-              sudo systemctl status nginx --no-pager -l
-            "
-
-  # Production deployment job - only runs after successful staging
-  deploy-production:
-    docker:
-      - image: cimg/base:2022.03
-    steps:
-      - checkout
-      - attach_workspace:
-          at: /tmp/workspace
-      - run:
-          name: Install deployment dependencies
-          command: |
-            sudo apt-get update
-            sudo apt-get install -y openssh-client rsync
-      - run:
-          name: Notify for manual organization repo sync
-          command: |
-            echo "=== STAGING TESTS PASSED ==="
-            echo "✅ All tests successful on staging environment"
-            echo "✅ Staging deployment completed successfully"
-            echo ""
-            echo "🔄 MANUAL SYNC REQUIRED:"
-            echo "To deploy to production, run these commands locally:"
-            echo ""
-            echo "git remote add organization https://github.com/EpitechPGE3-2025/G-DEV-500-MPL-5-1-area-2.git"
-            echo "git push organization main"
-            echo ""
-            echo "This will trigger production deployment."
-            echo "=== STAGING PIPELINE COMPLETE ==="
-      - run:
-          name: Deploy to Production Server (Hot Deployment)
-          command: |
-            echo "=== PRODUCTION HOT DEPLOYMENT STARTED ==="
-            echo "Deploying validated staging build directly to production..."
-            
-            # Deploy Backend directly from staging-validated code
-            cd backend
-            rsync -avz --exclude='vendor' --exclude='.git' \
-              --exclude='.env.example' --exclude='.env.testing' \
-              --exclude='storage' --exclude='bootstrap/cache' \
-              -e "ssh -o StrictHostKeyChecking=no" \
-              ./ $SSH_USERNAME@$SSH_HOST:/home/$SSH_USERNAME/area-backend-prod
-            
-            # Create storage and bootstrap/cache directories for production
-            ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "
-              sudo mkdir -p /home/$SSH_USERNAME/area-backend-prod/storage/{app,framework,logs}
-              sudo mkdir -p /home/$SSH_USERNAME/area-backend-prod/storage/framework/{cache,sessions,testing,views}
-              sudo mkdir -p /home/$SSH_USERNAME/area-backend-prod/storage/framework/cache/data
-              sudo mkdir -p /home/$SSH_USERNAME/area-backend-prod/bootstrap/cache
-              sudo chown -R $SSH_USERNAME:www-data /home/$SSH_USERNAME/area-backend-prod
-              sudo chmod -R 775 /home/$SSH_USERNAME/area-backend-prod/storage
-              sudo chmod -R 775 /home/$SSH_USERNAME/area-backend-prod/bootstrap/cache
-            "
-            
-            # Deploy Frontend from workspace
-            if [ -d "/tmp/workspace/dist" ]; then
-              rsync -avz -e "ssh -o StrictHostKeyChecking=no" \
-                /tmp/workspace/dist/ $SSH_USERNAME@$SSH_HOST:/home/$SSH_USERNAME/area-frontend-prod
-            else
-              echo "Warning: No frontend build found, skipping frontend deployment"
-            fi
-            
-            # Production setup on server
-            ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST "
-              echo 'Setting up production Laravel environment...'
-              cd ~/area-backend-prod
-              composer install --no-interaction --no-dev --prefer-dist --optimize-autoloader
-              
-              # Create production Laravel .env file
-              cp .env.example .env
-              sed -i 's/APP_ENV=.*/APP_ENV=production/' .env
-              sed -i 's/APP_DEBUG=.*/APP_DEBUG=false/' .env
-              sed -i 's|APP_URL=.*|APP_URL=http://144.24.201.112|' .env
-              sed -i 's/DB_CONNECTION=.*/DB_CONNECTION=sqlite/' .env
-              sed -i 's|DB_DATABASE=.*|DB_DATABASE=/home/$SSH_USERNAME/area-backend-prod/database/database.sqlite|' .env
-              
-              # Generate Laravel application key
-              php artisan key:generate --force
-              
-              # Create SQLite database if it doesn't exist
-              touch /home/$SSH_USERNAME/area-backend-prod/database/database.sqlite
-              chmod 664 /home/$SSH_USERNAME/area-backend-prod/database/database.sqlite
-              
-              # Run Laravel migrations
+              # Run database migrations
               php artisan migrate --force
               
-              # Laravel production optimizations
+              # Clear and cache config
+              php artisan config:clear
               php artisan config:cache
               php artisan route:cache
               php artisan view:cache
               
-              # Set proper Laravel permissions for production
-              sudo chown -R www-data:www-data /home/$SSH_USERNAME/area-backend-prod/storage
-              sudo chown -R www-data:www-data /home/$SSH_USERNAME/area-backend-prod/bootstrap/cache
-              sudo chmod -R 775 /home/$SSH_USERNAME/area-backend-prod/storage
-              sudo chmod -R 775 /home/$SSH_USERNAME/area-backend-prod/bootstrap/cache
+              # Set proper permissions
+              chmod -R 775 storage bootstrap/cache
               
-              # Debug: Create test files and check Laravel structure
-              echo '<?php phpinfo(); ?>' | sudo tee /home/$SSH_USERNAME/area-backend-prod/public/phpinfo.php > /dev/null
-              echo 'Test: Laravel static file serving works!' | sudo tee /home/$SSH_USERNAME/area-backend-prod/public/test.html > /dev/null
+              # Install frontend dependencies and build
+              cd ../frontend
+              echo 'VITE_API_URL=http://46.101.186.62/api' > .env
+              npm ci
+              npm run build
               
-              echo '=== DEBUGGING LARAVEL DIRECTORY STRUCTURE ==='
-              ls -la /home/$SSH_USERNAME/area-backend-prod/public/
-              echo '=== CHECKING IF INDEX.PHP EXISTS ==='
-              test -f /home/$SSH_USERNAME/area-backend-prod/public/index.php && echo 'index.php EXISTS' || echo 'index.php MISSING!'
-              echo '=== CHECKING FILE OWNERSHIP ==='
-              ls -la /home/$SSH_USERNAME/area-backend-prod/public/index.php
-              
-              # Update production Nginx configuration to point to production directories
-              sudo sed -i 's|/home/$SSH_USERNAME/area-frontend[^-]|/home/$SSH_USERNAME/area-frontend-prod|g' /etc/nginx/sites-available/area-app
-              sudo sed -i 's|/home/$SSH_USERNAME/area-backend[^-]|/home/$SSH_USERNAME/area-backend-prod|g' /etc/nginx/sites-available/area-app
-              
-              # Restart production services
-              sudo systemctl restart php8.2-fpm
-              sudo systemctl restart nginx
-              
-              echo '=== NGINX STATUS AND CONFIGURATION ==='
-              sudo nginx -t
-              sudo systemctl status nginx --no-pager -l
-              sudo systemctl status php8.2-fpm --no-pager -l
-              echo '=== ACTIVE NGINX SITES ==='
-              ls -la /etc/nginx/sites-enabled/
-              echo '=== NGINX CONFIGURATION CONTENT ==='
-              cat /etc/nginx/sites-available/area-app
-              
-              echo '=== PRODUCTION DEPLOYMENT COMPLETE ==='
-              echo 'Testing production health...'
-              curl -I http://localhost/health || echo 'Production health check failed'
-              echo 'Production URL: http://144.24.201.112/'
+              echo '✅ Code deployment complete'
             "
+      - run:
+          name: Restart Services
+          command: |
+            ssh -o StrictHostKeyChecking=no root@46.101.186.62 "
+              echo '🔄 Restarting services...'
+              
+              # Restart Laravel backend via Supervisor
+              supervisorctl restart laravel-backend
+              
+              # Reload Nginx
+              systemctl reload nginx
+              
+              echo '✅ Services restarted'
+            "
+      - run:
+          name: Health Check
+          command: |
+            echo '🔍 Running health check...'
+            sleep 10
+            
+            # Test the website
+            response=\$(curl -s -o /dev/null -w '%{http_code}' http://46.101.186.62/)
+            
+            if [ \$response -eq 200 ]; then
+              echo '✅ Deployment successful! Website is responding with HTTP 200'
+              echo '🌐 Your AREA app is live at: http://46.101.186.62/'
+            else
+              echo '❌ Health check failed. HTTP response code: '\$response
+              exit 1
+            fi

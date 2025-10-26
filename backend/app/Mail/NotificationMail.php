@@ -65,7 +65,7 @@ class NotificationMail extends Mailable
                 'actionText' => $this->actionText,
                 'actionUrl' => $this->actionUrl,
                 'appName' => config('app.name', 'AREA'),
-                'appUrl' => config('app.url', 'http://localhost:3000'),
+                'appUrl' => config('app.url', 'http://localhost:5173'),
             ],
         );
     }
