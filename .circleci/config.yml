@@ -91,25 +91,62 @@ jobs:
           name: Run Laravel Migrations
           command: |
             cd backend
-            echo "=== Testing Database Connection ==="
-            php artisan tinker --execute="DB::connection()->getPdo(); echo 'Database connection successful';" || {
-              echo "Database connection failed, trying to fix..."
-              # Clear any cached config
-              php artisan config:clear
-              php artisan cache:clear
-              # Recreate database file with proper path
-              rm -f /tmp/database.sqlite
-              touch /tmp/database.sqlite
-              chmod 666 /tmp/database.sqlite
-              echo "Database file recreated"
+            echo "=== Pre-migration Setup ==="
+            # Clear all caches
+            php artisan config:clear
+            php artisan cache:clear
+            php artisan route:clear
+            php artisan view:clear
+            
+            echo "=== Simple PHP/SQLite Test ==="
+            php -r "
+            try {
+                \$pdo = new PDO('sqlite:/tmp/database.sqlite');
+                echo 'Direct SQLite connection: SUCCESS\n';
+                \$pdo->exec('CREATE TABLE IF NOT EXISTS test (id INTEGER)');
+                echo 'SQLite table creation: SUCCESS\n';
+            } catch (Exception \$e) {
+                echo 'Direct SQLite connection failed: ' . \$e->getMessage() . '\n';
+                exit(1);
             }
-            echo ""
+            "
+            
+            echo "=== Laravel DB Test ==="
+            php artisan tinker --execute="
+            try {
+                DB::connection()->getPdo();
+                echo 'Laravel DB connection: SUCCESS';
+            } catch (Exception \$e) {
+                echo 'Laravel DB connection failed: ' . \$e->getMessage();
+                throw \$e;
+            }
+            " || {
+              echo "Laravel DB connection failed, debugging..."
+              echo "PHP SQLite extension check:"
+              php -m | grep -i sqlite || echo "SQLite extension not found!"
+              echo "Database file permissions:"
+              ls -la /tmp/database.sqlite
+              echo "Current working directory:"
+              pwd
+              echo "Laravel config cache status:"
+              ls -la bootstrap/cache/ || echo "No bootstrap cache"
+              exit 1
+            }
+            
             echo "=== Running Migrations ==="
-            php artisan migrate --force --verbose || {
-              echo "Migration failed, checking Laravel logs..."
-              tail -20 storage/logs/laravel.log 2>/dev/null || echo "No Laravel logs found"
-              echo "Trying with fresh database..."
-              php artisan migrate:fresh --force --verbose || exit 1
+            php artisan migrate --force --verbose --no-interaction || {
+              echo "=== Migration Failed - Full Debug ==="
+              echo "Migration status:"
+              php artisan migrate:status || echo "Status failed"
+              echo "Laravel logs:"
+              cat storage/logs/laravel.log 2>/dev/null | tail -50 || echo "No logs"
+              echo "Available migrations:"
+              ls -la database/migrations/ || echo "No migrations folder"
+              echo "Trying fresh migration..."
+              php artisan migrate:fresh --force --verbose --no-interaction || {
+                echo "Fresh migration also failed"
+                exit 1
+              }
             }
       - run:
           name: Run Backend Tests
