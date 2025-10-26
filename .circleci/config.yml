@@ -16,7 +16,7 @@ workflows:
             - frontend-ci
           filters:
             branches:
-              only: main
+              only: personal-main
 
 jobs:
   backend-ci:
@@ -117,11 +117,11 @@ jobs:
               if [ -d 'area-app/.git' ]; then
                 cd area-app
                 git fetch origin
-                git reset --hard origin/main
+                git reset --hard origin/personal-main
                 git clean -fd
               else
                 rm -rf area-app
-                git clone https://github.com/EpitechPGE3-2025/G-DEV-500-MPL-5-1-area-2.git area-app
+                git clone -b personal-main https://github.com/EpitechPGE3-2025/G-DEV-500-MPL-5-1-area-2.git area-app
                 cd area-app
               fi
               
