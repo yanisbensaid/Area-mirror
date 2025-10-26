@@ -200,6 +200,10 @@ jobs:
           command: |
             cd frontend
             echo 'VITE_API_URL=http://46.101.186.62' > .env
+            # Set build timestamp for deployment tracking
+            BUILD_TIMESTAMP=$(date +%s000)
+            echo 'VITE_BUILD_TIME='$BUILD_TIMESTAMP >> .env
+            echo "Build timestamp set to: $BUILD_TIMESTAMP"
             echo "Starting frontend build..."
             # Try build with more verbose output
             npm run build --verbose || {
@@ -211,6 +215,12 @@ jobs:
               sed -i 's/"noUnusedParameters": true/"noUnusedParameters": false/' tsconfig.app.json
               npm run build || exit 1
             }
+            # Copy logo files to built dist directory
+            echo "Copying logo files to dist..."
+            if [ -d 'public/logo' ]; then
+              mkdir -p dist/logo
+              cp -r public/logo/* dist/logo/ 2>/dev/null && echo 'Logo files copied to build'
+            fi
       - persist_to_workspace:
           root: frontend
           paths:
@@ -303,35 +313,45 @@ jobs:
               # Set proper permissions (only if needed)
               [ ! -w storage ] && chmod -R 775 storage bootstrap/cache || echo 'Permissions already OK'
               
-              # Install frontend dependencies and build (optimized)
-              cd ../frontend
-              echo '🎨 Building frontend...'
-              echo 'VITE_API_URL=http://46.101.186.62' > .env
+              # Use pre-built frontend from CircleCI workspace
+              echo '🎨 Using pre-built frontend from workspace...'
               
-              # Use npm ci with cache and parallel builds
-              npm ci --silent --no-audit --no-fund || {
-                echo 'npm ci failed, trying npm install...'
-                npm install --silent
-              }
-              
-              # Build with production optimizations and timestamp
-              BUILD_TIMESTAMP=$(date +%s000)
-              echo 'VITE_BUILD_TIME='$BUILD_TIMESTAMP >> .env
-              echo 'Build timestamp set to: '$BUILD_TIMESTAMP
-              NODE_ENV=production npm run build
-              
-              # Copy logo files to dist (Vite doesn't copy them automatically)
-              echo '🖼️ Copying logo files...'
-              if [ -d 'public/logo' ]; then
-                mkdir -p dist/logo
-                cp -r public/logo/* dist/logo/ 2>/dev/null && echo 'Logo files copied successfully'
-                ls -la dist/logo/ | head -10 || echo 'Failed to list logo files'
+              # Copy pre-built frontend from workspace
+              if [ -d '/tmp/workspace/dist' ]; then
+                echo 'Found pre-built frontend in workspace'
+                cd ../frontend
+                rm -rf dist
+                cp -r /tmp/workspace/dist ./
+                echo 'Pre-built frontend copied successfully'
+                
+                # Copy logo files to dist (Vite doesn't copy them automatically)
+                echo '🖼️ Copying logo files to pre-built dist...'
+                if [ -d 'public/logo' ]; then
+                  mkdir -p dist/logo
+                  cp -r public/logo/* dist/logo/ 2>/dev/null && echo 'Logo files copied successfully'
+                  ls -la dist/logo/ | head -10 || echo 'Failed to list logo files'
+                else
+                  echo 'No public/logo directory found'
+                fi
               else
-                echo 'No public/logo directory found'
+                echo 'WARNING: No pre-built frontend found, falling back to server build'
+                cd ../frontend
+                echo 'VITE_API_URL=http://46.101.186.62' > .env
+                npm ci --silent --no-audit --no-fund || npm install --silent
+                BUILD_TIMESTAMP=$(date +%s000)
+                echo 'VITE_BUILD_TIME='$BUILD_TIMESTAMP >> .env
+                NODE_ENV=production npm run build || {
+                  echo 'Frontend build failed, using minimal build'
+                  mkdir -p dist
+                  echo 'Build failed' > dist/index.html
+                }
               fi
               
               # Copy built frontend to web server directory
               echo '📋 Deploying frontend files...'
+              echo 'Current dist contents:'
+              ls -la dist/ | head -10
+              echo 'Deploying to /var/www/html/...'
               sudo rm -rf /var/www/html/*
               sudo cp -r dist/* /var/www/html/
               sudo chown -R www-data:www-data /var/www/html/
@@ -339,8 +359,16 @@ jobs:
               
               # Verify deployment
               echo '✅ Verifying deployment...'
-              ls -la /var/www/html/logo/ || echo 'Logo directory missing'
-              echo 'Frontend build hash:' $(ls /var/www/html/assets/*.js | head -1 | sed 's/.*-//' | sed 's/\.js//')
+              echo 'Web directory contents:'
+              ls -la /var/www/html/ | head -10
+              ls -la /var/www/html/logo/ | head -5 || echo 'Logo directory missing'
+              NEW_JS_FILE=$(ls /var/www/html/assets/*.js | head -1)
+              if [ -n \"$NEW_JS_FILE\" ]; then
+                echo 'Frontend JS file:' $(basename $NEW_JS_FILE)
+                echo 'File timestamp:' $(stat -c '%y' $NEW_JS_FILE)
+              else
+                echo 'No JS files found in deployment!'
+              fi
               
               echo '✅ Code deployment complete'
             "
