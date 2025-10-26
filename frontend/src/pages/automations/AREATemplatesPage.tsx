@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'  // Keep for login redirect
+import { useState, useEffect, useRef } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { getApiUrl } from '../../config/api'  // Keep for login redirect
 
 interface AREATemplate {
   id: string
@@ -50,7 +51,7 @@ export default function AREATemplatesPage() {
         setLoading(true)
 
         // Fetch templates
-        const templatesRes = await fetch('http://localhost:8000/api/areas/templates', {
+        const templatesRes = await fetch(getApiUrl('areas/templates'), {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Accept': 'application/json'
@@ -59,7 +60,7 @@ export default function AREATemplatesPage() {
         const templatesData = await templatesRes.json()
 
         // Fetch user's AREAs
-        const areasRes = await fetch('http://localhost:8000/api/areas', {
+        const areasRes = await fetch(getApiUrl('areas'), {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Accept': 'application/json'

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
+import { getApiUrl } from '../../config/api'
 
 interface DatabaseService {
   id: number;
@@ -68,14 +69,14 @@ export default function HomePage() {
         setLoading(true)
 
         // Fetch services
-        const servicesResponse = await fetch('http://localhost:8000/api/services')
+        const servicesResponse = await fetch(getApiUrl('services'))
         if (servicesResponse.ok) {
           const servicesData = await servicesResponse.json()
           setServices(servicesData.server.services || [])
         }
 
         // Fetch automations
-        const automationsResponse = await fetch('http://localhost:8000/api/automations')
+        const automationsResponse = await fetch(getApiUrl('automations'))
         if (automationsResponse.ok) {
           const automationsData = await automationsResponse.json()
           setAutomations(automationsData || [])

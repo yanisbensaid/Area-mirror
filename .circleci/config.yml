@@ -199,7 +199,7 @@ jobs:
           name: Build Frontend
           command: |
             cd frontend
-            echo 'VITE_API_URL=http://46.101.186.62/api' > .env
+            echo 'VITE_API_URL=http://46.101.186.62' > .env
             echo "Starting frontend build..."
             # Try build with more verbose output
             npm run build --verbose || {
@@ -298,7 +298,7 @@ jobs:
               # Install frontend dependencies and build (optimized)
               cd ../frontend
               echo '🎨 Building frontend...'
-              echo 'VITE_API_URL=http://46.101.186.62/api' > .env
+              echo 'VITE_API_URL=http://46.101.186.62' > .env
               
               # Use npm ci with cache and parallel builds
               npm ci --silent --no-audit --no-fund || {
