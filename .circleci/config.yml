@@ -284,6 +284,12 @@ jobs:
                 echo 'Migration took too long or failed, continuing...'
               }
               
+              # Seed the database with services and initial data
+              echo '🌱 Seeding database...'
+              timeout 60 php artisan db:seed --force --quiet || {
+                echo 'Database seeding failed or took too long, continuing...'
+              }
+              
               # Clear and cache config (parallel where possible)
               echo '🔧 Optimizing Laravel...'
               php artisan config:clear --quiet
@@ -307,13 +313,20 @@ jobs:
               }
               
               # Build with production optimizations and timestamp
-              echo 'VITE_BUILD_TIME='$(date +%s000) >> .env
+              BUILD_TIMESTAMP=$(date +%s000)
+              echo 'VITE_BUILD_TIME='$BUILD_TIMESTAMP >> .env
+              echo 'Build timestamp set to: '$BUILD_TIMESTAMP
               NODE_ENV=production npm run build
               
               # Copy logo files to dist (Vite doesn't copy them automatically)
               echo '🖼️ Copying logo files...'
-              mkdir -p dist/logo
-              cp -r public/logo/* dist/logo/ 2>/dev/null || echo 'No logo files found'
+              if [ -d 'public/logo' ]; then
+                mkdir -p dist/logo
+                cp -r public/logo/* dist/logo/ 2>/dev/null && echo 'Logo files copied successfully'
+                ls -la dist/logo/ | head -10 || echo 'Failed to list logo files'
+              else
+                echo 'No public/logo directory found'
+              fi
               
               # Copy built frontend to web server directory
               echo '📋 Deploying frontend files...'
