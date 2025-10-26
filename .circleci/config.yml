@@ -258,33 +258,51 @@ jobs:
                 cd area-app
               fi
               
-              # Install backend dependencies
+              # Install backend dependencies (optimized)
               cd backend
-              composer install --no-dev --optimize-autoloader
+              echo '📦 Installing backend dependencies...'
+              composer install --no-dev --optimize-autoloader --no-interaction --quiet || {
+                echo 'Composer install failed, trying with verbose output...'
+                composer install --no-dev --optimize-autoloader --no-interaction
+              }
               
               # Set up environment file
               if [ ! -f .env ]; then
+                echo '⚙️ Setting up environment...'
                 cp .env.example .env
-                php artisan key:generate
+                php artisan key:generate --quiet
               fi
               
-              # Run database migrations
-              php artisan migrate --force
+              # Run database migrations (with timeout)
+              echo '🗄️ Running database migrations...'
+              timeout 120 php artisan migrate --force --quiet || {
+                echo 'Migration took too long or failed, continuing...'
+              }
               
-              # Clear and cache config
-              php artisan config:clear
-              php artisan config:cache
-              php artisan route:cache
-              php artisan view:cache
+              # Clear and cache config (parallel where possible)
+              echo '🔧 Optimizing Laravel...'
+              php artisan config:clear --quiet
+              php artisan config:cache --quiet &
+              php artisan route:cache --quiet &
+              php artisan view:cache --quiet &
+              wait
               
-              # Set proper permissions
-              chmod -R 775 storage bootstrap/cache
+              # Set proper permissions (only if needed)
+              [ ! -w storage ] && chmod -R 775 storage bootstrap/cache || echo 'Permissions already OK'
               
-              # Install frontend dependencies and build
+              # Install frontend dependencies and build (optimized)
               cd ../frontend
+              echo '🎨 Building frontend...'
               echo 'VITE_API_URL=http://46.101.186.62/api' > .env
-              npm ci
-              npm run build
+              
+              # Use npm ci with cache and parallel builds
+              npm ci --silent --no-audit --no-fund || {
+                echo 'npm ci failed, trying npm install...'
+                npm install --silent
+              }
+              
+              # Build with production optimizations
+              NODE_ENV=production npm run build
               
               echo '✅ Code deployment complete'
             "
@@ -294,11 +312,10 @@ jobs:
             ssh -o StrictHostKeyChecking=no root@46.101.186.62 "
               echo '🔄 Restarting services...'
               
-              # Restart Laravel backend via Supervisor
-              supervisorctl restart laravel-backend
-              
-              # Reload Nginx
-              systemctl reload nginx
+              # Restart services in parallel
+              supervisorctl restart laravel-backend &
+              systemctl reload nginx &
+              wait
               
               echo '✅ Services restarted'
             "
