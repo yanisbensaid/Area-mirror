@@ -22,18 +22,30 @@ return new class extends Migration
 
         Schema::create('actions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('service_id')->constrained()->onDelete('cascade');
-            $table->string('name');
-            $table->text('description');
+            $table->string('service_name'); // Gmail, YouTube, Twitch, etc.
+            $table->string('action_key'); // new_email_received, video_liked, etc.
+            $table->string('name'); // Human-readable name
+            $table->text('description'); // Description of the action
+            $table->json('parameters')->nullable(); // JSON describing required/optional parameters
+            $table->boolean('active')->default(true); // Can be disabled
             $table->timestamps();
+
+            // Unique constraint on service + action_key
+            $table->unique(['service_name', 'action_key']);
         });
 
         Schema::create('reactions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('service_id')->constrained()->onDelete('cascade');
-            $table->string('name');
-            $table->text('description');
+            $table->string('service_name'); // Gmail, Telegram, Discord, etc.
+            $table->string('reaction_key'); // send_email, send_message, etc.
+            $table->string('name'); // Human-readable name
+            $table->text('description'); // Description of the reaction
+            $table->json('parameters')->nullable(); // JSON describing required/optional parameters
+            $table->boolean('active')->default(true); // Can be disabled
             $table->timestamps();
+
+            // Unique constraint on service + reaction_key
+            $table->unique(['service_name', 'reaction_key']);
         });
     }
 

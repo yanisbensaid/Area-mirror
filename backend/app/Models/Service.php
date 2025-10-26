@@ -19,12 +19,12 @@ class Service extends Model
 
     public function actions()
     {
-        return $this->hasMany(Action::class);
+        return $this->hasMany(Action::class, 'service_name', 'name');
     }
 
     public function reactions()
     {
-        return $this->hasMany(Reaction::class);
+        return $this->hasMany(Reaction::class, 'service_name', 'name');
     }
 
     public function triggerAutomations()
