@@ -5,9 +5,6 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  define: {
-    __BUILD_TIME__: JSON.stringify(Date.now()),
-  },
   publicDir: 'public', // Ensure public directory is copied
   build: {
     copyPublicDir: true, // Make sure public files are copied
