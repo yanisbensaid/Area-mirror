@@ -43,38 +43,73 @@ jobs:
           name: Prepare Laravel Environment
           command: |
             cd backend
-            cp .env.example .env
-            # Configure for SQLite instead of PostgreSQL
-            sed -i 's/DB_CONNECTION=pgsql/DB_CONNECTION=sqlite/' .env
-            sed -i 's|DB_HOST=.*|DB_HOST=|' .env
-            sed -i 's|DB_PORT=.*|DB_PORT=|' .env
-            sed -i 's|DB_DATABASE=.*|DB_DATABASE=/tmp/database.sqlite|' .env
-            sed -i 's|DB_USERNAME=.*|DB_USERNAME=|' .env
-            sed -i 's|DB_PASSWORD=.*|DB_PASSWORD=|' .env
-            # Ensure database directory exists
-            mkdir -p database
+            # Create a clean .env for CI with SQLite
+            cat > .env << 'EOF'
+            APP_NAME=AREA
+            APP_ENV=testing
+            APP_DEBUG=true
+            APP_KEY=
+            APP_URL=http://localhost
+            
+            DB_CONNECTION=sqlite
+            DB_DATABASE=/tmp/database.sqlite
+            
+            LOG_CHANNEL=stderr
+            LOG_LEVEL=debug
+            EOF
+            
+            # Ensure Laravel directories exist
+            mkdir -p storage/{app,framework,logs}
+            mkdir -p storage/framework/{cache,sessions,testing,views}
+            mkdir -p bootstrap/cache
+            chmod -R 775 storage bootstrap/cache
+            
+            # Create SQLite database
             touch /tmp/database.sqlite
-            chmod 664 /tmp/database.sqlite
+            chmod 666 /tmp/database.sqlite
+            
             # Generate application key
             php artisan key:generate
-            echo "Laravel environment prepared with SQLite database"
+            
+            echo "Laravel environment prepared with clean SQLite configuration"
+      - run:
+          name: Debug Laravel Configuration
+          command: |
+            cd backend
+            echo "=== Environment Debug ==="
+            echo "Current .env file contents:"
+            cat .env | grep -E "^DB_|^APP_"
+            echo ""
+            echo "=== Database File Check ==="
+            ls -la /tmp/database.sqlite || echo "Database file not found"
+            echo ""
+            echo "=== Laravel Config Debug ==="
+            php artisan config:show database.default || echo "Default DB config failed"
+            php artisan config:show database.connections.sqlite || echo "SQLite config failed"
+            echo ""
       - run:
           name: Run Laravel Migrations
           command: |
             cd backend
-            echo "Checking database connection..."
-            php artisan migrate:status || echo "Migration status check failed, continuing..."
-            echo "Running migrations..."
+            echo "=== Testing Database Connection ==="
+            php artisan tinker --execute="DB::connection()->getPdo(); echo 'Database connection successful';" || {
+              echo "Database connection failed, trying to fix..."
+              # Clear any cached config
+              php artisan config:clear
+              php artisan cache:clear
+              # Recreate database file with proper path
+              rm -f /tmp/database.sqlite
+              touch /tmp/database.sqlite
+              chmod 666 /tmp/database.sqlite
+              echo "Database file recreated"
+            }
+            echo ""
+            echo "=== Running Migrations ==="
             php artisan migrate --force --verbose || {
-              echo "Migration failed, trying to reset and migrate..."
-              php artisan migrate:reset --force || echo "Reset failed, continuing..."
-              php artisan migrate --force --verbose || {
-                echo "Migration still failed, checking database file..."
-                ls -la database/
-                echo "Checking Laravel config..."
-                php artisan config:show database.connections.sqlite || echo "Config check failed"
-                exit 1
-              }
+              echo "Migration failed, checking Laravel logs..."
+              tail -20 storage/logs/laravel.log 2>/dev/null || echo "No Laravel logs found"
+              echo "Trying with fresh database..."
+              php artisan migrate:fresh --force --verbose || exit 1
             }
       - run:
           name: Run Backend Tests
