@@ -27,7 +27,9 @@ return [
         env('FRONTEND_URL'),
     ]),
 
-    'allowed_origins_patterns' => [],
+    'allowed_origins_patterns' => [
+        '/^http:\/\/.*\.sslip\.io$/',
+    ],
 
     'allowed_headers' => ['*'],
 
