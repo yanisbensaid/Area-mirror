@@ -341,26 +341,12 @@ export default function LoginPage() {
                   </svg>
                 ) : (
                   <img
-                    src="/logo/google.png"
+                    src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/768px-Google_%22G%22_logo.svg.png"
                     alt="Google"
                     className="w-5 h-5 mr-3"
                   />
                 )}
                 <span className="font-medium">{oauthLoading === 'google' ? 'Connecting...' : 'Continue with Google'}</span>
-              </button>
-
-              {/* Outlook */}
-              <button
-                type="button"
-                className="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 shadow-sm hover:shadow-md"
-                style={{ fontFamily: 'Inter, sans-serif' }}
-              >
-                <img
-                  src="/logo/outlook.png"
-                  alt="Outlook"
-                  className="w-5 h-5 mr-3"
-                />
-                <span className="font-medium">Continue with Outlook</span>
               </button>
 
               {/* GitHub */}
@@ -378,7 +364,7 @@ export default function LoginPage() {
                   </svg>
                 ) : (
                   <img
-                    src="/logo/github.png"
+                    src="https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png"
                     alt="GitHub"
                     className="w-5 h-5 mr-3"
                   />
