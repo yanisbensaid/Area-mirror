@@ -20,7 +20,7 @@ export interface ActionFormData {
 }
 
 export class EditActionService {
-  private static readonly BASE_URL = 'http://localhost:8000/api';
+  private static readonly BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000') + '/api';
 
   static async getActionsByServiceId(serviceId: string): Promise<EditActionData[]> {
     try {

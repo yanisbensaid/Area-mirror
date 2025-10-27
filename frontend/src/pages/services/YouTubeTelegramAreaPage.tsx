@@ -60,7 +60,7 @@ export default function YouTubeTelegramAreaPage() {
         const token = localStorage.getItem('token')
         if (!token) return
 
-        const templatesRes = await fetch('http://localhost:8000/api/areas/templates', {
+        const templatesRes = await fetch(`${API_URL}/api/areas/templates`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Accept': 'application/json'
@@ -107,7 +107,7 @@ export default function YouTubeTelegramAreaPage() {
       const token = localStorage.getItem('token')
       if (!token) return
 
-      const templatesRes = await fetch('http://localhost:8000/api/areas/templates', {
+      const templatesRes = await fetch(`${API_URL}/api/areas/templates`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json'

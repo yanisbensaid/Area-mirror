@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
+import { API_CONFIG } from '../../config/api'
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -73,7 +74,7 @@ export default function LoginPage() {
             password: formData.password
           }
 
-      const response = await fetch(`http://localhost:8000/api/${endpoint}`, {
+      const response = await fetch(`${API_CONFIG.API_URL}/${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -123,7 +124,7 @@ export default function LoginPage() {
     setError('')
 
     try {
-      const response = await fetch(`http://localhost:8000/api/oauth/${provider}`, {
+      const response = await fetch(`${API_CONFIG.API_URL}/oauth/${provider}`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',

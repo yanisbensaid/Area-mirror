@@ -43,7 +43,8 @@ export default function CreateServicePage() {
         throw new Error('Authentication token not found. Please log in again.');
       }
 
-      const response = await fetch('http://localhost:8000/api/services', {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${apiUrl}/api/services`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

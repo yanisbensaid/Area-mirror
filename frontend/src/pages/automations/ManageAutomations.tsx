@@ -110,7 +110,8 @@ export default function ManageAutomations() {
       setDeletingItems(prev => ({ ...prev, [`action-${actionId}`]: true }));
       
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:8000/api/services/${serviceId}/actions/${actionId}`, {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${apiUrl}/api/services/${serviceId}/actions/${actionId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -147,7 +148,8 @@ export default function ManageAutomations() {
       setDeletingItems(prev => ({ ...prev, [`reaction-${reactionId}`]: true }));
       
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:8000/api/services/${serviceId}/reactions/${reactionId}`, {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${apiUrl}/api/services/${serviceId}/reactions/${reactionId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

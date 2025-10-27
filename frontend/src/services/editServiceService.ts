@@ -9,7 +9,7 @@ export interface ServiceFormData {
 }
 
 export class EditServiceService {
-  private static readonly BASE_URL = 'http://localhost:8000/api';
+  private static readonly BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000') + '/api';
 
   static async getServiceById(serviceId: string): Promise<DatabaseService> {
     try {
