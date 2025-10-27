@@ -22,6 +22,8 @@ interface UserArea {
   can_execute: boolean
 }
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+
 export default function AREATemplatesPage() {
   const [templates, setTemplates] = useState<AREATemplate[]>([])
   const [userAreas, setUserAreas] = useState<UserArea[]>([])
@@ -59,7 +61,7 @@ export default function AREATemplatesPage() {
         const templatesData = await templatesRes.json()
 
         // Fetch user's AREAs
-        const areasRes = await fetch('http://localhost:8000/api/areas', {
+        const areasRes = await fetch(`${API_URL}/api/areas`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Accept': 'application/json'
@@ -91,7 +93,7 @@ export default function AREATemplatesPage() {
     try {
       setConnecting('YouTube')
 
-      const response = await fetch('http://localhost:8000/api/oauth/youtube', {
+      const response = await fetch(`${API_URL}/api/oauth/youtube`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json'
@@ -111,7 +113,7 @@ export default function AREATemplatesPage() {
         // Poll for connection status
         const checkInterval = setInterval(async () => {
           try {
-            const templatesRes = await fetch('http://localhost:8000/api/areas/templates', {
+            const templatesRes = await fetch(`${API_URL}/api/areas/templates`, {
               headers: {
                 'Authorization': `Bearer ${token}`,
                 'Accept': 'application/json'
@@ -148,7 +150,7 @@ export default function AREATemplatesPage() {
 
   const handleCreateArea = async (templateId: string) => {
     try {
-      const response = await fetch('http://localhost:8000/api/areas', {
+      const response = await fetch(`${API_URL}/api/areas`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -165,7 +167,7 @@ export default function AREATemplatesPage() {
 
       if (data.success) {
         // Refresh user areas
-        const areasRes = await fetch('http://localhost:8000/api/areas', {
+        const areasRes = await fetch(`${API_URL}/api/areas`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Accept': 'application/json'
@@ -183,7 +185,7 @@ export default function AREATemplatesPage() {
 
   const handleToggleArea = async (areaId: number) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/areas/${areaId}/toggle`, {
+      const response = await fetch(`${API_URL}/api/areas/${areaId}/toggle`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -214,7 +216,7 @@ export default function AREATemplatesPage() {
       setConnecting('Telegram')
       setTelegramError(null)
 
-      const response = await fetch('http://localhost:8000/api/services/connect', {
+      const response = await fetch(`${API_URL}/api/services/connect`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -234,7 +236,7 @@ export default function AREATemplatesPage() {
 
       if (data.success) {
         // Success - refresh templates to update connection status
-        const templatesRes = await fetch('http://localhost:8000/api/areas/templates', {
+        const templatesRes = await fetch(`${API_URL}/api/areas/templates`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Accept': 'application/json'
