@@ -132,20 +132,24 @@ class ServicesController extends Controller
      */
     public function index(): JsonResponse
     {
-        $services = Service::with(['actions', 'reactions'])->get()
-            ->sortBy('id'); // Sort services by ID
+        try {
+            $services = Service::with(['actions', 'reactions'])->get()
+                ->sortBy('id'); // Sort services by ID
 
-        return response()->json([
-            'client' => [
-                'host' => request()->ip(), // Get the client's IP address
-            ],
-            'server' => [
-                'current_time' => now()->timestamp, // Get the current Unix timestamp
-                'services' => $services->toArray(),
-            ],
-        ]);
-
-        console.log("index called successfully");
+            return response()->json([
+                'client' => [
+                    'host' => request()->ip(), // Get the client's IP address
+                ],
+                'server' => [
+                    'current_time' => now()->timestamp, // Get the current Unix timestamp
+                    'services' => $services->toArray(),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Database error: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

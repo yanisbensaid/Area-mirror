@@ -5,6 +5,19 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  publicDir: 'public', // Ensure public directory is copied
+  build: {
+    copyPublicDir: true, // Make sure public files are copied
+    assetsDir: 'assets',
+    rollupOptions: {
+      output: {
+        // Ensure assets are properly chunked
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+        }
+      }
+    }
+  },
   server: {
     port: 5173,
     proxy: {

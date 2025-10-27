@@ -25,6 +25,28 @@ const getServiceLogo = (serviceName: string) => {
   return `/logo/${serviceName}.png?v=3`
 }
 
+const ServiceLogo = ({ serviceName }: { serviceName: string }) => {
+  const [imageError, setImageError] = useState(false)
+  
+  if (imageError) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-purple-600 text-white font-bold text-xs rounded">
+        {serviceName}
+      </div>
+    )
+  }
+  
+  return (
+    <img
+      src={getServiceLogo(serviceName)}
+      alt={serviceName}
+      className="w-full h-full object-contain"
+      onError={() => setImageError(true)}
+      onLoad={() => setImageError(false)}
+    />
+  )
+}
+
 export default function ServicesPage() {
   const { isLoggedIn } = useAuth()
   const navigate = useNavigate()
@@ -160,7 +182,6 @@ export default function ServicesPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {SERVICES.map((service) => {
             const stats = serviceStats.find(s => s.service_name === service.name)
-            const serviceColor = service.color
 
             return (
               <div
@@ -171,14 +192,7 @@ export default function ServicesPage() {
 
                 {/* Service Logo */}
                 <div className="w-20 h-20 rounded-xl bg-white flex items-center justify-center mb-4 group-hover:shadow-lg transition-shadow p-4">
-                  <img
-                    src={getServiceLogo(service.name)}
-                    alt={service.name}
-                    className="w-full h-full object-contain"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none'
-                    }}
-                  />
+                  <ServiceLogo serviceName={service.name} />
                 </div>
 
                 {/* Service Name */}

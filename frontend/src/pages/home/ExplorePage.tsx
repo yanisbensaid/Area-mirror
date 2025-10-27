@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+import { API_CONFIG } from '../../config/api'
+const API_URL = API_CONFIG.BASE_URL
 
 interface AREATemplate {
   id: string

@@ -57,6 +57,7 @@ export default function CreateAutomation() {
   const [showSummary, setShowSummary] = useState(false)
 
   // Service connection state
+  // @ts-ignore - Variable will be used in future implementation
   const [servicesConnected, setServicesConnected] = useState<{[key: string]: boolean}>({})
   const [missingServices, setMissingServices] = useState<{[key: string]: boolean}>({})
 

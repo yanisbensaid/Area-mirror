@@ -67,7 +67,7 @@ return [
     'github' => [
         'client_id' => env('GITHUB_CLIENT_ID'),
         'client_secret' => env('GITHUB_CLIENT_SECRET'),
-        'redirect_uri' => env('GITHUB_REDIRECT_URI'),
+        'redirect' => env('GITHUB_REDIRECT_URI', 'http://localhost:8000/api/oauth/github/callback'),
     ],
 
     'spotify' => [
@@ -101,9 +101,9 @@ return [
     ],
 
     'google' => [
-        'client_id' => env('YOUTUBE_CLIENT_ID'),
-        'client_secret' => env('YOUTUBE_CLIENT_SECRET'),
-        'redirect' => env('YOUTUBE_REDIRECT_URI', 'http://localhost:8000/api/oauth/youtube/callback'),
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI', 'http://127.0.0.1:8000/api/oauth/google/callback'),
     ],
 
     'twitch' => [

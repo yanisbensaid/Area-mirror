@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'  // Keep for login redirect
+import { Link } from 'react-router-dom'
+import { getApiUrl } from '../../config/api'  // Keep for login redirect
 
 interface AREATemplate {
   id: string
@@ -52,7 +53,7 @@ export default function AREATemplatesPage() {
         setLoading(true)
 
         // Fetch templates
-        const templatesRes = await fetch('http://localhost:8000/api/areas/templates', {
+        const templatesRes = await fetch(getApiUrl('areas/templates'), {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Accept': 'application/json'
@@ -61,7 +62,7 @@ export default function AREATemplatesPage() {
         const templatesData = await templatesRes.json()
 
         // Fetch user's AREAs
-        const areasRes = await fetch(`${API_URL}/api/areas`, {
+        const areasRes = await fetch(getApiUrl('areas'), {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Accept': 'application/json'
@@ -89,6 +90,7 @@ export default function AREATemplatesPage() {
     fetchData()
   }, [isLoggedIn, token])
 
+  // @ts-ignore - Function will be used in future implementation
   const handleConnectYouTube = async () => {
     try {
       setConnecting('YouTube')
@@ -148,6 +150,7 @@ export default function AREATemplatesPage() {
     }
   }
 
+  // @ts-ignore - Function will be used in future implementation  
   const handleCreateArea = async (templateId: string) => {
     try {
       const response = await fetch(`${API_URL}/api/areas`, {
@@ -183,6 +186,7 @@ export default function AREATemplatesPage() {
     }
   }
 
+  // @ts-ignore - Function will be used in future implementation
   const handleToggleArea = async (areaId: number) => {
     try {
       const response = await fetch(`${API_URL}/api/areas/${areaId}/toggle`, {

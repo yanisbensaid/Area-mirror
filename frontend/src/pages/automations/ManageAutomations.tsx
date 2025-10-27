@@ -58,28 +58,29 @@ export default function ManageAutomations() {
         setLoading(true);
         
         // Fetch service details
-        const serviceResponse = await fetch(`http://localhost:8000/api/services/${serviceId}`);
+        const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        const serviceResponse = await fetch(`${apiBase}/api/services/${serviceId}`);
         if (serviceResponse.ok) {
           const serviceData = await serviceResponse.json();
           setService(serviceData.server.service);
         }
 
         // Fetch actions
-        const actionsResponse = await fetch(`http://localhost:8000/api/services/${serviceId}/actions`);
+        const actionsResponse = await fetch(`${apiBase}/api/services/${serviceId}/actions`);
         if (actionsResponse.ok) {
           const actionsData = await actionsResponse.json();
           setActions(actionsData.server.actions || []);
         }
 
         // Fetch reactions
-        const reactionsResponse = await fetch(`http://localhost:8000/api/services/${serviceId}/reactions`);
+        const reactionsResponse = await fetch(`${apiBase}/api/services/${serviceId}/reactions`);
         if (reactionsResponse.ok) {
           const reactionsData = await reactionsResponse.json();
           setReactions(reactionsData.server.reactions || []);
         }
 
         // Fetch automations
-        const automationsResponse = await fetch(`http://localhost:8000/api/services/${serviceId}/automations`);
+        const automationsResponse = await fetch(`${apiBase}/api/services/${serviceId}/automations`);
         if (automationsResponse.ok) {
           const automationsData = await automationsResponse.json();
           setAutomations(automationsData.server.automations || []);

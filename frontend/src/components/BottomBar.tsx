@@ -1,7 +1,31 @@
 import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 
 export default function BottomBar() {
   const currentYear = new Date().getFullYear()
+  const [deploymentInfo, setDeploymentInfo] = useState<{
+    date: string;
+    time: string;
+  } | null>(null)
+
+  useEffect(() => {
+    // Get deployment info from build time
+    const buildTime = import.meta.env.VITE_BUILD_TIME || (window as any).__BUILD_TIME__ || Date.now()
+    const deployDate = new Date(Number(buildTime))
+    
+    setDeploymentInfo({
+      date: deployDate.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric',
+        year: 'numeric'
+      }),
+      time: deployDate.toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: false
+      })
+    })
+  }, [])
 
   const footerLinks = {
     product: [
@@ -272,14 +296,26 @@ export default function BottomBar() {
               >
                 © {currentYear} AREA. All rights reserved.
               </p>
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span 
-                  className="text-sm text-gray-300"
-                  style={{ fontFamily: 'Inter, sans-serif' }}
-                >
-                  All systems operational
-                </span>
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span 
+                    className="text-sm text-gray-300"
+                    style={{ fontFamily: 'Inter, sans-serif' }}
+                  >
+                    All systems operational
+                  </span>
+                </div>
+                {deploymentInfo && (
+                  <div className="flex items-center space-x-2">
+                    <span 
+                      className="text-xs text-gray-400"
+                      style={{ fontFamily: 'Inter, sans-serif' }}
+                    >
+                      Last deployment: {deploymentInfo.date} at {deploymentInfo.time}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
             

@@ -131,7 +131,7 @@ export default function DashboardPage() {
     const fetchServices = async () => {
       try {
         setServicesLoading(true);
-        const response = await fetch('http://localhost:8000/api/services');
+        const response = await fetch((import.meta.env.VITE_API_URL || 'http://localhost:8000') + '/api/services');
 
         if (!response.ok) {
           throw new Error(`Failed to fetch services: ${response.status}`);

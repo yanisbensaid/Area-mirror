@@ -95,7 +95,7 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'search_path' => 'public',
-            'sslmode' => 'require', // IMPORTANT: Neon requires SSL
+            'sslmode' => env('DB_SSLMODE', 'prefer'), // Use 'prefer' for local, 'require' for production
         ],
 
         'sqlsrv' => [
