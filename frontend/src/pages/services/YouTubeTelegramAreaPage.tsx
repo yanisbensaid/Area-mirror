@@ -148,7 +148,7 @@ export default function YouTubeTelegramAreaPage() {
         return
       }
 
-      const response = await fetch('http://localhost:8000/api/oauth/youtube', {
+      const response = await fetch(`${API_URL}/api/oauth/youtube`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json'

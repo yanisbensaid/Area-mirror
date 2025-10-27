@@ -213,6 +213,29 @@ class AreaController extends Controller
                     ]
                 ]
             ],
+            [
+                'id' => 'telegram_keyword_to_telegram',
+                'name' => 'Telegram Keyword to Telegram',
+                'description' => 'Get notified when someone sends a message with a specific keyword to your Telegram bot',
+                'action_service' => 'Telegram',
+                'action_type' => 'message_contains_keyword',
+                'reaction_service' => 'Telegram',
+                'reaction_type' => 'send_message',
+                'requires_services' => ['Telegram'],
+                'services_connected' => [
+                    'Telegram' => in_array('Telegram', $connectedServices),
+                ],
+                'can_activate' => in_array('Telegram', $connectedServices),
+                'default_config' => [
+                    'action_config' => [
+                        'keyword' => 'hello',
+                        'last_update_id' => 0
+                    ],
+                    'reaction_config' => [
+                        'message_template' => "🔔 Keyword detected!\n\n💬 Message: {text}\n👤 From: {from_first_name}\n🔍 Matched: {matched_keyword}\n📅 Time: {date}"
+                    ]
+                ]
+            ],
         ];
 
         return response()->json([
@@ -587,6 +610,63 @@ class AreaController extends Controller
             ], 201);
         }
 
+        // For Telegram Keyword to Telegram template
+        if ($validated['template_id'] === 'telegram_keyword_to_telegram') {
+            // Verify Telegram service is connected
+            $hasTelegram = UserServiceToken::where('user_id', $userId)
+                ->where('service_name', 'Telegram')
+                ->exists();
+
+            if (!$hasTelegram) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Please connect Telegram service first',
+                    'missing_services' => [
+                        'Telegram' => !$hasTelegram,
+                    ]
+                ], 400);
+            }
+
+            // Get keyword from action_config if provided, otherwise use default
+            $keyword = $validated['action_config']['keyword'] ?? 'hello';
+
+            // Create AREA
+            $area = Area::create([
+                'user_id' => $userId,
+                'name' => $validated['name'] ?? 'Telegram Keyword Monitor',
+                'description' => "Monitors for '{$keyword}' keyword in Telegram messages",
+                'action_service' => 'Telegram',
+                'action_type' => 'message_contains_keyword',
+                'action_config' => [
+                    'keyword' => $keyword,
+                    'last_update_id' => 0
+                ],
+                'reaction_service' => 'Telegram',
+                'reaction_type' => 'send_message',
+                'reaction_config' => $validated['reaction_config'] ?? [
+                    'message_template' => "🔔 Keyword detected!\n\n💬 Message: {text}\n👤 From: {from_first_name}\n🔍 Matched: {matched_keyword}\n📅 Time: {date}"
+                ],
+                'active' => false, // User must manually activate
+            ]);
+
+            Log::info('AREA created', [
+                'area_id' => $area->id,
+                'user_id' => $userId,
+                'template' => 'telegram_keyword_to_telegram',
+                'keyword' => $keyword
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'AREA created successfully. Click "Activate" to start monitoring.',
+                'data' => [
+                    'id' => $area->id,
+                    'name' => $area->name,
+                    'active' => $area->active,
+                ]
+            ], 201);
+        }
+
         return response()->json([
             'success' => false,
             'error' => 'Unknown template ID'
@@ -707,6 +787,12 @@ class AreaController extends Controller
             $defaultActionConfig = ['last_message_id' => null];
         } elseif ($validated['action_service'] === 'Gmail') {
             $defaultActionConfig = ['last_message_ids' => []];
+        } elseif ($validated['action_service'] === 'Telegram') {
+            $defaultActionConfig = ['last_update_id' => 0];
+            // Add keyword for message_contains_keyword action type
+            if ($validated['action_type'] === 'message_contains_keyword') {
+                $defaultActionConfig['keyword'] = 'hello';
+            }
         }
 
         // Merge with user-provided config

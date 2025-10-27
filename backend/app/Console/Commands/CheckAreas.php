@@ -94,6 +94,12 @@ class CheckAreas extends Command
                     return false;
                 }
                 $actionToken->refresh(); // Reload from database
+            } elseif ($area->action_service === 'Discord') {
+                if (!$oauthController->refreshDiscordToken($actionToken)) {
+                    $this->error("❌ Failed to refresh Discord token");
+                    return false;
+                }
+                $actionToken->refresh(); // Reload from database
             }
         }
 
@@ -106,9 +112,11 @@ class CheckAreas extends Command
                 'user_id' => $additionalData['user_id'] ?? null
             ]);
         } elseif ($area->action_service === 'Discord') {
-            // Discord uses OAuth2 access_token
+            // Discord uses bot_token + webhook_url
+            $additionalData = $actionToken->additional_data ?? [];
             $actionService->authenticate([
-                'access_token' => $actionToken->getDecryptedAccessToken()
+                'bot_token' => $actionToken->getDecryptedAccessToken(),
+                'webhook_url' => $additionalData['webhook_url'] ?? null
             ]);
         } elseif ($area->action_service === 'Telegram') {
             // Telegram uses bot_token + chat_id
@@ -352,17 +360,10 @@ class CheckAreas extends Command
                     // Build email parameters
                     $reactionParams = $area->reaction_config;
 
-                    // Add action service and action type to data for placeholders
-                    $resultWithMeta = array_merge($result, [
-                        'service' => $area->action_service,
-                        'action_type' => $area->action_type,
-                        'action_name' => $this->getActionDisplayName($area->action_service, $area->action_type)
-                    ]);
-
                     // Replace placeholders in email content
                     foreach ($reactionParams as $key => $value) {
                         if (is_string($value)) {
-                            $reactionParams[$key] = $this->replacePlaceholders($value, $resultWithMeta);
+                            $reactionParams[$key] = $this->replacePlaceholders($value, $result);
                         }
                     }
 
@@ -371,15 +372,8 @@ class CheckAreas extends Command
                     // Build Discord message parameters
                     $content = $area->reaction_config['content'] ?? "🎥 New video!\n{title}\n{url}";
 
-                    // Add action service and action type to data for placeholders
-                    $resultWithMeta = array_merge($result, [
-                        'service' => $area->action_service,
-                        'action_type' => $area->action_type,
-                        'action_name' => $this->getActionDisplayName($area->action_service, $area->action_type)
-                    ]);
-
                     // Replace placeholders with actual data
-                    $content = $this->replacePlaceholders($content, $resultWithMeta);
+                    $content = $this->replacePlaceholders($content, $result);
 
                     $this->info("📤 Sending message to Discord...");
 
