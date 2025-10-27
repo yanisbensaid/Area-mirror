@@ -153,9 +153,88 @@ export default function PrivacyPolicyPage() {
               </ul>
             </section>
 
+            {/* Third-Party Services Data Usage */}
+            <section className="mb-6 md:mb-8">
+              <h2
+                className="text-xl md:text-2xl font-semibold text-gray-900 mb-3 md:mb-4"
+                style={{ fontFamily: 'Inter, sans-serif' }}
+              >
+                Third-Party Services Data Usage
+              </h2>
+
+              <h3
+                className="text-lg md:text-xl font-medium text-gray-900 mb-2 md:mb-3"
+                style={{ fontFamily: 'Inter, sans-serif' }}
+              >
+                YouTube Data
+              </h3>
+              <p
+                className="text-gray-700 leading-relaxed mb-3 md:mb-4 text-sm md:text-base"
+                style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.6' }}
+              >
+                When you connect your YouTube account to AREA, we access your YouTube data solely to enable the automations you create. Specifically:
+              </p>
+              <ul className="list-disc pl-6 mb-3 md:mb-4 space-y-1 md:space-y-2">
+                <li className="text-gray-700 text-sm md:text-base" style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.6' }}>
+                  We retrieve your liked videos list to detect when you like a new video and trigger your configured automations
+                </li>
+                <li className="text-gray-700 text-sm md:text-base" style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.6' }}>
+                  We do not modify, delete, or upload any content to your YouTube account
+                </li>
+                <li className="text-gray-700 text-sm md:text-base" style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.6' }}>
+                  We do not share your YouTube data with any third parties except as necessary to execute your automations
+                </li>
+                <li className="text-gray-700 text-sm md:text-base" style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.6' }}>
+                  You can revoke our access to your YouTube data at any time through your Google account settings
+                </li>
+              </ul>
+              <p
+                className="text-gray-700 leading-relaxed mb-4 text-sm md:text-base"
+                style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.6' }}
+              >
+                AREA's use of information received from Google APIs adheres to the{' '}
+                <a
+                  href="https://developers.google.com/terms/api-services-user-data-policy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-700 underline"
+                >
+                  Google API Services User Data Policy
+                </a>
+                , including the Limited Use requirements.
+              </p>
+
+              <h3
+                className="text-lg md:text-xl font-medium text-gray-900 mb-2 md:mb-3"
+                style={{ fontFamily: 'Inter, sans-serif' }}
+              >
+                Gmail Data
+              </h3>
+              <p
+                className="text-gray-700 leading-relaxed mb-3 md:mb-4 text-sm md:text-base"
+                style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.6' }}
+              >
+                When you connect your Gmail account to AREA:
+              </p>
+              <ul className="list-disc pl-6 mb-4 space-y-1 md:space-y-2">
+                <li className="text-gray-700 text-sm md:text-base" style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.6' }}>
+                  We access your email metadata (sender, subject, date) to detect new emails matching your automation criteria
+                </li>
+                <li className="text-gray-700 text-sm md:text-base" style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.6' }}>
+                  We may send emails on your behalf only when explicitly configured in your automations
+                </li>
+                <li className="text-gray-700 text-sm md:text-base" style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.6' }}>
+                  We do not read, store, or analyze the content of your emails beyond what is necessary to execute your automations
+                </li>
+                <li className="text-gray-700 text-sm md:text-base" style={{ fontFamily: 'Inter, sans-serif', lineHeight: '1.6' }}>
+                  You can disconnect Gmail at any time from your AREA account settings
+                </li>
+              </ul>
+            </section>
+
             {/* Information Sharing */}
             <section className="mb-8">
-              <h2 
+              <h2
                 className="text-2xl font-semibold text-gray-900 mb-4"
                 style={{ fontFamily: 'Inter, sans-serif' }}
               >
