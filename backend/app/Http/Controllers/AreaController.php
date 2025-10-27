@@ -83,12 +83,16 @@ class AreaController extends Controller
      */
     public function templates(Request $request): JsonResponse
     {
-        $userId = $request->user()->id;
+        // Check if user is authenticated
+        $user = $request->user();
+        $connectedServices = [];
 
-        // Check which services user has connected
-        $connectedServices = UserServiceToken::where('user_id', $userId)
-            ->pluck('service_name')
-            ->toArray();
+        if ($user) {
+            // Check which services user has connected
+            $connectedServices = UserServiceToken::where('user_id', $user->id)
+                ->pluck('service_name')
+                ->toArray();
+        }
 
         $templates = [
             [

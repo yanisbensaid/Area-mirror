@@ -36,11 +36,17 @@ export default function ExplorePage() {
       try {
         setLoading(true)
         const token = localStorage.getItem('token')
+        const headers: HeadersInit = {
+          'Accept': 'application/json'
+        }
+
+        // Only add Authorization header if token exists
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`
+        }
+
         const response = await fetch(`${API_URL}/api/areas/templates`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json'
-          }
+          headers
         })
 
         if (response.ok) {

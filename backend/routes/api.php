@@ -65,6 +65,9 @@ Route::get('/oauth/gmail/redirect', [OAuthController::class, 'redirectToGmailPop
 Route::get('/oauth/twitch/redirect', [OAuthController::class, 'redirectToTwitchPopup']);
 Route::get('/oauth/discord/redirect', [OAuthController::class, 'redirectToDiscordPopup']);
 
+// Public AREA templates (accessible without authentication)
+Route::get('/areas/templates', [AreaController::class, 'templates']);
+
 // Protected routes (requires authentication)
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -95,7 +98,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // AREA management
     Route::get('/areas', [AreaController::class, 'index']);
-    Route::get('/areas/templates', [AreaController::class, 'templates']);
     Route::get('/areas/{id}', [AreaController::class, 'show']);
     Route::post('/areas', [AreaController::class, 'store']);
     Route::post('/areas/custom', [AreaController::class, 'storeCustom']);
