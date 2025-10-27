@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
+use Laravel\Socialite\Facades\Socialite;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -89,5 +91,111 @@ class AuthController extends Controller
     public function me(Request $request): JsonResponse
     {
         return response()->json($request->user());
+    }
+
+    /**
+     * Redirect to Google OAuth provider
+     */
+    public function redirectToGoogle(): JsonResponse
+    {
+        try {
+            $url = Socialite::driver('google')->stateless()->redirect()->getTargetUrl();
+            
+            return response()->json(['url' => $url]);
+        } catch (\Exception $e) {
+            \Log::error('Google OAuth redirect error: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Failed to generate OAuth URL',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Handle Google OAuth callback
+     */
+    public function handleGoogleCallback(Request $request)
+    {
+        try {
+            $googleUser = Socialite::driver('google')->stateless()->user();
+            
+            // Find or create user
+            $user = User::where('email', $googleUser->getEmail())->first();
+            
+            if (!$user) {
+                // Create new user
+                $user = User::create([
+                    'name' => $googleUser->getName() ?? $googleUser->getNickname() ?? 'Google User',
+                    'email' => $googleUser->getEmail(),
+                    'password' => Hash::make(Str::random(32)), // Random password for OAuth users
+                    'email_verified_at' => now(), // Auto-verify OAuth users
+                ]);
+            }
+            
+            // Generate token
+            $token = $user->createToken('auth-token')->plainTextToken;
+            
+            // Redirect to frontend with token
+            $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
+            return redirect()->away("{$frontendUrl}/oauth/callback?token={$token}");
+            
+        } catch (\Exception $e) {
+            \Log::error('Google OAuth error: ' . $e->getMessage());
+            $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
+            return redirect()->away("{$frontendUrl}/login?error=oauth_failed");
+        }
+    }
+
+    /**
+     * Redirect to GitHub OAuth provider
+     */
+    public function redirectToGitHub(): JsonResponse
+    {
+        try {
+            $url = Socialite::driver('github')->stateless()->redirect()->getTargetUrl();
+            
+            return response()->json(['url' => $url]);
+        } catch (\Exception $e) {
+            \Log::error('GitHub OAuth redirect error: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Failed to generate OAuth URL',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Handle GitHub OAuth callback
+     */
+    public function handleGitHubCallback(Request $request)
+    {
+        try {
+            $githubUser = Socialite::driver('github')->stateless()->user();
+            
+            // Find or create user
+            $user = User::where('email', $githubUser->getEmail())->first();
+            
+            if (!$user) {
+                // Create new user
+                $user = User::create([
+                    'name' => $githubUser->getName() ?? $githubUser->getNickname() ?? 'GitHub User',
+                    'email' => $githubUser->getEmail(),
+                    'password' => Hash::make(Str::random(32)), // Random password for OAuth users
+                    'email_verified_at' => now(), // Auto-verify OAuth users
+                ]);
+            }
+            
+            // Generate token
+            $token = $user->createToken('auth-token')->plainTextToken;
+            
+            // Redirect to frontend with token
+            $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
+            return redirect()->away("{$frontendUrl}/oauth/callback?token={$token}");
+            
+        } catch (\Exception $e) {
+            \Log::error('GitHub OAuth error: ' . $e->getMessage());
+            $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
+            return redirect()->away("{$frontendUrl}/login?error=oauth_failed");
+        }
     }
 }

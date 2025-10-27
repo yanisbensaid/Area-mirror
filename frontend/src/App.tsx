@@ -7,7 +7,7 @@ import { EditActionsProvider } from './contexts/EditActionsContext'
 import Navbar from './components/Navbar'
 import BottomBar from './components/BottomBar'
 import HomePage from './pages/home/HomePage'
-import LoginPage from './pages/auth/LoginPage'
+import { LoginPage, OAuthCallbackPage } from './pages/auth'
 import ExplorePage from './pages/home/ExplorePage'
 
 import ServicesPage from './pages/services/ServicesPage'
@@ -204,6 +204,11 @@ function App() {
             <>
               <LoginPage />
               <BottomBar />
+            </>
+          } />
+          <Route path="/oauth/callback" element={
+            <>
+              <OAuthCallbackPage />
             </>
           } />
           <Route path="/privacy-policy" element={

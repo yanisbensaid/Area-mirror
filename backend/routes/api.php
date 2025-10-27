@@ -26,6 +26,12 @@ Route::post('/echo', [ApiTestController::class, 'echo']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
+// OAuth endpoints for login (Google & GitHub)
+Route::get('/oauth/google', [AuthController::class, 'redirectToGoogle']);
+Route::get('/oauth/google/callback', [AuthController::class, 'handleGoogleCallback']);
+Route::get('/oauth/github', [AuthController::class, 'redirectToGitHub']);
+Route::get('/oauth/github/callback', [AuthController::class, 'handleGitHubCallback']);
+
 // Services, Actions, and Reactions endpoints to show services
 Route::get('/services', [ServicesController::class, 'index']);
 Route::get('/services/{service}', [ServicesController::class, 'show']);

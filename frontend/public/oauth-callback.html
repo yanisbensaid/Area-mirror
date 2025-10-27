@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>OAuth Callback</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
+        }
+        #debug {
+            color: #666;
+            font-size: 12px;
+            margin-top: 20px;
+            text-align: left;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h2 id="status">Processing authentication...</h2>
+    <p id="message">Please wait while we complete your login.</p>
+    <div id="debug"></div>
+
+    <script>
+        (function() {
+            console.log('OAuth callback script started');
+            const debugEl = document.getElementById('debug');
+            const statusEl = document.getElementById('status');
+            const messageEl = document.getElementById('message');
+
+            function updateDebug(msg) {
+                console.log(msg);
+                debugEl.innerHTML += msg + '<br>';
+            }
+
+            function showError(msg) {
+                statusEl.textContent = 'Authentication Error';
+                messageEl.textContent = msg;
+                statusEl.style.color = 'red';
+            }
+
+            updateDebug('Script loaded successfully');
+            updateDebug('Current URL: ' + window.location.href);
+
+            // Set timeout to prevent infinite loading
+            const timeout = setTimeout(() => {
+                showError('Authentication timeout. Please close this window and try again.');
+                updateDebug('TIMEOUT REACHED');
+            }, 30000);
+
+            try {
+                // Extract URL parameters
+                const urlParams = new URLSearchParams(window.location.search);
+                const code = urlParams.get('code');
+                const error = urlParams.get('error');
+                const state = urlParams.get('state');
+
+                updateDebug('Code present: ' + (code ? 'Yes' : 'No'));
+                updateDebug('Error param: ' + (error || 'None'));
+                updateDebug('Referrer: ' + document.referrer);
+
+                if (error) {
+                    clearTimeout(timeout);
+                    const errorMsg = error === 'access_denied' ? 'Authentication cancelled' : 'Authentication failed';
+                    showError(errorMsg);
+                    if (window.opener) {
+                        window.opener.postMessage({
+                            type: 'OAUTH_ERROR',
+                            error: errorMsg
+                        }, window.location.origin);
+                    }
+                    setTimeout(() => window.close(), 2000);
+                    return;
+                }
+
+                if (!code) {
+                    clearTimeout(timeout);
+                    showError('No authorization code received');
+                    updateDebug('ERROR: No code in URL');
+                    if (window.opener) {
+                        window.opener.postMessage({
+                            type: 'OAUTH_ERROR',
+                            error: 'No authorization code received'
+                        }, window.location.origin);
+                    }
+                    setTimeout(() => window.close(), 2000);
+                    return;
+                }
+
+                // Determine provider
+                let provider = 'google'; // default
+                const referrer = document.referrer.toLowerCase();
+                
+                if (referrer.includes('google.com') || referrer.includes('accounts.google')) {
+                    provider = 'google';
+                } else if (referrer.includes('github.com')) {
+                    provider = 'github';
+                } else if (referrer.includes('microsoft.com') || referrer.includes('live.com')) {
+                    provider = 'microsoft';
+                } else {
+                    // Fallback to sessionStorage
+                    const storedProvider = sessionStorage.getItem('oauth_provider');
+                    if (storedProvider) {
+                        provider = storedProvider;
+                    }
+                }
+
+                updateDebug('Detected provider: ' + provider);
+
+                const backendUrl = `http://localhost:8000/api/auth/${provider}/callback${window.location.search}`;
+                updateDebug('Calling backend: ' + backendUrl);
+
+                // Exchange code for token
+                fetch(backendUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                    },
+                })
+                .then(response => {
+                    updateDebug('Response status: ' + response.status);
+                    updateDebug('Response headers: ' + JSON.stringify([...response.headers.entries()]));
+                    return response.text().then(text => {
+                        updateDebug('Response body (raw): ' + text);
+                        try {
+                            return JSON.parse(text);
+                        } catch (e) {
+                            throw new Error('Invalid JSON response: ' + text);
+                        }
+                    });
+                })
+                .then(data => {
+                    clearTimeout(timeout);
+                    updateDebug('Parsed data: ' + JSON.stringify(data));
+                    
+                    if (data.token) {
+                        statusEl.textContent = 'Success!';
+                        messageEl.textContent = 'Redirecting...';
+                        statusEl.style.color = 'green';
+                        updateDebug('Token received, sending to parent window');
+                        
+                        if (window.opener) {
+                            window.opener.postMessage({
+                                type: 'OAUTH_SUCCESS',
+                                token: data.token,
+                                user: data.user
+                            }, window.location.origin);
+                            updateDebug('Message sent to parent');
+                        } else {
+                            updateDebug('ERROR: No window.opener found');
+                        }
+                        
+                        setTimeout(() => {
+                            updateDebug('Closing window...');
+                            window.close();
+                        }, 1000);
+                    } else {
+                        showError(data.error || 'Authentication failed - no token received');
+                        updateDebug('ERROR: No token in response');
+                        if (window.opener) {
+                            window.opener.postMessage({
+                                type: 'OAUTH_ERROR',
+                                error: data.error || 'Authentication failed'
+                            }, window.location.origin);
+                        }
+                        setTimeout(() => window.close(), 3000);
+                    }
+                })
+                .catch(err => {
+                    clearTimeout(timeout);
+                    console.error('Fetch error:', err);
+                    updateDebug('FETCH ERROR: ' + err.message);
+                    updateDebug('Error stack: ' + err.stack);
+                    showError('Network error: ' + err.message);
+                    if (window.opener) {
+                        window.opener.postMessage({
+                            type: 'OAUTH_ERROR',
+                            error: 'Network error during authentication: ' + err.message
+                        }, window.location.origin);
+                    }
+                    setTimeout(() => window.close(), 5000);
+                });
+
+            } catch (err) {
+                console.error('Script error:', err);
+                updateDebug('SCRIPT ERROR: ' + err.message);
+                updateDebug('Error stack: ' + err.stack);
+                showError('Script error: ' + err.message);
+            }
+        })();
+    </script>
+</body>
+</html>
