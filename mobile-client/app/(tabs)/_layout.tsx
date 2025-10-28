@@ -69,9 +69,9 @@ export default function TabLayout() {
           }}
         />
       )}
-      {/* Database test tab only shows in development builds */}
+      {/* Profile tab - shows login or user profile */}
       <Tabs.Screen
-        name="login"
+        name="profile"
         options={{
           title: 'Profile',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,

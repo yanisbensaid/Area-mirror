@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "mobileclient",
+    "scheme": "area-mobile",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -46,7 +46,10 @@
       "reactCompiler": true
     },
     "extra": {
-      "environment": "development"
+      "environment": "development",
+      "apiUrl": "https://api.syncreviews.eu/api",
+      "databaseUrl": "http://146.190.20.45:8000/project/acs0ckc4wgwosco4w88sk08o/environment/fs08gk44wosck0cgs8sowkco/database/css4kgswogwk8c0occosc8ks",
+      "databaseUsername": "postgres"
     }
   }
 }

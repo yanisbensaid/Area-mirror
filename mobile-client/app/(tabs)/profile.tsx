@@ -6,8 +6,14 @@ import { ThemedText } from '@/components/themed-text';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
 import apiService, { User } from '@/services/api';
+import oauthService from '@/services/oauth';
+import * as WebBrowser from 'expo-web-browser';
+import testOAuthUrls from '@/utils/testOAuth';
 
-export default function LoginScreen() {
+// Complete the auth session when the component mounts
+WebBrowser.maybeCompleteAuthSession();
+
+export default function ProfileScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   
@@ -18,6 +24,7 @@ export default function LoginScreen() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [oauthLoading, setOauthLoading] = useState<string | null>(null);
 
     // Check authentication status on component mount
   useEffect(() => {
@@ -107,9 +114,82 @@ export default function LoginScreen() {
     setEmail('');
     setPassword('');
     setConfirmPassword('');
+    setOauthLoading(null);
     setLoading(false);
     Alert.alert('Success', 'Logged out successfully');
   };
+
+  const handleGoogleOAuth = async () => {
+    setOauthLoading('google');
+    try {
+      // First test: Get OAuth URL from backend
+      console.log('=== Google OAuth Test ===');
+      const urlResult = await apiService.getGoogleOAuthUrl();
+      console.log('Backend OAuth URL result:', urlResult);
+      
+      if (!urlResult.success) {
+        Alert.alert('Error', `Failed to get OAuth URL: ${urlResult.error}`);
+        return;
+      }
+      
+      // Proceed with OAuth
+      const result = await oauthService.authenticateWithGoogle();
+      
+      if (result.success) {
+        // Get updated user info
+        const userResult = await apiService.getStoredUser();
+        if (userResult) {
+          setUser(userResult);
+          setIsAuthenticated(true);
+          Alert.alert('Success', 'Logged in with Google successfully!');
+        }
+      } else {
+        Alert.alert('Google OAuth Failed', result.error || 'Authentication failed');
+      }
+    } catch (error) {
+      console.error('Google OAuth error:', error);
+      Alert.alert('Error', `Google authentication failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setOauthLoading(null);
+    }
+  };
+
+  const handleGitHubOAuth = async () => {
+    setOauthLoading('github');
+    try {
+      // First test: Get OAuth URL from backend
+      console.log('=== GitHub OAuth Test ===');
+      const urlResult = await apiService.getGitHubOAuthUrl();
+      console.log('Backend OAuth URL result:', urlResult);
+      
+      if (!urlResult.success) {
+        Alert.alert('Error', `Failed to get OAuth URL: ${urlResult.error}`);
+        return;
+      }
+      
+      // Proceed with OAuth
+      const result = await oauthService.authenticateWithGitHub();
+      
+      if (result.success) {
+        // Get updated user info
+        const userResult = await apiService.getStoredUser();
+        if (userResult) {
+          setUser(userResult);
+          setIsAuthenticated(true);
+          Alert.alert('Success', 'Logged in with GitHub successfully!');
+        }
+      } else {
+        Alert.alert('GitHub OAuth Failed', result.error || 'Authentication failed');
+      }
+    } catch (error) {
+      console.error('GitHub OAuth error:', error);
+      Alert.alert('Error', `GitHub authentication failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setOauthLoading(null);
+    }
+  };
+
+
 
   if (loading) {
     return (
@@ -248,12 +328,20 @@ export default function LoginScreen() {
                 {
                   backgroundColor: colorScheme === 'dark' ? '#1a1a1a' : '#fff',
                   borderColor: colorScheme === 'dark' ? '#333' : '#e5e5e5',
+                  opacity: oauthLoading ? 0.6 : 1,
                 }
               ]}
-              onPress={() => Alert.alert('OAuth', 'Google login coming soon')}
+              onPress={handleGoogleOAuth}
+              disabled={oauthLoading !== null}
             >
-              <Image source={require('@/assets/images/app_logo/google.png')} style={styles.oauthIcon} />
-              <ThemedText style={[styles.oauthText, { color: colorScheme === 'dark' ? '#fff' : '#000' }]}>Google</ThemedText>
+              {oauthLoading === 'google' ? (
+                <ActivityIndicator size="small" color={colors.tint} style={{ marginRight: 12 }} />
+              ) : (
+                <Image source={require('@/assets/images/app_logo/google.png')} style={styles.oauthIcon} />
+              )}
+              <ThemedText style={[styles.oauthText, { color: colorScheme === 'dark' ? '#fff' : '#000' }]}>
+                {oauthLoading === 'google' ? 'Connecting...' : 'Google'}
+              </ThemedText>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -262,28 +350,41 @@ export default function LoginScreen() {
                 {
                   backgroundColor: colorScheme === 'dark' ? '#1a1a1a' : '#fff',
                   borderColor: colorScheme === 'dark' ? '#333' : '#e5e5e5',
+                  opacity: oauthLoading ? 0.6 : 1,
                 }
               ]}
-              onPress={() => Alert.alert('OAuth', 'GitHub login coming soon')}
+              onPress={handleGitHubOAuth}
+              disabled={oauthLoading !== null}
             >
-              <Image source={require('@/assets/images/app_logo/github.png')} style={styles.oauthIcon} />
-              <ThemedText style={[styles.oauthText, { color: colorScheme === 'dark' ? '#fff' : '#000' }]}>GitHub</ThemedText>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.oauthButton,
-                {
-                  backgroundColor: colorScheme === 'dark' ? '#1a1a1a' : '#fff',
-                  borderColor: colorScheme === 'dark' ? '#333' : '#e5e5e5',
-                }
-              ]}
-              onPress={() => Alert.alert('OAuth', 'Outlook login coming soon')}
-            >
-              <Image source={require('@/assets/images/app_logo/outlook.png')} style={styles.oauthIcon} />
-              <ThemedText style={[styles.oauthText, { color: colorScheme === 'dark' ? '#fff' : '#000' }]}>Outlook</ThemedText>
+              {oauthLoading === 'github' ? (
+                <ActivityIndicator size="small" color={colors.tint} style={{ marginRight: 12 }} />
+              ) : (
+                <Image source={require('@/assets/images/app_logo/github.png')} style={styles.oauthIcon} />
+              )}
+              <ThemedText style={[styles.oauthText, { color: colorScheme === 'dark' ? '#fff' : '#000' }]}>
+                {oauthLoading === 'github' ? 'Connecting...' : 'GitHub'}
+              </ThemedText>
             </TouchableOpacity>
           </View>
+
+          {/* Debug button for OAuth testing */}
+          {__DEV__ && (
+            <TouchableOpacity
+              style={[
+                styles.debugButton,
+                {
+                  backgroundColor: colorScheme === 'dark' ? '#2a2a2a' : '#f0f0f0',
+                  borderColor: colorScheme === 'dark' ? '#444' : '#ddd',
+                  marginTop: 16,
+                }
+              ]}
+              onPress={testOAuthUrls}
+            >
+              <ThemedText style={[styles.debugButtonText, { color: colors.text }]}>
+                🔍 Test OAuth URLs
+              </ThemedText>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             style={styles.switchButton}
@@ -293,6 +394,8 @@ export default function LoginScreen() {
               {isLogin ? 'Need an account? Sign up' : 'Already have an account? Sign in'}
             </ThemedText>
           </TouchableOpacity>
+
+
         </View>
       </ScrollView>
     </ThemedView>
@@ -421,6 +524,16 @@ const styles = StyleSheet.create({
   },
   oauthText: {
     fontSize: 14,
+    fontWeight: '500',
+  },
+  debugButton: {
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  debugButtonText: {
+    fontSize: 12,
     fontWeight: '500',
   },
 });
