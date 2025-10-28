@@ -96,10 +96,24 @@ class AuthController extends Controller
     /**
      * Redirect to Google OAuth provider
      */
-    public function redirectToGoogle(): JsonResponse
+    public function redirectToGoogle(Request $request)
     {
         try {
-            $url = Socialite::driver('google')->stateless()->redirect()->getTargetUrl();
+            // Check if this is a mobile request
+            $mobile = $request->query('mobile');
+            $mobileRedirect = $request->query('redirect');
+            
+            // Store mobile redirect info in session for callback
+            if ($mobile && $mobileRedirect) {
+                session(['oauth_mobile' => true, 'oauth_mobile_redirect' => $mobileRedirect]);
+            }
+            
+            $url = Socialite::driver('google')->redirect()->getTargetUrl();
+            
+            // For mobile requests, redirect directly instead of returning JSON
+            if ($mobile) {
+                return redirect()->away($url);
+            }
             
             return response()->json(['url' => $url]);
         } catch (\Exception $e) {
@@ -117,7 +131,7 @@ class AuthController extends Controller
     public function handleGoogleCallback(Request $request)
     {
         try {
-            $googleUser = Socialite::driver('google')->stateless()->user();
+            $googleUser = Socialite::driver('google')->user();
             
             // Find or create user
             $user = User::where('email', $googleUser->getEmail())->first();
@@ -135,24 +149,62 @@ class AuthController extends Controller
             // Generate token
             $token = $user->createToken('auth-token')->plainTextToken;
             
-            // Redirect to frontend with token
-            $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
-            return redirect()->away("{$frontendUrl}/oauth/callback?token={$token}");
+            // Check for mobile redirect info from session
+            $mobileRedirect = session('oauth_mobile_redirect');
+            $isMobile = session('oauth_mobile');
+            
+            // Clear session data
+            session()->forget(['oauth_mobile', 'oauth_mobile_redirect']);
+            
+            if ($isMobile && $mobileRedirect) {
+                // Redirect to mobile deep link
+                return redirect()->away("{$mobileRedirect}?token={$token}");
+            } else {
+                // Redirect to frontend web app
+                $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
+                return redirect()->away("{$frontendUrl}/oauth/callback?token={$token}");
+            }
             
         } catch (\Exception $e) {
             \Log::error('Google OAuth error: ' . $e->getMessage());
-            $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
-            return redirect()->away("{$frontendUrl}/login?error=oauth_failed");
+            
+            // Check for mobile redirect info from session for error handling
+            $mobileRedirect = session('oauth_mobile_redirect');
+            $isMobile = session('oauth_mobile');
+            
+            // Clear session data
+            session()->forget(['oauth_mobile', 'oauth_mobile_redirect']);
+            
+            if ($isMobile && $mobileRedirect) {
+                return redirect()->away("{$mobileRedirect}?error=oauth_failed");
+            } else {
+                $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
+                return redirect()->away("{$frontendUrl}/login?error=oauth_failed");
+            }
         }
     }
 
     /**
      * Redirect to GitHub OAuth provider
      */
-    public function redirectToGitHub(): JsonResponse
+    public function redirectToGitHub(Request $request)
     {
         try {
-            $url = Socialite::driver('github')->stateless()->redirect()->getTargetUrl();
+            // Check if this is a mobile request
+            $mobile = $request->query('mobile');
+            $mobileRedirect = $request->query('redirect');
+            
+            // Store mobile redirect info in session for callback
+            if ($mobile && $mobileRedirect) {
+                session(['oauth_mobile' => true, 'oauth_mobile_redirect' => $mobileRedirect]);
+            }
+            
+            $url = Socialite::driver('github')->redirect()->getTargetUrl();
+            
+            // For mobile requests, redirect directly instead of returning JSON
+            if ($mobile) {
+                return redirect()->away($url);
+            }
             
             return response()->json(['url' => $url]);
         } catch (\Exception $e) {
@@ -170,7 +222,7 @@ class AuthController extends Controller
     public function handleGitHubCallback(Request $request)
     {
         try {
-            $githubUser = Socialite::driver('github')->stateless()->user();
+            $githubUser = Socialite::driver('github')->user();
             
             // Find or create user
             $user = User::where('email', $githubUser->getEmail())->first();
@@ -188,14 +240,38 @@ class AuthController extends Controller
             // Generate token
             $token = $user->createToken('auth-token')->plainTextToken;
             
-            // Redirect to frontend with token
-            $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
-            return redirect()->away("{$frontendUrl}/oauth/callback?token={$token}");
+            // Check for mobile redirect info from session
+            $mobileRedirect = session('oauth_mobile_redirect');
+            $isMobile = session('oauth_mobile');
+            
+            // Clear session data
+            session()->forget(['oauth_mobile', 'oauth_mobile_redirect']);
+            
+            if ($isMobile && $mobileRedirect) {
+                // Redirect to mobile deep link
+                return redirect()->away("{$mobileRedirect}?token={$token}");
+            } else {
+                // Redirect to frontend web app
+                $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
+                return redirect()->away("{$frontendUrl}/oauth/callback?token={$token}");
+            }
             
         } catch (\Exception $e) {
             \Log::error('GitHub OAuth error: ' . $e->getMessage());
-            $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
-            return redirect()->away("{$frontendUrl}/login?error=oauth_failed");
+            
+            // Check for mobile redirect info from session for error handling
+            $mobileRedirect = session('oauth_mobile_redirect');
+            $isMobile = session('oauth_mobile');
+            
+            // Clear session data
+            session()->forget(['oauth_mobile', 'oauth_mobile_redirect']);
+            
+            if ($isMobile && $mobileRedirect) {
+                return redirect()->away("{$mobileRedirect}?error=oauth_failed");
+            } else {
+                $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
+                return redirect()->away("{$frontendUrl}/login?error=oauth_failed");
+            }
         }
     }
 }

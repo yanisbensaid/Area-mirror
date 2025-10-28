@@ -2,8 +2,9 @@
 // This mirrors the functionality from your web frontend API service
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Config from '../constants/config';
 
-const API_BASE_URL = 'http://46.101.186.62/api';
+const API_BASE_URL = Config.API_BASE_URL;
 
 interface ApiResponse<T = any> {
   success: boolean;
@@ -174,15 +175,23 @@ class ApiService {
   ): Promise<ApiResponse<T>> {
     try {
       const url = `${this.baseURL}${endpoint}`;
+      
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), Config.APP.TIMEOUT);
+      
       const config: RequestInit = {
         ...options,
         headers: {
           ...this.getHeaders(),
           ...options.headers,
         },
+        signal: controller.signal,
       };
 
       const response = await fetch(url, config);
+      clearTimeout(timeoutId);
+      
       const data = await response.json();
 
       if (!response.ok) {
@@ -198,9 +207,23 @@ class ApiService {
       };
     } catch (error) {
       console.error('API Request Error:', error);
+      
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          return {
+            success: false,
+            error: 'Request timed out. Please check your internet connection.',
+          };
+        }
+        return {
+          success: false,
+          error: error.message,
+        };
+      }
+      
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Network error occurred',
+        error: 'Network error occurred',
       };
     }
   }
@@ -243,6 +266,19 @@ class ApiService {
     await this.clearToken();
     
     return result;
+  }
+
+  // OAuth endpoints
+  async getGoogleOAuthUrl(): Promise<ApiResponse<{ url: string }>> {
+    return this.makeRequest<{ url: string }>('/oauth/google', {
+      method: 'GET',
+    });
+  }
+
+  async getGitHubOAuthUrl(): Promise<ApiResponse<{ url: string }>> {
+    return this.makeRequest<{ url: string }>('/oauth/github', {
+      method: 'GET',
+    });
   }
 
   // User endpoints
