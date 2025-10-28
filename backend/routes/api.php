@@ -34,11 +34,11 @@ Route::get('/oauth/github/callback', [AuthController::class, 'handleGitHubCallba
 
 // Services, Actions, and Reactions endpoints to show services
 Route::get('/services', [ServicesController::class, 'index']);
-Route::get('/services/{service}', [ServicesController::class, 'show']);
+// Note: Specific routes must come before parameterized routes
 Route::get('/services/{service}/actions', [ServicesController::class, 'showActions']);
 Route::get('/services/{service}/reactions', [ServicesController::class, 'showReactions']);
 Route::get('/services/{service}/automations', [AutomationController::class, 'getAutomationsForService']);
-Route::get('/services/{service}/automations', [AutomationController::class, 'getAutomationsForService']);
+Route::get('/services/{service}', [ServicesController::class, 'show']);
 
 // Public automation endpoints
 Route::get('/automations', [AutomationController::class, 'index']);
