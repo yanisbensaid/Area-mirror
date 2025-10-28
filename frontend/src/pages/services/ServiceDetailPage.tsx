@@ -159,7 +159,7 @@ export default function ServiceDetailPage() {
                 }}
               />
             </div>
-            <div>
+            <div className="flex-1">
               <h1 className="text-4xl font-bold">{serviceName} AREAs</h1>
               <p className="text-slate-300">
                 {isConnected ? (
@@ -169,6 +169,14 @@ export default function ServiceDetailPage() {
                 )}
               </p>
             </div>
+            {!isConnected && (
+              <Link
+                to="/createAutomation"
+                className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold"
+              >
+                Connect {serviceName}
+              </Link>
+            )}
           </div>
         </div>
 
