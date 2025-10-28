@@ -87,7 +87,7 @@ stderr_logfile=/var/log/worker-laravel.log
 "worker-scheduler.conf" = '''
 [program:worker-scheduler]
 process_name=%(program_name)s
-command=bash -c 'exec php /app/artisan schedule:work'
+command=bash -c 'while true; do php /app/artisan schedule:run --verbose; sleep 60; done'
 autostart=true
 autorestart=true
 stopasgroup=true
