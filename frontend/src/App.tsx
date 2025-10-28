@@ -9,6 +9,7 @@ import BottomBar from './components/BottomBar'
 import HomePage from './pages/home/HomePage'
 import { LoginPage, OAuthCallbackPage } from './pages/auth'
 import ExplorePage from './pages/home/ExplorePage'
+import OAuthSuccess from './pages/OAuthSuccess'
 
 import ServicesPage from './pages/services/ServicesPage'
 import ServiceDetailPage from './pages/services/ServiceDetailPage'
@@ -209,6 +210,11 @@ function App() {
           <Route path="/oauth/callback" element={
             <>
               <OAuthCallbackPage />
+            </>
+          } />
+          <Route path="/oauth-success" element={
+            <>
+              <OAuthSuccess />
             </>
           } />
           <Route path="/privacy-policy" element={

@@ -144,11 +144,9 @@ class OAuthController extends Controller
                 'email' => $googleUser->email
             ]);
 
-            // Redirect to frontend success page
-            return response()->json([
-                'success' => true,
-                'message' => 'Successfully connected to YouTube! You can close this window.'
-            ]);
+            // Redirect to frontend callback page
+            $frontendUrl = env('FRONTEND_URL', 'http://localhost:3000');
+            return redirect($frontendUrl . '/oauth-success?service=YouTube');
 
         } catch (\Exception $e) {
             Log::error('YouTube OAuth callback failed', [
@@ -288,10 +286,9 @@ class OAuthController extends Controller
             'twitch_user' => $userData['login'] ?? 'unknown'
         ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Successfully connected to Twitch! You can close this window.'
-        ]);
+        // Redirect to frontend callback page
+        $frontendUrl = env('FRONTEND_URL', 'http://localhost:3000');
+        return redirect($frontendUrl . '/oauth-success?service=Twitch');
     }
 
     /**
@@ -494,10 +491,9 @@ class OAuthController extends Controller
             'email' => $gmailEmail
         ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Successfully connected to Gmail! You can close this window.'
-        ]);
+        // Redirect to frontend callback page
+        $frontendUrl = env('FRONTEND_URL', 'http://localhost:3000');
+        return redirect($frontendUrl . '/oauth-success?service=Gmail');
     }
 
     /**
@@ -670,7 +666,7 @@ class OAuthController extends Controller
                 'discord_username' => $userInfo['username']
             ]);
 
-            return redirect(env('FRONTEND_URL', 'http://localhost:5173') . '?discord_connected=true');
+            return redirect(env('FRONTEND_URL', 'http://localhost:5173') . '/oauth-success?service=Discord');
 
         } catch (\Exception $e) {
             Log::error('Discord callback error', [

@@ -94,6 +94,19 @@ export default function GmailTelegramAreaPage() {
     }
 
     fetchData()
+
+    // Listen for OAuth success messages from popup
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return
+
+      if (event.data.type === 'OAUTH_SUCCESS') {
+        // Refresh data when OAuth succeeds
+        fetchData()
+      }
+    }
+
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
   }, [isLoggedIn])
 
   const refreshData = async () => {
