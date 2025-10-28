@@ -11,6 +11,5 @@ Artisan::command('inspire', function () {
 // Schedule AREA checks every minute
 Schedule::command('areas:check')
     ->cron('* * * * *')
-    ->withoutOverlapping()
     ->runInBackground()
     ->appendOutputTo('/dev/stdout');
