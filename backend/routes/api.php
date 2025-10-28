@@ -24,7 +24,7 @@ Route::post('/echo', [ApiTestController::class, 'echo']);
 
 // Auth endpoints
 Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/login', [AuthController::class, 'login'])->name('login');
 
 // OAuth endpoints for login (Google & GitHub)
 Route::get('/oauth/google', [AuthController::class, 'redirectToGoogle']);
