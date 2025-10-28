@@ -10,6 +10,4 @@ Artisan::command('inspire', function () {
 
 // Schedule AREA checks every minute
 Schedule::command('areas:check')
-    ->cron('* * * * *')
-    ->runInBackground()
-    ->appendOutputTo('/dev/stdout');
+    ->everyMinute();
